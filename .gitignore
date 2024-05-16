@@ -1,0 +1,11 @@
+/node_modules/
+/dist/
+/build/
+
+.vscode/
+
+.DS_Store
+Thumbs.db
+
+package-lock.json
+yarn.lock
