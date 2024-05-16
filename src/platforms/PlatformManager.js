@@ -7,6 +7,7 @@ import C64 from './systems/C64.js';
 import C128 from './systems/C128.js';
 import C264 from './systems/C264.js';
 import A2600 from './systems/A2600.js';
+import A5200 from './systems/A5200.js';
 import A800 from './systems/A800.js';
 import CPC from './systems/CPC.js';
 import VIC20 from './systems/VIC20.js';
@@ -19,7 +20,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, SMS, C64, C128, C264, A2600, A800, CPC, VIC20, ZX80, Spectrum
+    NES, GB, GBC, SMS, C64, C128, C264, A2600, A5200, A800, CPC, VIC20, ZX80, Spectrum
 }
 
 export class PlatformManager {
