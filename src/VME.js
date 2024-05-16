@@ -72,12 +72,13 @@ export class VME {
         this.#kb.clicks_on();
 
         this.#cli.register_command(new HelpCommand());
+        this.#cli.register_command(new AboutCommand(this.#pl));
         this.#cli.register_command(new SystemCommand(this.#pl));
-        this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new ListCommand(this.#pl));
         this.#cli.register_command(new FindCommand(this.#pl));
+        this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new SetCommand());
-        this.#cli.register_command(new AboutCommand(this.#pl));
+
         this.#cli.register_default('find');
 
         this.#addListeners();
