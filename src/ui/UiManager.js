@@ -111,7 +111,6 @@ export class UiManager {
 
         this.addButtonEventListeners(s('#desktopUiFfd'),
             (pressed) => {
-                console.log('pizd');
                 if (pressed) {
 
                     self.#platform_manager.getNostalgist().sendCommand('FAST_FORWARD');
@@ -131,7 +130,6 @@ export class UiManager {
         let isPressed = false;
 
         const handleEvent = (pressed) => {
-            console.log(pressed);
             handleAction(pressed);
         };
 
@@ -201,7 +199,7 @@ export class UiManager {
     }
 
     static toggleJoystick = (mode) => {
-        if (EnvironmentManager.isDesktop()) {
+        if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
             return;
         }
 
