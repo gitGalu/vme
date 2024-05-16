@@ -62,7 +62,7 @@ const A800 = {
         let config = {...defaultOptions};
 
         Object.keys(tagRules).forEach(tag => {
-            if(fileName.includes(tag)) {
+            if(fileName.toUpperCase().includes(tag)) {
                 Object.assign(config, tagRules[tag]);
             }
         });
