@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta id="viewport-meta" name="viewport"
+        content="width=device-width, viewport-fit=cover, height=device-height,initial-scale=1, maximum-scale=1, target-densityDpi=device-dpi" />
+    <meta name="robots" content="noindex, nofollow">
+    <title>VM/E</title>
+    <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" sizes="32x32">
+    <link rel="icon" href="assets/images/favicon-16x16.png" type="image/png" sizes="16x16">
+    <script type="module" src="./app.js"></script>
+</head>
+<style>
+    html {
+        display: none;
+        background-color: black;
+        color: black;
+    }
+</style>
+
+<body>
+    <div id="container1">
+        <div id="emulator">
+            <div id="emuscreen"></div>
+        </div>
+
+        <div id="desktopOverlay" style="display:none;">
+            <button id="closeBtn">Close</button>
+            <div id="desktopOverlayContent"></div>
+        </div>
+
+        <div id="desktopUi" style="display:none;">
+            <div id="desktopUiBack" class="clickable-area"><img src="./assets/images/arrow.png"></img></div>
+            <div class="right-area">
+                <div id="desktopUiRewind" class="clickable-area">Rewind</div>
+                <div id="desktopUiFfd" class="clickable-area">Ffd</div>
+            </div>
+        </div>
+
+        <div id="warningStandalone">
+            <div class="logo"></div>
+            <p>To use this web app on your smartphone or tablet, add it to your home screen.</p>
+            <p>On Safari/iOS, tap the Share icon and scroll to the "Add to Home Screen" option.</p>
+            <p>On Chrome/Android, tap the three dots and select "Add to Home screen".</p>
+            <p>Then, launch the app from its icon on your home screen.</p>
+        </div>
+
+        <div id="settings">
+            <div id="header">
+                <p>VM/E <span id="versionLabel"></span> <span id="platformLabel"></span></p>
+                <p>&nbsp;</p>
+            </div>
+            <div class="menu-wrap">
+                <div id="menu-button-strip"></div>
+                <p>&nbsp;</p>
+            </div>
+            <div id="cors_interface">
+                <span id="cors_query_caret">Command></span>
+                <span id="cors_query_prefix"></span>
+                <span id="cors_query"></span>
+                <div id="cursor"></div>
+                <input type="text" id="cors_hidden_input" style="opacity: 0; position: absolute; top: -1000px;">
+            </div>
+            <p>&nbsp;</p>
+            <div id="cors_results" tabindex="0"></div>
+        </div>
+
+        <div id="keyboardContainer">
+            <div id="keyboardControls">
+                <span class="kbCtrl" id="kbCtrlClear">&#x25B1;</span>
+                <span class="kbCtrl" id="kbCtrlArrow">&#x25BD;</span>
+                <span class="kbCtrl" id="kbCtrlCross">&#x2715;</span>
+            </div>
+            <div id="keyboard" class="keyboardQwerty">
+                <span class="key layerA layerB" data-value="backspace" data-code="Backspace"
+                    id="keyBackspace">BSP</span>
+                <span class="key layerA layerB" data-value="space" data-code="Space" id="keySpace">SPC</span>
+                <span class="key layerA layerB" data-value="enter" data-code="Enter" id="keyEnter">ENTER</span>
+                <span class="key layerA" data-value="a" data-code="KeyA" id="keyA">A</span>
+                <span class="key layerA" data-value="b" data-code="KeyB" id="keyB">B</span>
+                <span class="key layerA" data-value="c" data-code="KeyC" id="keyC">C</span>
+                <span class="key layerA" data-value="d" data-code="KeyD" id="keyD">D</span>
+                <span class="key layerA" data-value="e" data-code="KeyE" id="keyE">E</span>
+                <span class="key layerA" data-value="f" data-code="KeyF" id="keyF">F</span>
+                <span class="key layerA" data-value="g" data-code="KeyG" id="keyG">G</span>
+                <span class="key layerA" data-value="h" data-code="KeyH" id="keyH">H</span>
+                <span class="key layerA" data-value="i" data-code="KeyI" id="keyI">I</span>
+                <span class="key layerA" data-value="j" data-code="KeyJ" id="keyJ">J</span>
+                <span class="key layerA" data-value="k" data-code="KeyK" id="keyK">K</span>
+                <span class="key layerA" data-value="l" data-code="KeyL" id="keyL">L</span>
+                <span class="key layerA" data-value="m" data-code="KeyM" id="keyM">M</span>
+                <span class="key layerA" data-value="n" data-code="KeyN" id="keyN">N</span>
+                <span class="key layerA" data-value="o" data-code="KeyO" id="keyO">O</span>
+                <span class="key layerA" data-value="p" data-code="KeyP" id="keyP">P</span>
+                <span class="key layerA" data-value="q" data-code="KeyQ" id="keyQ">Q</span>
+                <span class="key layerA" data-value="r" data-code="KeyR" id="keyR">R</span>
+                <span class="key layerA" data-value="s" data-code="KeyS" id="keyS">S</span>
+                <span class="key layerA" data-value="t" data-code="KeyT" id="keyT">T</span>
+                <span class="key layerA" data-value="u" data-code="KeyU" id="keyU">U</span>
+                <span class="key layerA" data-value="v" data-code="KeyV" id="keyV">V</span>
+                <span class="key layerA" data-value="w" data-code="KeyW" id="keyW">W</span>
+                <span class="key layerA" data-value="x" data-code="KeyX" id="keyX">X</span>
+                <span class="key layerA" data-value="y" data-code="KeyY" id="keyY">Y</span>
+                <span class="key layerA" data-value="z" data-code="KeyZ" id="keyZ">Z</span>
+                <span class="key layerB" data-value="0" data-code="Digit0" id="key0">0</span>
+                <span class="key layerB" data-value="1" data-code="Digit1" id="key1">1</span>
+                <span class="key layerB" data-value="2" data-code="Digit2" id="key2">2</span>
+                <span class="key layerB" data-value="3" data-code="Digit3" id="key3">3</span>
+                <span class="key layerB" data-value="4" data-code="Digit4" id="key4">4</span>
+                <span class="key layerB" data-value="5" data-code="Digit5" id="key5">5</span>
+                <span class="key layerB" data-value="6" data-code="Digit6" id="key6">6</span>
+                <span class="key layerB" data-value="7" data-code="Digit7" id="key7">7</span>
+                <span class="key layerB" data-value="8" data-code="Digit8" id="key8">8</span>
+                <span class="key layerB" data-value="9" data-code="Digit9" id="key9">9</span>
+                <span class="key layerB" data-value="9" data-code="Digit9" id="key9">9</span>
+
+                <span class="key layerB" data-value="-" data-code="Minus" id="keyMinus">-</span>
+                <span class="key layerB" data-value="/" data-code="Slash" id="keySlash">/</span>
+                <span class="key layerB" data-value=":" data-code="Colon" id="keyColon">:</span>
+                <span class="key layerB" data-value=";" data-code="Semicolon" id="keySemicolon">;</span>
+                <span class="key layerB" data-value="(" data-code="BracketLeft" id="keyBracketLeft">(</span>
+                <span class="key layerB" data-value=")" data-code="BracketRight" id="keyBracketRight">)</span>
+                <span class="key layerB" data-value="$" data-code="Dollar" id="keyDollar">$</span>
+                <span class="key layerB" data-value="&" data-code="Ampersand" id="keyAmpersand">&</span>
+                <span class="key layerB" data-value="@" data-code="At" id="keyAt">@</span>
+                <span class="key layerB" data-value='"' data-code="Quote" id="keyQuote">"</span>
+                <span class="key layerB" data-value="." data-code="Period" id="keyPeriod">.</span>
+                <span class="key layerB" data-value="," data-code="Comma" id="keyComma">,</span>
+                <span class="key layerB" data-value="?" data-code="Slash" id="keyQuestion">?</span>
+                <span class="key layerB" data-value="!" data-code="Digit1" id="keyExclamation">!</span>
+                <span class="key layerB" data-value="'" data-code="Quote" id="keyApostrophe">'</span>
+
+                <span class="key layerA layerB nostrip" data-value="-100" data-code="Shift" id="keyShift">SHIFT</span>
+                <span class="key layerA layerB nostrip" data-value="-120" data-code="Toggle"
+                    id="keyToggle">TOGGLE</span>
+            </div>
+        </div>
+</body>
+
+</html>
