@@ -53,10 +53,10 @@ export class EnvironmentManager {
     }
 
     static updateDeviceType() {
-        if (EnvironmentManager.hasTouch()) {
-            EnvironmentManager.forceTouch();
-        } else if (EnvironmentManager.isDesktop()) {
+        if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
             EnvironmentManager.forceDesktop();
+        } else if (EnvironmentManager.hasTouch()) {
+            EnvironmentManager.forceTouch();
         }
     }
 
@@ -90,7 +90,6 @@ export class EnvironmentManager {
     }
 
     static isQuest() {
-        // return true;
         var ua = navigator.userAgent;
 
         if (ua.includes('OculusBrowser') || ua.includes('Quest')) {

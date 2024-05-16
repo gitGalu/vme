@@ -138,7 +138,7 @@ export class VME {
                 hide('#save-browser');
                 show('#emulator', 'block');
 
-                if (EnvironmentManager.isDesktop()) {
+                if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
                     hide('#fastui', 'grid');
                     hide('#quickshots');
                     hide('#quickshot');
