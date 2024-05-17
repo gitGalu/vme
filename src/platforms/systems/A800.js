@@ -59,10 +59,10 @@ const A800 = {
             atari800_system: '800XL (64K)'
         };
 
-        let config = {...defaultOptions};
+        let config = { ...defaultOptions };
 
         Object.keys(tagRules).forEach(tag => {
-            if(fileName.toUpperCase().includes(tag)) {
+            if (fileName.toUpperCase().includes(tag)) {
                 Object.assign(config, tagRules[tag]);
             }
         });
@@ -98,14 +98,26 @@ const A800 = {
     fire_buttons: 1,
     additional_buttons: {
         1: {
+            "label": "OPTION",
+            "key": {
+                "key": 'F2',
+                "code": 'F2',
+                "keyCode": 113
+            }
+        },
+        2: {
             "label": "SELECT",
             "keyCode": 'select'
         },
-        2: {
+        3: {
             "label": "START",
-            "keyCode": 'start'
+            "key": {
+                "key": 'F4',
+                "code": 'F4',
+                "keyCode": 115
+            }
         }
-  
+
     }
 };
 
