@@ -67,6 +67,10 @@ export class CLI {
         }
     }
 
+    set_article_mode(val) {
+        this.#articleMode = val;
+    }
+
     #kb_event(event) {
         event.preventDefault();
         if (this.#is_loading) {
