@@ -87,7 +87,17 @@ export class PlatformManager {
         this.#prepareNostalgist(caption);
         const response = await fetch(filename);
         const blob = await response.blob();
+        this.#storeLastProgramInfo(filename, caption);
         this.startEmulation(blob, caption);
+    }
+
+    #storeLastProgramInfo(filename, caption) {
+        const data = {
+            filename: filename,
+            caption: caption
+        };
+        const jsonString = JSON.stringify(data);
+        StorageManager.storeValue(this.#selected_platform.platform_id + ".LAST_FILE", jsonString);
     }
 
     async loadRomFile(blob, caption) {
@@ -96,7 +106,7 @@ export class PlatformManager {
     }
 
     async startEmulation(blob, caption) {
-       
+
         let self = this;
 
         let core = this.#selected_platform.core;
@@ -119,7 +129,7 @@ export class PlatformManager {
                     return `${file}`
                 },
                 resolveShader(file) {
-                    if (StorageManager.getValue("SHADER") == "0") { return [];}
+                    if (StorageManager.getValue("SHADER") == "0") { return []; }
                     return self.#selected_platform.shader;
                 }
             });

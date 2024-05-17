@@ -9,6 +9,7 @@ import { FindCommand } from './cli/FindCommand.js';
 import { SetCommand } from './cli/SetCommand.js';
 import { OpenCommand } from './cli/OpenCommand.js';
 import { AboutCommand } from './cli/AboutCommand.js';
+import { LastCommand } from './cli/LastCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
@@ -78,6 +79,7 @@ export class VME {
         this.#cli.register_command(new FindCommand(this.#pl));
         this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new SetCommand());
+        this.#cli.register_command(new LastCommand(this.#pl));
 
         this.#cli.register_default('find');
 
@@ -99,7 +101,6 @@ export class VME {
     }
 
     #guard() {
-        // return false;
         if (isMobile && !((window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches)) {
             return true;
         }
