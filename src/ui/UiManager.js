@@ -1,9 +1,8 @@
-import { s, show, hide } from '../dom.js';
+import { s } from '../dom.js';
 import { SingleTouchButton } from '../touch/SingleTouchButton.js';
 import { TouchButtonListener } from '../touch/TouchButtonListener.js';
 import { SingleTouchButtonJoyListener } from '../touch/SingleTouchButtonJoyListener.js';
-import { DualTouchButton } from '../touch/DualTouchButton.js';
-import { DualTouchButtonJoyListener } from '../touch/DualTouchButtonJoyListener.js';
+import { SingleTouchButtonKbListener } from '../touch/SingleTouchButtonKbListener.js';
 import { VME } from '../VME.js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { QuickJoy } from '../touch/QuickJoy.js';
@@ -125,7 +124,6 @@ export class UiManager {
             });
     }
 
-
     addButtonEventListeners(button, handleAction) {
         let isPressed = false;
 
@@ -192,7 +190,16 @@ export class UiManager {
             let key = keys[i];
             let label = this.#platform_manager.getSelectedPlatform().additional_buttons[key].label;
             let keyCode = this.#platform_manager.getSelectedPlatform().additional_buttons[key].keyCode;
-            new SingleTouchButton(container, '<span style="font-size: 50%;">' + label + '</span>', undefined, 'fast' + counter, new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), keyCode));
+            let kbKey = this.#platform_manager.getSelectedPlatform().additional_buttons[key].key;
+
+            let listener;
+            if (kbKey) {
+                listener = new SingleTouchButtonKbListener(kbKey.key, kbKey.code, kbKey.keyCode);
+            } else {
+                listener = new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), keyCode);
+            }
+            new SingleTouchButton(container, '<span style="font-size: 50%;">' + label + '</span>', undefined, 'fast' + counter, listener);
+
             cell += 6;
             counter += 1;
         }
