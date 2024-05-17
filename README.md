@@ -75,6 +75,8 @@ vice-libretro https://github.com/libretro/vice-libretro
 
 libretro-atari800 https://github.com/libretro/libretro-atari800
 
+a5200 https://github.com/libretro/a5200
+
 fuse-libretro https://github.com/libretro/fuse-libretro
 
 81-libretro https://github.com/libretro/81-libretro
