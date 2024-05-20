@@ -1,11 +1,11 @@
 import { s, show, hide } from '../dom.js';
-import { SingleTouchButton  } from "./SingleTouchButton";
-import { DualTouchButton  } from "./DualTouchButton";
+import { SingleTouchButton } from "./SingleTouchButton";
+import { DualTouchButton } from "./DualTouchButton";
 import { SingleTouchButtonJoyListener } from "./SingleTouchButtonJoyListener";
 import { DualTouchButtonJoyListener } from "./DualTouchButtonJoyListener";
 
 export class QuickShot {
-    static #DEAD_ZONE_RADIUS = 50;
+    static #DEAD_ZONE_RADIUS = 30;
 
     #platform_manager;
     #nostalgist;
@@ -14,7 +14,7 @@ export class QuickShot {
     #joystickThumb;
     #joystickContainer;
     #activeTouchId = null;
-    #activeDirections;
+    #activeDirections = new Set();
 
     constructor(platform_manager) {
         this.#platform_manager = platform_manager;
@@ -50,9 +50,9 @@ export class QuickShot {
             new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab4', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
             new DualTouchButton(bottomContainer, true, 'Y', 'X', undefined, 'qsxy4', new DualTouchButtonJoyListener(this.#nostalgist, 1, 9), '12px');
         }
-    
+
         document.body.appendChild(bottomContainer);
-    
+
         this.#joystickContainer = document.createElement('div');
         this.#joystickContainer.style.display = 'non';
         this.#joystickContainer.id = 'quickshot';
@@ -66,9 +66,10 @@ export class QuickShot {
         this.#joystickContainer.style.display = 'none';
         document.body.appendChild(this.#joystickContainer);
 
-        this.#joystickContainer.addEventListener('touchstart', this.#onTouchStart, false);
-        this.#joystickContainer.addEventListener('touchmove', this.#onTouchMove, false);
-        this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd, false);    
+        this.#joystickContainer.addEventListener('touchstart', this.#onTouchStart);
+        this.#joystickContainer.addEventListener('touchmove', this.#onTouchMove);
+        this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd);   
+        this.#joystickContainer.addEventListener('touchcancel', this.#onTouchEnd);
     }
 
     show() {
@@ -89,21 +90,21 @@ export class QuickShot {
 
     #getDirections(angleDeg) {
         if (angleDeg >= 337.5 || angleDeg < 22.5) {
-            return ['right']; 
+            return ['right'];
         } else if (angleDeg >= 22.5 && angleDeg < 67.5) {
-            return ['right', 'down']; 
+            return ['right', 'down'];
         } else if (angleDeg >= 67.5 && angleDeg < 112.5) {
-            return ['down']; 
+            return ['down'];
         } else if (angleDeg >= 112.5 && angleDeg < 157.5) {
-            return ['down', 'left']; 
+            return ['down', 'left'];
         } else if (angleDeg >= 157.5 && angleDeg < 202.5) {
-            return ['left']; 
+            return ['left'];
         } else if (angleDeg >= 202.5 && angleDeg < 247.5) {
             return ['left', 'up'];
         } else if (angleDeg >= 247.5 && angleDeg < 292.5) {
-            return ['up']; 
+            return ['up'];
         } else {
-            return ['up', 'right']; 
+            return ['up', 'right'];
         }
     }
 
@@ -126,8 +127,10 @@ export class QuickShot {
         for (let touch of event.changedTouches) {
             if (touch.identifier === this.#activeTouchId) {
                 this.#updateDirections([]);
-                this.#joystickBase.remove();
-                this.#joystickThumb.remove();
+                if (this.#joystickBase && this.#joystickThumb) {
+                    this.#joystickBase.remove();
+                    this.#joystickThumb.remove();
+                }
                 this.#activeTouchId = null;
             }
         }
@@ -136,13 +139,12 @@ export class QuickShot {
     #onTouchStart = (event) => {
         event.preventDefault();
         if (this.#activeTouchId === null) {
-            for (let i = 0; i < event.touches.length; i++) {
-                if (event.touches[i].target.id === 'quickshot') {
-                    let touch = event.touches[i];
+            for (let touch of event.touches) {
+                if (touch.target.id === 'quickshot') {
                     this.#activeTouchId = touch.identifier;
                     this.#createJoystickElements(touch);
+                    break;
                 }
-
             }
         }
     }
@@ -165,14 +167,12 @@ export class QuickShot {
                     this.#joystickBase.style.top = `${touch.pageY - baseRect.height / 2 - Math.sin(angle) * baseRect.height / 2}px`;
                 }
 
-                this.#joystickThumb.style.left = `${touch.pageX - 25}px`; 
+                this.#joystickThumb.style.left = `${touch.pageX - 25}px`;
                 this.#joystickThumb.style.top = `${touch.pageY - 25}px`;
 
                 let angle = Math.atan2(touch.pageY - baseCenter.y, touch.pageX - baseCenter.x);
                 let angleDeg = angle * (180 / Math.PI);
                 if (angleDeg < 0) angleDeg += 360;
-
-                // this.#updateDirections([]);
 
                 if (distance > QuickShot.#DEAD_ZONE_RADIUS) {
                     let directions = this.#getDirections(angleDeg);
