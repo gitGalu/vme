@@ -10,7 +10,7 @@ import { SetCommand } from './cli/SetCommand.js';
 import { OpenCommand } from './cli/OpenCommand.js';
 import { AboutCommand } from './cli/AboutCommand.js';
 import { LastCommand } from './cli/LastCommand.js';
-import { LastCommand } from './cli/WikiCommand.js';
+import { WikiCommand } from './cli/WikiCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
