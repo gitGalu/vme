@@ -46,7 +46,6 @@ export class PlatformManager {
         this.#cli.set_default_handler(() => { this.updatePlatform() });
     }
 
-
     async #prepareNostalgist(caption) {
         s("#cors_query_prefix").style.display = "none";
         s('#cors_query_prefix').innerHTML = "";
@@ -63,7 +62,7 @@ export class PlatformManager {
                 rewind_granularity: 5,
                 fastforward_ratio: 10,
                 input_pause_toggle: false,
-                video_scale_integer: false,
+                video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
                 video_smooth: true,
                 savestate_thumbnail_enable: true,
                 video_font_enable: false
@@ -106,19 +105,25 @@ export class PlatformManager {
     }
 
     async startEmulation(blob, caption) {
-
         let self = this;
 
+        let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
 
         try {
             this.#nostalgist = await Nostalgist.launch({
-                core: this.#selected_platform.core,
+                core: core,
                 rom: {
                     fileName: caption,
                     fileContent: blob
                 },
-                shader: 'crt/crt-geom.glsp',
+                async beforeLaunch(nostalgist) {
+                    if (StorageManager.getValue("SHADER") == "0") return;
+                    if (typeof platform.shader === 'function') {
+                        await platform.shader(nostalgist);
+                    }
+                },
+                shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
                 resolveCoreJs(file) {
                     return `./libretro/${core}_libretro.js`
                 },

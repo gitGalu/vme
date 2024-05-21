@@ -14,7 +14,23 @@ const GBC = {
         '--font': 'GB',
         '--cursorwidth': '1em'
     },
-    shader: '',
+    shader: async function(nostalgist){
+        const FS = nostalgist.getEmscriptenFS();
+
+        const glslp = await fetch('assets/shaders/handheld/sameboy-lcd.glslp')
+        const shader0 = await fetch('assets/shaders/handheld/shaders/sameboy-lcd.glsl');
+
+        FS.mkdirTree('/home/web_user/retroarch/bundle/shaders/shaders_glsl/handheld/shaders');
+        FS.writeFile('/home/web_user/retroarch/bundle/shaders/shaders_glsl/handheld/sameboy-lcd.glslp', await glslp.text());
+        FS.writeFile('/home/web_user/retroarch/bundle/shaders/shaders_glsl/handheld/shaders/sameboy-lcd.glsl', await shader0.text());
+
+        FS.mkdirTree('/home/web_user/retroarch/userdata/config/')
+        FS.writeFile(
+          '/home/web_user/retroarch/userdata/config/global.glslp',
+          '#reference /home/web_user/retroarch/bundle/shaders/shaders_glsl/handheld/sameboy-lcd.glslp',
+        )
+    },
+    force_scale: true,
     fire_buttons: 2,
     additional_buttons: {
         1: {

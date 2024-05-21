@@ -47,7 +47,7 @@ export default defineConfig({
                     dest: 'libretro'
                 },
                 {
-                    src: 'assets/shaders/**',
+                    src: 'assets/shaders/*',
                     dest: 'assets/shaders'
                 },
                 {
