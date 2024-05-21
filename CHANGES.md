@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4] - 2024-05-21
+
+- Touch: fix Quickshot freeze issue on multitouch events
+- add GB and GBC LCD shaders
+
 ## [0.4.3] - 2024-05-17 
 
 - Atari 800: add START and OPTION quick access buttons in touch mode
