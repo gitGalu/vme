@@ -33,6 +33,7 @@ export class LastCommand extends CommandBase {
     }
 
     #load(filename, caption) {
+        this.cli.set_loading(true);
         this.#platform_manager.loadRomFileFromUrl(filename, caption);
     }
 
