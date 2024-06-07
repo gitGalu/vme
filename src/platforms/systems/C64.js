@@ -14,6 +14,14 @@ const C64 = {
         '--font': 'PetMe64',
         '--cursorwidth': '1em',
     },
+    guessConfig: (fileName) => {
+        return {
+            vice_drive_true_emulation: 'true',
+            vice_warp_boost: 'enabled',
+            vice_autostart: 'enabled',
+            vice_autoloadwarp: 'enabled',
+        };
+    },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     fire_buttons: 1,
     additional_buttons: {
