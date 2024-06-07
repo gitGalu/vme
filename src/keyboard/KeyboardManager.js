@@ -108,8 +108,8 @@ export class KeyboardManager {
         };
         this.initAudioContext();
         this.#mode = KeyboardManager.Mode.QWERTY;
-        this.keydownHandler = this.keydownHandler.bind(this);
-        this.keyupHandler = this.keyupHandler.bind(this);
+        this.keydownHandlerBound = this.keydownHandler.bind(this);
+        this.keyupHandlerBound = this.keyupHandler.bind(this);
 
         this.#initTouchKeyboard();
         this.#initHiddenInputs();
@@ -118,24 +118,23 @@ export class KeyboardManager {
             this.initAudioContext();
             this.toggleTouchKeyboard();
         });
-
     }
 
     clicks_on() {
-        document.addEventListener('keydown', this.keydownHandler);
-        document.addEventListener('keyup', this.keyupHandler);
+        document.addEventListener('keydown', this.keydownHandlerBound);
+        document.addEventListener('keyup', this.keyupHandlerBound);
     }
 
     clicks_off() {
-        document.removeEventListener('keydown', this.keydownHandler);
-        document.removeEventListener('keyup', this.keyupHandler);
+        document.removeEventListener('keydown', this.keydownHandlerBound);
+        document.removeEventListener('keyup', this.keyupHandlerBound);
     }
 
     initAudioContext() {
         if (!this.#audioContextInitialized) {
             try {
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                this.loadAllAudioFiles();  // Load and decode audio files
+                this.loadAllAudioFiles(); 
                 this.#audioContextInitialized = true;
             } catch (error) {
                 console.error("Failed to initialize AudioContext:", error);

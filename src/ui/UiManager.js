@@ -1,4 +1,4 @@
-import { s } from '../dom.js';
+import { s, addButtonEventListeners } from '../dom.js';
 import { SingleTouchButton } from '../touch/SingleTouchButton.js';
 import { TouchButtonListener } from '../touch/TouchButtonListener.js';
 import { SingleTouchButtonJoyListener } from '../touch/SingleTouchButtonJoyListener.js';
@@ -12,7 +12,6 @@ import { Hideaway } from '../touch/Hideaway.js';
 
 export class UiManager {
     #platform_manager;
-    #vme;
 
     static #qj;
     static #qs;
@@ -20,8 +19,7 @@ export class UiManager {
 
     static currentJoyTouchMode;
 
-    constructor(vme, platform_manager) {
-        this.#vme = vme;
+    constructor(platform_manager) {
         this.#platform_manager = platform_manager;
     }
 
@@ -32,7 +30,9 @@ export class UiManager {
 
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(this.#platform_manager.getNostalgist()));
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new CommandButtonListener('FAST_FORWARD', this.#platform_manager.getNostalgist(), 'Fast Forward'));
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">MENU</span>', undefined, 'fastmenu', new ResetButtonListener());
+        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener());
+
+        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(this.#platform_manager));
 
         this.#placeItems(fastuiContainer);
 
@@ -90,14 +90,32 @@ export class UiManager {
 
         addMouseMoveListenerToCanvas(observer);
 
-
-
-
         let intervalId = null;
         let self = this;
 
-        this.addButtonEventListeners(s('#desktopUiRewind'),
+        addButtonEventListeners(s('#desktopUiSave'),
             (pressed) => {
+
+                if (pressed) {
+                    let state = this.#platform_manager.saveState();
+                    console.log(state);
+                    state.then((data) => {
+                    }).catch((error) => {
+                        console.error('Error resolving state:', error);
+                    });
+
+                    self.#platform_manager.getNostalgist().sendCommand('REWIND');
+                    intervalId = setInterval(() => {
+                        self.#platform_manager.getNostalgist().sendCommand('REWIND');
+                    }, 5);
+                } else {
+                    clearInterval(intervalId);
+                }
+            });
+
+        addButtonEventListeners(s('#desktopUiRewind'),
+            (pressed) => {
+
                 if (pressed) {
                     self.#platform_manager.getNostalgist().sendCommand('REWIND');
                     intervalId = setInterval(() => {
@@ -108,7 +126,7 @@ export class UiManager {
                 }
             });
 
-        this.addButtonEventListeners(s('#desktopUiFfd'),
+        addButtonEventListeners(s('#desktopUiFfd'),
             (pressed) => {
                 if (pressed) {
 
@@ -118,35 +136,10 @@ export class UiManager {
                 }
             });
 
-        this.addButtonEventListeners(s('#desktopUiBack'),
+        addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
                 location.reload();
             });
-    }
-
-    addButtonEventListeners(button, handleAction) {
-        let isPressed = false;
-
-        const handleEvent = (pressed) => {
-            handleAction(pressed);
-        };
-
-        button.addEventListener('mousedown', () => {
-            isPressed = true;
-            handleEvent(true);
-        });
-        button.addEventListener('mouseup', () => {
-            if (isPressed) {
-                handleEvent(false);
-                isPressed = false;
-            }
-        });
-        button.addEventListener('mouseleave', () => {
-            if (isPressed) {
-                handleEvent(false);
-                isPressed = false;
-            }
-        });
     }
 
     initControllerMenu() {
@@ -302,6 +295,21 @@ class CommandButtonListener extends TouchButtonListener {
 
     trigger(s) {
         this.#nostalgist.sendCommand(this.#command);
+    }
+}
+
+class SaveButtonListener extends TouchButtonListener {
+    #platform_manager;
+
+    constructor(platform_manager) {
+        super();
+        this.#platform_manager = platform_manager;
+    }
+
+    async trigger(s) {
+        if (s) {
+            this.#platform_manager.saveState();
+        }
     }
 }
 

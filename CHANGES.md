@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2024-06-07
+
+- Save Browser: initial save state support
+- CLI: multiline results by default
+
 ## [0.4.4] - 2024-05-21
 
 - Touch: fix Quickshot freeze issue on multitouch events

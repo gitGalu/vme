@@ -58,7 +58,7 @@ export class CommandBase {
             p.setAttribute('data-value', item.data);
             p.classList.add('corsrow');
             const span = document.createElement('span');
-            if (StorageManager.getValue("LINES") == "multi") {
+            if (StorageManager.getValue("LINES") != "single") {
             } else {
                 span.classList.add('singleline');
             }

@@ -29,3 +29,28 @@ export function toggle(el) {
 	}
 	el.style.display = "block";
 }
+
+export function addButtonEventListeners(button, handleAction) {
+    let isPressed = false;
+
+    const handleEvent = (pressed) => {
+        handleAction(pressed);
+    };
+
+    button.addEventListener('mousedown', () => {
+        isPressed = true;
+        handleEvent(true);
+    });
+    button.addEventListener('mouseup', () => {
+        if (isPressed) {
+            handleEvent(false);
+            isPressed = false;
+        }
+    });
+    button.addEventListener('mouseleave', () => {
+        if (isPressed) {
+            handleEvent(false);
+            isPressed = false;
+        }
+    });
+}

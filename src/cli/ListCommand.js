@@ -7,7 +7,7 @@ export class ListCommand extends CommandBase {
 
     constructor(platform_manager) {
         super();
-        this.#platform_manager = platform_manager; 
+        this.#platform_manager = platform_manager;
     }
 
     get_keywords() {
@@ -19,7 +19,7 @@ export class ListCommand extends CommandBase {
     }
 
     process_input(parameters) {
-        if ( this.#platform_manager.get_software_dir() == undefined) {
+        if (this.#platform_manager.get_software_dir() == undefined) {
             this.cli.soft_msg('To use LIST command please import SOFTWARE DIRECTORY first.')
             return;
         }
@@ -56,9 +56,13 @@ export class ListCommand extends CommandBase {
         return true;
     }
 
-    process_selection(item) {
+    async process_selection(item) {
         this.cli.set_loading(true);
-        this.#platform_manager.loadRomFileFromUrl(item.data, item.label);
+        try {
+            await this.#platform_manager.loadRomFileFromUrl(item.data, item.label);
+        } catch (error) {
+            this.cli.message("LOADING...", "&nbsp;", "Error loading file.");
+        }
     }
 
     selection_changed(item) {

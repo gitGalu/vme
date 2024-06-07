@@ -1,5 +1,6 @@
-import { s, show, hide } from './dom.js';
+import { s, show, hide, addButtonEventListeners } from './dom.js';
 import { CLI } from './cli/CLI.js';
+import { SaveBrowser } from './SaveBrowser.js';
 import { KeyboardManager } from './keyboard/KeyboardManager.js';
 import { StorageManager } from './storage/StorageManager.js';
 import { HelpCommand } from './cli/HelpCommand.js';
@@ -11,6 +12,7 @@ import { OpenCommand } from './cli/OpenCommand.js';
 import { AboutCommand } from './cli/AboutCommand.js';
 import { LastCommand } from './cli/LastCommand.js';
 import { WikiCommand } from './cli/WikiCommand.js';
+import { RestoreCommand } from './cli/RestoreCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
@@ -23,6 +25,8 @@ export class VME {
     #pl;
     #db;
     #ui;
+
+    #save_browser;
 
     static whitespace = "&nbsp;";
 
@@ -69,16 +73,19 @@ export class VME {
 
         this.#pl = new PlatformManager(this, this.#cli, this.#db);
         this.#env = new EnvironmentManager(this.#pl);
-        this.#ui = new UiManager(this, this.#pl);
+        this.#ui = new UiManager(this.#pl);
+
+        this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);
 
         this.#kb.clicks_on();
 
         this.#cli.register_command(new HelpCommand());
-        this.#cli.register_command(new AboutCommand(this.#pl));
-        this.#cli.register_command(new SystemCommand(this.#pl));
+        this.#cli.register_command(new RestoreCommand(this.#save_browser));
+        this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new ListCommand(this.#pl));
         this.#cli.register_command(new FindCommand(this.#pl));
-        this.#cli.register_command(new OpenCommand(this.#pl));
+        this.#cli.register_command(new AboutCommand(this.#pl));
+        this.#cli.register_command(new SystemCommand(this.#pl));
         this.#cli.register_command(new SetCommand());
         this.#cli.register_command(new LastCommand(this.#pl));
         this.#cli.register_command(new WikiCommand());
@@ -118,6 +125,7 @@ export class VME {
         this.#ui.initHideaway();
         EnvironmentManager.updateDeviceType();
         UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+        this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         this.#ui.initControllerMenu();
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
     }
@@ -126,8 +134,8 @@ export class VME {
         switch (mode) {
             case VME.CURRENT_SCREEN.MENU:
                 hide('#warningStandalone');
-                hide('#emulator');
                 hide('#save-browser');
+                hide('#emulator');
                 hide('#quickjoys');
                 hide('#fastui');
                 hide('#quickshot');
@@ -137,6 +145,7 @@ export class VME {
                 document.body.classList.remove('black');
                 break;
             case VME.CURRENT_SCREEN.EMULATION:
+                this.#cli.off();
                 hide('#warningStandalone');
                 hide('#settings');
                 hide('#save-browser');
@@ -152,8 +161,15 @@ export class VME {
                     show('#fastui', 'grid');
                 }
                 this.#kb.hideTouchKeyboard();
-                this.#cli.off();
                 this.#kb.clicks_off();
+                document.body.classList.add('black');
+                break;
+            case VME.CURRENT_SCREEN.SAVE_BROWSER:
+                this.#cli.off();
+                hide('#warningStandalone');
+                hide('#settings');
+                hide('#emulator');
+                show('#save-browser', 'flex');
                 document.body.classList.add('black');
                 break;
         }

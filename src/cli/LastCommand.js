@@ -32,9 +32,13 @@ export class LastCommand extends CommandBase {
         }
     }
 
-    #load(filename, caption) {
+    async #load(filename, caption) {
         this.cli.set_loading(true);
-        this.#platform_manager.loadRomFileFromUrl(filename, caption);
+        try {
+            await this.#platform_manager.loadRomFileFromUrl(filename, caption);
+        } catch (error) {
+            this.cli.message_clear("Error loading file.");
+        }
     }
 
 }

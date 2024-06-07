@@ -21,6 +21,24 @@
 </style>
 
 <body>
+    <div id="save-browser">
+        <div class="flicking-background"></div>
+        <div id="saveBrowserEmpty">Loading...</div>
+        <div id="flicking" class="flicking-viewport">
+            <div class="flicking-camera">
+            </div>
+            <span class="flicking-arrow-prev"></span>
+            <span class="flicking-arrow-next"></span>
+        </div>
+        <div id="saveBrowserUi">
+            <div id="saveBrowserUiBack" class="clickable-area"><img src="./assets/images/arrow.png"></img></div>
+            <div class="right-area">
+                <div id="saveBrowserUiDelete" class="clickable-area">Delete</div>
+                <div id="saveBrowserUiLoad" class="clickable-area">Load</div>
+            </div>
+        </div>
+    </div>
+
     <div id="container1">
         <div id="emulator">
             <div id="emuscreen"></div>
@@ -34,6 +52,7 @@
         <div id="desktopUi" style="display:none;">
             <div id="desktopUiBack" class="clickable-area"><img src="./assets/images/arrow.png"></img></div>
             <div class="right-area">
+                <div id="desktopUiSave" class="clickable-area">Save</div>
                 <div id="desktopUiRewind" class="clickable-area">Rewind</div>
                 <div id="desktopUiFfd" class="clickable-area">Ffd</div>
             </div>

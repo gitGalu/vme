@@ -59,9 +59,13 @@ export class FindCommand extends CommandBase {
         return true;
     }
 
-    process_selection(item) {
+    async process_selection(item) {
         this.cli.set_loading(true);
-        this.#platform_manager.loadRomFileFromUrl(item.data, item.label);
+        try {
+            await this.#platform_manager.loadRomFileFromUrl(item.data, item.label);
+        } catch (error) {
+            this.cli.message("LOADING...", "&nbsp;", "Error loading file.");
+        }
     }
 
     selection_changed(item) {

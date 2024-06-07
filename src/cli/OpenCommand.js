@@ -20,6 +20,9 @@ export class OpenCommand extends CommandBase {
 
     process_input(input, is_enter_pressed) {
         if (!is_enter_pressed) {
+            this.cli.clear();
+            this.cli.print("Press ENTER to open local file.");
+            this.cli.redraw();
             return;
         }
         this.#openFile();

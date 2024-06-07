@@ -15,7 +15,7 @@ import ZX80 from './systems/ZX80.js';
 import Spectrum from './systems/Spectrum.js';
 import JSZip from 'jszip';
 import { s } from '../dom.js';
-import { MD5, CryptoJS, enc, lib } from 'crypto-js';
+import { MD5, lib } from 'crypto-js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 
@@ -32,6 +32,10 @@ export class PlatformManager {
     #vme;
     #cli;
     #resolved_deps;
+    #program_name;
+
+    #state;
+    #current_rom;
 
     static VME_CFG_CURRENT_PLATFORM = 'VME_CFG.CURRENT_PLATFORM';
     static SOFTWARE_DIR_KEY = '.software';
@@ -83,11 +87,15 @@ export class PlatformManager {
     }
 
     async loadRomFileFromUrl(filename, caption) {
-        this.#prepareNostalgist(caption);
-        const response = await fetch(filename);
-        const blob = await response.blob();
-        this.#storeLastProgramInfo(filename, caption);
-        this.startEmulation(blob, caption);
+        try {
+            this.#prepareNostalgist(caption);
+            const response = await fetch(filename);
+            const blob = await response.blob();
+            this.#storeLastProgramInfo(filename, caption);
+            this.startEmulation(blob, caption);
+        } catch (error) {
+            throw new Error('Error loading file.');
+        }
     }
 
     #storeLastProgramInfo(filename, caption) {
@@ -107,8 +115,12 @@ export class PlatformManager {
     async startEmulation(blob, caption) {
         let self = this;
 
+        this.#current_rom = blob;
+
         let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
+
+        this.#model = {}; // free mem
 
         try {
             this.#nostalgist = await Nostalgist.launch({
@@ -121,6 +133,13 @@ export class PlatformManager {
                     if (StorageManager.getValue("SHADER") == "0") return;
                     if (typeof platform.shader === 'function') {
                         await platform.shader(nostalgist);
+                    }
+                },
+                onLaunch(nostalgist) {
+                    self.#program_name = caption;
+
+                    if (self.#state) {
+                        nostalgist.loadState(self.#state);
                     }
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
@@ -140,7 +159,6 @@ export class PlatformManager {
             });
         }
         catch (error) {
-            console.error(error);
             console.error('Error importing Nostalgist:', error);
             return;
         }
@@ -205,7 +223,7 @@ export class PlatformManager {
                 let deps_satisfied = true;
 
                 this.#cli.print(this.#selected_platform.platform_name);
-                this.#cli.print("<p class='only-landscapeTODO'>" + ("=".repeat(this.#selected_platform.platform_name.length)) + "</p>");
+                this.#cli.print("<p class='only-landscape'>" + ("=".repeat(this.#selected_platform.platform_name.length)) + "</p>");
 
                 if (missingDeps.length > 0) {
                     deps_satisfied = false;
@@ -401,5 +419,31 @@ export class PlatformManager {
                 this.hideThumbnail();
             }
         });
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async loadState(platform_id, state, blob, caption) {
+        if (platform_id != this.#selected_platform.platform_id) {
+            let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
+            this.setSelectedPlatform(selected);
+            this.updatePlatform();
+        }
+        this.#state = state;
+        await this.loadRomFile(blob, caption);
+    }
+
+    async saveState() {
+        let state = await this.#nostalgist.saveState();
+
+        const save_data = state.state;
+        const screenshot = state.thumbnail;
+        const platform_id = this.#selected_platform.platform_id;
+        const program_name = this.#program_name;
+        const rom_data = this.#current_rom;
+
+        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name);
     }
 }

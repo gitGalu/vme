@@ -47,7 +47,6 @@ export class CLI {
     }
 
     set_selection_mode(val) {
-        // this.#is_selection = val;
         if (val) {
             this.#hideCursor();
         } else {
