@@ -15,6 +15,7 @@ export class SaveBrowser {
     #flicking;
 
     #selected;
+    #launched;
     #kb_event_bound;
 
     constructor(vme, platform_manager, storage_manager, cli) {
@@ -152,6 +153,8 @@ export class SaveBrowser {
 
                     self.#updateActivePanel();
                     self.#updateBackground();
+
+                    this.#launched = false;
                 }
             });
 
@@ -196,7 +199,8 @@ export class SaveBrowser {
 
     #loadSelected() {
         this.close();
-        if (this.#selected) {
+        if (this.#selected && !this.#launched) {
+            this.#launched = true;
             const activePanel = this.#flicking.currentPanel;
             if (activePanel != null) {
                 const id = activePanel.element.getAttribute('data-id');
@@ -207,7 +211,7 @@ export class SaveBrowser {
                         this.#platform_manager.loadState(data.platform_id, data.save_data, data.rom_data, data.program_name);
                     })
             }
-        }
+        } 
     }
 
     #destroy() {

@@ -120,8 +120,8 @@ export class PlatformManager {
         let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
 
-        this.#model = {}; // free mem
-
+        this.#model = {}; 
+        
         try {
             this.#nostalgist = await Nostalgist.launch({
                 core: core,
@@ -135,12 +135,9 @@ export class PlatformManager {
                         await platform.shader(nostalgist);
                     }
                 },
+                state: self.#state,
                 onLaunch(nostalgist) {
                     self.#program_name = caption;
-
-                    if (self.#state) {
-                        nostalgist.loadState(self.#state);
-                    }
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
                 resolveCoreJs(file) {
