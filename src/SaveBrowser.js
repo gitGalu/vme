@@ -40,7 +40,9 @@ export class SaveBrowser {
 
     #createPanelHTML(item) {
         const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
-        const url = URL.createObjectURL(item.screenshot);
+
+        let screenshotBlob = new Blob([item.screenshot], { type: 'image/png' });
+        const url = URL.createObjectURL(screenshotBlob);
 
         const randomDegree = Math.random() * 20 - 10;
 
