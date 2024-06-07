@@ -92,35 +92,66 @@ export class StorageManager {
     async storeState(save_data, rom_data, screenshot, platform_id, program_name) {
         const hash = await this.#computeHash(rom_data);
 
+        const screenshotB64 = await this.blobToBase64(screenshot);
+        const romB64 = await this.blobToBase64(rom_data);
+        const saveB64 = await this.blobToBase64(save_data);
+
         try {
             await this.#db.transaction('rw', this.#db.saveMeta, this.#db.saveData, this.#db.romData, async () => {
                 const existing = await this.#db.romData.where({ hash }).first();
 
                 let romDataId;
                 if (existing == undefined) {
-                    romDataId = await this.#db.romData.add({ rom_data: rom_data, hash });
+                    romDataId = await this.#db.romData.add({ rom_data: romB64, hash });
                 } else {
                     romDataId = existing.id;
                 }
 
-                let saveDataId = await this.#db.saveData.add({ save_data });
+                let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
 
                 await this.#db.saveMeta.add({
                     platform_id: platform_id,
                     program_name: program_name,
-                    screenshot: screenshot,
+                    screenshot: screenshotB64,
                     rom_data_id: romDataId,
                     save_data_id: saveDataId,
                     timestamp: Date.now(),
                 });
             });
+
         } catch (error) {
             console.error("Failed to save state:", error);
         }
     }
 
+    async blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    base64ToBlob(base64) {
+        const byteString = atob(base64.split(',')[1]);
+        const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], { type: mimeString });
+    }
+
     async getAllSaveMeta() {
-        return this.#db.saveMeta.orderBy('timestamp').reverse().toArray();
+        const saveMetaArray = await this.#db.saveMeta.orderBy('timestamp').reverse().toArray();
+        return saveMetaArray.map(item => {
+            if (item.screenshot) {
+                item.screenshot = this.base64ToBlob(item.screenshot);
+            }
+            return item;
+        });
     }
 
     async getSaveData(saveId) {
@@ -137,11 +168,14 @@ export class StorageManager {
             throw new Error('Save state or program data is missing.');
         }
 
+        const saveBlob = this.base64ToBlob(saveData.save_data);
+        const romBlob = this.base64ToBlob(romData.rom_data);
+
         return {
             platform_id: saveMeta.platform_id,
             program_name: saveMeta.program_name,
-            save_data: saveData.save_data,
-            rom_data: romData.rom_data,
+            save_data: saveBlob,
+            rom_data: romBlob,
             timestamp: saveMeta.timestamp
         };
     }

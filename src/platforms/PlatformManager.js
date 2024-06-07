@@ -440,6 +440,7 @@ export class PlatformManager {
 
         const save_data = state.state;
         const screenshot = state.thumbnail;
+
         const platform_id = this.#selected_platform.platform_id;
         const program_name = this.#program_name;
         const rom_data = this.#current_rom;
