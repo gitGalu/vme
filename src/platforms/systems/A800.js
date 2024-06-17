@@ -95,14 +95,25 @@ const A800 = {
             accepted: ["a3e8d617c95d08031fe1b20d541434b2"]
         },
     ],
+    touch_controller_mapping: {
+        input_player1_up: 'F13',
+        input_player1_left: 'F14', 
+        input_player1_down: 'F15',
+        input_player1_right: 'F11', 
+        input_player1_b: 'kp_minus'
+    },
     fire_buttons: 1,
+    keyboard: {
+        shiftKey: 2,
+        overrides: {
+        }
+    },
     additional_buttons: {
         1: {
             "label": "OPTION",
             "key": {
                 "key": 'F2',
                 "code": 'F2',
-                "keyCode": 113
             }
         },
         2: {
@@ -114,7 +125,6 @@ const A800 = {
             "key": {
                 "key": 'F4',
                 "code": 'F4',
-                "keyCode": 115
             }
         }
 
