@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2024-06-15
+
+- Atari 800: initial touch keyboard support
+- Atari 800: fix joystick mapping for touchscreens
+- Atari 800: fix joystick mapping for physical controllers
+
 ## [0.5.0] - 2024-06-07
 
 - Save Browser: initial save state support
