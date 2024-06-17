@@ -57,6 +57,8 @@ export class AboutCommand extends CommandBase {
         this.cli.print("&nbsp;")
         this.cli.print('Click to <a href="https://github.com/gitGalu/VME">Visit Project Website</a>');
         this.cli.print("&nbsp;")
+        this.cli.print('Click to <a href="https://github.com/gitGalu/vme/blob/main/CHANGES.md">View Changelog</a>');
+        this.cli.print("&nbsp;")
         this.#print_info();
     }
 }
