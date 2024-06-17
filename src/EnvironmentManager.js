@@ -107,7 +107,7 @@ export class EnvironmentManager {
     static forceTouch() {
         hide('#desktopUi');
         show('#fastui', 'grid');
-        UiManager.toggleJoystick();
+        UiManager.toggleJoystick(); //todo
     }
 
     static forceDesktop() {
@@ -118,7 +118,7 @@ export class EnvironmentManager {
         } else {
             show("#toggle-keyboard");
         }
-        UiManager.toggleJoystick();
+        UiManager.toggleJoystick(); //todo
     }
 
     static isGamepadConnected() {

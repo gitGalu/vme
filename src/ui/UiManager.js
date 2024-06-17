@@ -12,15 +12,18 @@ import { Hideaway } from '../touch/Hideaway.js';
 
 export class UiManager {
     #platform_manager;
+    #kb_manager;
 
     static #qj;
     static #qs;
     static #ha;
 
     static currentJoyTouchMode;
+    static keyboardVisible;
 
-    constructor(platform_manager) {
+    constructor(platform_manager, kb_manager) {
         this.#platform_manager = platform_manager;
+        this.#kb_manager = kb_manager;
     }
 
     initFastUI() {
@@ -33,6 +36,10 @@ export class UiManager {
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener());
 
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(this.#platform_manager));
+
+        if (this.#platform_manager.getSelectedPlatform().keyboard) {
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">KB</span>', undefined, 'fastkb', new KbListener(this.#kb_manager));
+        }
 
         this.#placeItems(fastuiContainer);
 
@@ -149,12 +156,17 @@ export class UiManager {
             }
             trigger(s) {
                 if (s) {
-                    if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
-                        UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
-                    } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
-                        UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.HIDEAWAY);
-                    } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
-                        UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+                    if (UiManager.keyboardVisible) {
+                        UiManager.hideKeyboard();
+                        UiManager.showJoystick();
+                    } else {
+                        if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
+                            UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
+                        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
+                            UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.HIDEAWAY);
+                        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+                            UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+                        }
                     }
                 }
             }
@@ -196,6 +208,32 @@ export class UiManager {
             cell += 6;
             counter += 1;
         }
+    }
+
+    static hideJoystick() {
+        if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+            this.#ha.hide();
+        }
+        s('#quickshots').style.display = 'none';
+        s('#quickjoys').style.display = 'none';
+    }
+
+    static showJoystick() {
+        if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
+            s('#quickshots').style.display = 'grid';
+        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
+            s('#quickjoys').style.display = 'grid';
+        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+        }
+    }
+
+    static hideKeyboard() {
+        UiManager.keyboardVisible = false;
+        s('#keyboardContainer').style.display = 'none';
+    }
+
+    static showKeyboard() {
+        s('#keyboardContainer').style.display = 'block';
     }
 
     static toggleJoystick = (mode) => {
@@ -313,6 +351,25 @@ class SaveButtonListener extends TouchButtonListener {
     }
 }
 
+class KbListener extends TouchButtonListener {
+    #kb_manager;
+
+    constructor(kb_manager) {
+        super();
+        this.#kb_manager = kb_manager;
+    }
+
+    trigger(s) {
+        if (s) {
+            UiManager.keyboardVisible = true;
+            UiManager.hideJoystick();
+            UiManager.showKeyboard();
+
+            this.#kb_manager.showTouchKeyboard();
+        }
+    }
+}
+
 class ResetButtonListener extends TouchButtonListener {
     constructor() {
         super();
@@ -321,35 +378,6 @@ class ResetButtonListener extends TouchButtonListener {
     trigger(s) {
         if (s) {
             location.reload();
-        }
-    }
-}
-
-class SizeButtonListener extends TouchButtonListener {
-    constructor() {
-        super();
-        this.clicked = false;
-    }
-
-    trigger(s) {
-        if (!s) {
-            this.clicked = false;
-            return;
-        }
-
-        if (!this.clicked) {
-            this.clicked = true;
-            var el = document.querySelector('#emulator');
-
-            if (this.screenSize == VME.SCREEN_SIZE.SMALLER) {
-                el.classList.remove("smaller");
-                el.classList.add("bigger");
-                this.screenSize = VME.SCREEN_SIZE.BIGGER;
-            } else if (this.screenSize == VME.SCREEN_SIZE.BIGGER) {
-                el.classList.remove("bigger");
-                el.classList.add("smaller");
-                this.screenSize = VME.SCREEN_SIZE.SMALLER;
-            }
         }
     }
 }

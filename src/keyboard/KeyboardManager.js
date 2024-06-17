@@ -10,15 +10,21 @@ import Kb7Sound from '../assets/audio/gui_type7.mp3';
 import Kb8Sound from '../assets/audio/gui_type8.mp3';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { VME } from '../VME.js';
+import { UiManager } from '../ui/UiManager.js';
 
 export class KeyboardManager {
     #mode;
     #layer;
     #cli;
     #audioContextInitialized = false;
+    #mute
     audioContext;
-    audioBuffers = {}; 
+    audioBuffers = {};
 
+    #handleCliInputBound;
+    #handleEmulationInputBound;
+    #handleEmulationSpecialBound;
 
     static State = {
         OFF: 0, ON: 1
@@ -29,7 +35,7 @@ export class KeyboardManager {
     };
 
     static Layer = {
-        A: 0, B: 1
+        A: 0, B: 1, C: 2
     };
 
     constructor(cli) {
@@ -111,6 +117,10 @@ export class KeyboardManager {
         this.keydownHandlerBound = this.keydownHandler.bind(this);
         this.keyupHandlerBound = this.keyupHandler.bind(this);
 
+        this.#handleCliInputBound = this.#handleCliInput.bind(this);
+        this.#handleEmulationInputBound = this.#handleEmulationInput.bind(this);
+        this.#handleEmulationSpecialBound = this.#handleEmulationSpecial.bind(this);
+
         this.#initTouchKeyboard();
         this.#initHiddenInputs();
 
@@ -134,7 +144,7 @@ export class KeyboardManager {
         if (!this.#audioContextInitialized) {
             try {
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                this.loadAllAudioFiles(); 
+                this.loadAllAudioFiles();
                 this.#audioContextInitialized = true;
             } catch (error) {
                 console.error("Failed to initialize AudioContext:", error);
@@ -157,6 +167,7 @@ export class KeyboardManager {
     }
 
     playSound(key) {
+        if (this.#mute) return;
         if (!this.audioContext) {
             console.error("AudioContext is not initialized.");
             return;
@@ -201,6 +212,9 @@ export class KeyboardManager {
                 document.querySelectorAll('.layerB').forEach(function (el) {
                     el.style.visibility = 'visible';
                 });
+                document.querySelectorAll('.layerC').forEach(function (el) {
+                    el.style.visibility = 'visible';
+                });
 
                 document.querySelectorAll('.nostrip').forEach(function (el) {
                     el.style.display = 'none';
@@ -215,7 +229,9 @@ export class KeyboardManager {
                 document.querySelectorAll('.layerB').forEach(function (el) {
                     el.style.visibility = 'hidden';
                 });
-
+                document.querySelectorAll('.layerC').forEach(function (el) {
+                    el.style.visibility = 'hidden';
+                });
                 document.querySelectorAll('.layerA').forEach(function (el) {
                     el.style.visibility = 'visible';
                 });
@@ -234,10 +250,36 @@ export class KeyboardManager {
             this.hideTouchKeyboard();
         });
 
+        document.querySelector('#keyShift').addEventListener('click', (e) => {
+            if (this.#layer  == KeyboardManager.Layer.A) {
+                //todo caps
+            } else if (this.#layer == KeyboardManager.Layer.B) {
+                this.#layer = KeyboardManager.Layer.C;
+                document.querySelectorAll('.layerB').forEach(function (el) {
+                    el.style.visibility = 'hidden';
+                });
+                document.querySelectorAll('.layerC').forEach(function (el) {
+                    el.style.visibility = 'visible';
+                }); 
+            } else if (this.#layer == KeyboardManager.Layer.C) {
+                this.#layer = KeyboardManager.Layer.B;
+                document.querySelectorAll('.layerC').forEach(function (el) {
+                    el.style.visibility = 'hidden';
+                });
+                document.querySelectorAll('.layerB').forEach(function (el) {
+                    el.style.visibility = 'visible';
+                }); 
+            }
+        });
+
         document.querySelector('#keyToggle').addEventListener('click', (e) => {
             if (this.#layer == KeyboardManager.Layer.A) {
+                document.querySelector('#keyShift').innerHTML = 'MORE';
                 this.#layer = KeyboardManager.Layer.B;
                 document.querySelectorAll('.layerA').forEach(function (el) {
+                    el.style.visibility = 'hidden';
+                });
+                document.querySelectorAll('.layerC').forEach(function (el) {
                     el.style.visibility = 'hidden';
                 });
                 document.querySelectorAll('.layerB').forEach(function (el) {
@@ -245,7 +287,11 @@ export class KeyboardManager {
                 });
             } else if (this.#layer == KeyboardManager.Layer.B) {
                 this.#layer = KeyboardManager.Layer.A;
+                document.querySelector('#keyShift').innerHTML = 'CAPS';
                 document.querySelectorAll('.layerB').forEach(function (el) {
+                    el.style.visibility = 'hidden';
+                });
+                document.querySelectorAll('.layerC').forEach(function (el) {
                     el.style.visibility = 'hidden';
                 });
                 document.querySelectorAll('.layerA').forEach(function (el) {
@@ -253,16 +299,50 @@ export class KeyboardManager {
                 });
             }
         });
+    }
 
-        document.querySelector('#keyboard').addEventListener('click', (e) => {
-            const target = e.target;
-            if (target.classList.contains('key')) {
-                const keyValue = target.getAttribute('data-value');
-                const keyCode = target.getAttribute('data-code');
-                this.playSound(keyCode);
-                this.#cli.process_input(keyValue);
+    #handleCliInput(e) {
+        const target = e.target;
+        if (target.classList.contains('key')) {
+            const keyValue = target.getAttribute('data-value');
+            const keyCode = target.getAttribute('data-code');
+            this.playSound(keyCode);
+            this.#cli.process_input(keyValue);
+        }
+    }
+
+    #handleEmulationSpecial(e) {
+        const type = e.type;
+
+        if (type == "touchstart") {
+            this.#simulateKeyEvent('Escape', 'Escape', 'keydown');
+        } else if (type == "touchend") {
+            this.#simulateKeyEvent('Escape', 'Escape', 'keyup');
+        }
+    }
+
+    #handleEmulationInput(e) {
+        const type = e.type;
+        const target = e.target;
+        const key = target.getAttribute('data-value');
+        const code = target.getAttribute('data-code');
+        const shift = target.getAttribute('data-shift');
+
+        if (shift) {
+            if (type == "touchstart") {
+                this.#simulateKeyEvent('Shift', 'ShiftRight', 'keydown', { keyCode: 16, which: 16, shiftKey: true, location: 2 });
+                this.#simulateKeyEvent(key, code, 'keydown', { shiftKey: true, location: 2 });
+            } else if (type == "touchend") {
+                this.#simulateKeyEvent('Shift', 'ShiftRight', 'keyup', { keyCode: 16, which: 16, shiftKey: true, location: 2 });
+                this.#simulateKeyEvent(key, code, 'keyup', { shiftKey: true, location: 2 });
             }
-        });
+        } else {
+            if (type == "touchstart") {
+                this.#simulateKeyEvent(key, code, 'keydown');
+            } else if (type == "touchend") {
+                this.#simulateKeyEvent(key, code, 'keyup');
+            }
+        }
     }
 
     #initHiddenInputs() {
@@ -275,7 +355,9 @@ export class KeyboardManager {
     }
 
     keydownHandler(e) {
-        s("div#keyboardContainer").style.display = "none";
+        if (EnvironmentManager.isDesktop()) {
+            s("div#keyboardContainer").style.display = "none";
+        }
 
         if (!this.keysDown[e.code]) {
             this.keysDown[e.code] = true;
@@ -287,13 +369,32 @@ export class KeyboardManager {
         this.keysDown[e.code] = false;
     }
 
+    updateMode(mode) {
+        switch (mode) {
+            case VME.CURRENT_SCREEN.MENU:
+                this.#mute = false;
+                document.querySelector('#keyboard').addEventListener('click', this.#handleCliInputBound);
+                break;
+            case VME.CURRENT_SCREEN.EMULATION:
+                this.#mute = true;
+                document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound); 
+                document.querySelector('#keyboard').addEventListener('touchstart', this.#handleEmulationInputBound);
+                document.querySelector('#keyboard').addEventListener('touchend', this.#handleEmulationInputBound);
+
+                document.querySelector('#kbCtrlClear').addEventListener('touchstart', this.#handleEmulationSpecialBound);
+                document.querySelector('#kbCtrlClear').addEventListener('touchend', this.#handleEmulationSpecialBound);
+
+                break;
+        }
+    }
+
     toggleTouchKeyboard() {
         let element = s('#keyboardContainer');
         let isVisible = element.classList.contains('visible');
         if (isVisible) {
             this.hideTouchKeyboard();
         } else {
-            if ((StorageManager.getValue("SYSKB") == "1") || EnvironmentManager.isQuest()) { 
+            if ((StorageManager.getValue("SYSKB") == "1") || EnvironmentManager.isQuest()) {
                 document.getElementById('cors_hidden_input').focus();
             } else {
                 this.showTouchKeyboard();
@@ -301,11 +402,37 @@ export class KeyboardManager {
         }
     }
 
+    #simulateKeyEvent(key, code, type, options = {}) {
+        const event = new KeyboardEvent(type, {
+            key: key,
+            code: code,
+            keyCode: options.keyCode || key.charCodeAt(0),
+            which: options.which || key.charCodeAt(0),
+            shiftKey: options.shiftKey || false,
+            location: options.location || 0,
+            bubbles: true,
+            cancelable: true
+        });
+        document.dispatchEvent(event);
+    }
+
     showTouchKeyboard() {
+        const elements = document.querySelectorAll('.kbCtrl');
+        elements.forEach(element => {
+            element.style.paddingTop = '6px';
+        });
+
         s('#keyboardContainer').classList.add('visible');
     }
 
     hideTouchKeyboard() {
+        UiManager.keyboardVisible = false;
+        UiManager.showJoystick();
+        const elements = document.querySelectorAll('.kbCtrl');
+        elements.forEach(element => {
+            element.style.paddingTop = '0px';
+        });
+
         s('#keyboardContainer').classList.remove('visible');
     }
 }

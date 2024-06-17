@@ -58,6 +58,22 @@ export class PlatformManager {
 
         const self = this;
 
+        let retroarchConfigOverrides = {};
+        if (EnvironmentManager.hasTouch() && this.#selected_platform.touch_controller_mapping != undefined) {
+            retroarchConfigOverrides = {
+                ...this.#selected_platform.touch_controller_mapping
+            }
+        } else if (EnvironmentManager.hasGamepad()) {
+            retroarchConfigOverrides = {
+                input_player1_up: 'nul',
+                input_player1_left: 'nul', 
+                input_player1_down: 'nul',
+                input_player1_right: 'nul', 
+                input_player1_b: 'nul',
+                input_player1_a: 'nul'
+            }
+        }
+
         Nostalgist.configure({
             bios: this.#selected_platform.bios,
             retroarchConfig: {
@@ -69,7 +85,8 @@ export class PlatformManager {
                 video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
                 video_smooth: true,
                 savestate_thumbnail_enable: true,
-                video_font_enable: false
+                video_font_enable: false,
+                ...retroarchConfigOverrides
             },
             retroarchCoreConfig: {
                 atari800_ntscpal: 'PAL',

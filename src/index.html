@@ -88,15 +88,27 @@
 
         <div id="keyboardContainer">
             <div id="keyboardControls">
-                <span class="kbCtrl" id="kbCtrlClear">&#x25B1;</span>
+                <span class="kbCtrl" id="kbCtrlClear">&#x241B;</span>
                 <span class="kbCtrl" id="kbCtrlArrow">&#x25BD;</span>
                 <span class="kbCtrl" id="kbCtrlCross">&#x2715;</span>
             </div>
             <div id="keyboard" class="keyboardQwerty">
-                <span class="key layerA layerB" data-value="backspace" data-code="Backspace"
+                <span class="key layerA layerB layerC" data-value="backspace" data-code="Backspace"
                     id="keyBackspace">BSP</span>
-                <span class="key layerA layerB" data-value="space" data-code="Space" id="keySpace">SPC</span>
-                <span class="key layerA layerB" data-value="enter" data-code="Enter" id="keyEnter">ENTER</span>
+                <span class="key layerA layerB layerC" data-value="space" data-code="Space" id="keySpace">SPC</span>
+                <span class="key layerA layerB layerC" data-value="enter" data-code="Enter" id="keyEnter">ENTER</span>
+
+                <span class="key layerB" data-value="0" data-code="Digit0" id="key0">0</span>
+                <span class="key layerB" data-value="1" data-code="Digit1" id="key1">1</span>
+                <span class="key layerB" data-value="2" data-code="Digit2" id="key2">2</span>
+                <span class="key layerB" data-value="3" data-code="Digit3" id="key3">3</span>
+                <span class="key layerB" data-value="4" data-code="Digit4" id="key4">4</span>
+                <span class="key layerB" data-value="5" data-code="Digit5" id="key5">5</span>
+                <span class="key layerB" data-value="6" data-code="Digit6" id="key6">6</span>
+                <span class="key layerB" data-value="7" data-code="Digit7" id="key7">7</span>
+                <span class="key layerB" data-value="8" data-code="Digit8" id="key8">8</span>
+                <span class="key layerB" data-value="9" data-code="Digit9" id="key9">9</span>
+
                 <span class="key layerA" data-value="a" data-code="KeyA" id="keyA">A</span>
                 <span class="key layerA" data-value="b" data-code="KeyB" id="keyB">B</span>
                 <span class="key layerA" data-value="c" data-code="KeyC" id="keyC">C</span>
@@ -123,36 +135,60 @@
                 <span class="key layerA" data-value="x" data-code="KeyX" id="keyX">X</span>
                 <span class="key layerA" data-value="y" data-code="KeyY" id="keyY">Y</span>
                 <span class="key layerA" data-value="z" data-code="KeyZ" id="keyZ">Z</span>
-                <span class="key layerB" data-value="0" data-code="Digit0" id="key0">0</span>
-                <span class="key layerB" data-value="1" data-code="Digit1" id="key1">1</span>
-                <span class="key layerB" data-value="2" data-code="Digit2" id="key2">2</span>
-                <span class="key layerB" data-value="3" data-code="Digit3" id="key3">3</span>
-                <span class="key layerB" data-value="4" data-code="Digit4" id="key4">4</span>
-                <span class="key layerB" data-value="5" data-code="Digit5" id="key5">5</span>
-                <span class="key layerB" data-value="6" data-code="Digit6" id="key6">6</span>
-                <span class="key layerB" data-value="7" data-code="Digit7" id="key7">7</span>
-                <span class="key layerB" data-value="8" data-code="Digit8" id="key8">8</span>
-                <span class="key layerB" data-value="9" data-code="Digit9" id="key9">9</span>
-                <span class="key layerB" data-value="9" data-code="Digit9" id="key9">9</span>
 
                 <span class="key layerB" data-value="-" data-code="Minus" id="keyMinus">-</span>
                 <span class="key layerB" data-value="/" data-code="Slash" id="keySlash">/</span>
-                <span class="key layerB" data-value=":" data-code="Colon" id="keyColon">:</span>
+                <span class="key layerB" data-value=":" data-code="Semicolon" data-shift="true" id="keyColon">:</span>
                 <span class="key layerB" data-value=";" data-code="Semicolon" id="keySemicolon">;</span>
-                <span class="key layerB" data-value="(" data-code="BracketLeft" id="keyBracketLeft">(</span>
-                <span class="key layerB" data-value=")" data-code="BracketRight" id="keyBracketRight">)</span>
-                <span class="key layerB" data-value="$" data-code="Dollar" id="keyDollar">$</span>
-                <span class="key layerB" data-value="&" data-code="Ampersand" id="keyAmpersand">&</span>
-                <span class="key layerB" data-value="@" data-code="At" id="keyAt">@</span>
-                <span class="key layerB" data-value='"' data-code="Quote" id="keyQuote">"</span>
+                <span class="key layerB" data-value="(" data-code="Digit9" data-shift="true"
+                    id="keyBracketLeft">(</span>
+                <span class="key layerB" data-value=")" data-code="BracketRight" data-shift="true"
+                    id="keyBracketRight">)</span>
+                <span class="key layerB" data-value="$" data-code="Digit4" data-shift="true" id="keyDollar">$</span>
+                <span class="key layerB" data-value="&" data-code="Digit7" data-shift="true" id="keyAmpersand">&</span>
+                <span class="key layerB" data-value="@" data-code="Digit8" data-shift="true" id="keyAt">@</span>
+                <span class="key layerB" data-value='"' data-code="Quote" data-shift="true" id="keyQuote">"</span>
                 <span class="key layerB" data-value="." data-code="Period" id="keyPeriod">.</span>
                 <span class="key layerB" data-value="," data-code="Comma" id="keyComma">,</span>
-                <span class="key layerB" data-value="?" data-code="Slash" id="keyQuestion">?</span>
-                <span class="key layerB" data-value="!" data-code="Digit1" id="keyExclamation">!</span>
+                <span class="key layerB" data-value="?" data-code="Slash" data-shift="true" id="keyQuestion">?</span>
+                <span class="key layerB" data-value="!" data-code="Digit1" data-shift="true"
+                    id="keyExclamation">!</span>
                 <span class="key layerB" data-value="'" data-code="Quote" id="keyApostrophe">'</span>
 
-                <span class="key layerA layerB nostrip" data-value="-100" data-code="Shift" id="keyShift">SHIFT</span>
-                <span class="key layerA layerB nostrip" data-value="-120" data-code="Toggle"
+                <span class="key layerC" data-value="[" data-code="BracketLeft" id="key1">[</span>
+                <span class="key layerC" data-value="]" data-code="BracketRight" id="key2">]</span>
+                <span class="key layerC" data-value="{" data-code="BracketLeft" data-shift="true" id="key3">{</span>
+                <span class="key layerC" data-value="}" data-code="BracketRight" data-shift="true" id="key4">}</span>
+                <span class="key layerC" data-value="#" data-code="Digit3" data-shift="true" id="key5">#</span>
+                <span class="key layerC" data-value="$" data-code="Digit6" id="key6">$</span>
+                <span class="key layerC" data-value="^" data-code="Digit7" id="key7">^</span>
+                <span class="key layerC" data-value="*" data-code="Digit8" id="key8">*</span>
+                <span class="key layerC" data-value="+" data-code="Digit9" id="key9">+</span>
+                <span class="key layerC" data-value="=" data-code="Digit0" id="key0">=</span>
+
+                <span class="key layerC" data-value="_" data-code="Minus" id="keyMinus">_</span>
+                <span class="key layerC" data-value="\" data-code="Slash" id="keySlash">\</span>
+                <span class="key layerC" data-value="|" data-code="Colon" data-shift="true" id="keyColon">|</span>
+                <span class="key layerC" data-value="~" data-code="Semicolon" id="keySemicolon">~</span>
+                <span class="key layerC" data-value="<" data-code="BracketLeft" data-shift="true"
+                    id="keyBracketLeft">&lt;</span>
+                <span class="key layerC" data-value=">" data-code="BracketRight" data-shift="true"
+                    id="keyBracketRight">&gt;</span>
+                <span class="key layerC" data-value="$" data-code="Digit4" data-shift="true" id="keyDollar">$</span>
+                <span class="key layerC" data-value="p" data-code="Ampersand" data-shift="true"
+                    id="keyAmpersand">&</span>
+                <span class="key layerC" data-value="`" data-code="Backquote" id="keyAt">`</span>
+                <span class="key layerC" data-value="yyy" data-code="" data-shift="true" id="keyQuote">"</span>
+                <span class="key layerC" data-value="zzz" data-code="" id="keyPeriod">.</span>
+                <span class="key layerC" data-value="." data-code="Comma" id="keyComma">,</span>
+                <span class="key layerC" data-value="," data-code="Slash" data-shift="true" id="keyQuestion">?</span>
+                <span class="key layerC" data-value="?" data-code="Digit1" data-shift="true"
+                    id="keyExclamation">!</span>
+                <span class="key layerC" data-value="!" data-code="Quote" id="keyApostrophe">'</span>
+
+                <span class="key layerA layerB layerC nostrip" data-value="-100" data-code="Shift"
+                    id="keyShift">CAPS</span>
+                <span class="key layerA layerB layerC nostrip" data-value="-120" data-code="Toggle"
                     id="keyToggle">TOGGLE</span>
             </div>
         </div>

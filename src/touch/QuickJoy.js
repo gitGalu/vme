@@ -23,7 +23,7 @@ export class QuickJoy {
         bottomContainer.style.height = '100%';
         bottomContainer.style.display = 'grid';
         bottomContainer.style.gap = '2px';
-        bottomContainer.style.zIndex = '2147483647';
+        bottomContainer.style.zIndex = '7777';
         bottomContainer.style.textAlign = 'center';
         bottomContainer.style.fontFamily = "Helvetica, Arial, sans-serif !important";
         bottomContainer.style.justifyContent = 'center';

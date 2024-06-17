@@ -34,7 +34,7 @@ export class QuickShot {
         bottomContainer.style.height = '100%';
         bottomContainer.style.display = 'none';
         bottomContainer.style.gap = '2px';
-        bottomContainer.style.zIndex = '2147483647';
+        bottomContainer.style.zIndex = '7777';
         bottomContainer.style.textAlign = 'center';
         bottomContainer.style.fontFamily = "Helvetica, Arial, sans-serif !important";
         bottomContainer.style.justifyContent = 'center';
@@ -62,7 +62,7 @@ export class QuickShot {
         this.#joystickContainer.style.width = '100%';
         this.#joystickContainer.style.height = '100%';
         this.#joystickContainer.style.height = '375px !important';
-        this.#joystickContainer.style.zIndex = '2147483640';
+        this.#joystickContainer.style.zIndex = '666';
         this.#joystickContainer.style.display = 'none';
         document.body.appendChild(this.#joystickContainer);
 

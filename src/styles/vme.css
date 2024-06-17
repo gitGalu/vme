@@ -202,7 +202,7 @@ body, html {
   height: 100%;
   display: grid;
   gap: 2px;
-  z-index: 2147483646;
+  z-index: 7777;
   text-align: center;
   font-family: "Helvetica, Arial, sans-serif !important";
   justify-content: center;
@@ -545,6 +545,10 @@ a {
     grid-area: 8 / 1 / span 4 / span 9;
   }
 
+  #fastkb {
+    grid-area: 14 / 33 / span 4 / span 9;
+  }
+
   #fastjoy {
     grid-area: 14 / 1 / span 4 / span 9;
   }
@@ -640,6 +644,10 @@ a {
     grid-area: 3 / 1 / span 4 / span 4;
   }
 
+  #fastkb {
+    grid-area: 15 / 43 / span 4 / span 4;
+  }
+
   #fastjoy {
     grid-area: 15 / 1 / span 4 / span 4;
   }
@@ -703,6 +711,7 @@ a {
   display: block;
   transform: translateY(100%);
   transition: transform 0.2s ease-out;
+  z-index: 99999;
 }
 
 #keyboardContainer.visible {
@@ -745,6 +754,10 @@ a {
   visibility: hidden;
 }
 
+.layerC {
+  visibility: hidden;
+}
+
 .layerA {
   visibility: visible;
 }
@@ -768,7 +781,8 @@ a {
 }
 
 .kbCtrl {
-  padding: 6px;
+  padding-bottom: 6px;
+  padding-top: 6px;
   padding-left: 16px;
   padding-right: 16px;
   height: 50px;
@@ -1132,8 +1146,6 @@ a {
   grid-area: 2 / 19 / span 1 / span 2;
 }
 
-
-
 .keyboardQwerty>#keyPeriod {
   display: block;
   grid-area: 3 / 5 / span 1 / span 2;
@@ -1158,7 +1170,6 @@ a {
   display: block;
   grid-area: 3 / 15 / span 1 / span 2;
 }
-
 
 .editable {
   display: inline-block;
@@ -1369,7 +1380,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  z-index: 2147483642;
+  z-index: 7777;
 }
 
 .fire-button {
@@ -1410,7 +1421,7 @@ a {
 }
 
 .popup {
-  z-index: 2147483647;
+  z-index: 99999;
   display: none;
   position: absolute;
   background-color: #232323;

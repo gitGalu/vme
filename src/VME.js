@@ -73,7 +73,7 @@ export class VME {
 
         this.#pl = new PlatformManager(this, this.#cli, this.#db);
         this.#env = new EnvironmentManager(this.#pl);
-        this.#ui = new UiManager(this.#pl);
+        this.#ui = new UiManager(this.#pl, this.#kb);
 
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);
 
@@ -116,16 +116,15 @@ export class VME {
     }
 
     emulationStarted() {
-        this.#kb.clicks_off();
-        this.#kb.hideTouchKeyboard();
         this.#ui.initFastUI();
         this.#ui.initQuickJoy();
         this.#ui.initQuickshot();
         this.#ui.initDesktopUI();
         this.#ui.initHideaway();
+        
+        this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         EnvironmentManager.updateDeviceType();
         UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
-        this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         this.#ui.initControllerMenu();
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
     }
@@ -142,6 +141,7 @@ export class VME {
                 show('#settings', 'flex');
                 this.#cli.on();
                 this.#kb.clicks_on();
+                this.#kb.updateMode(mode);
                 document.body.classList.remove('black');
                 break;
             case VME.CURRENT_SCREEN.EMULATION:
@@ -162,6 +162,7 @@ export class VME {
                 }
                 this.#kb.hideTouchKeyboard();
                 this.#kb.clicks_off();
+                this.#kb.updateMode(mode);
                 document.body.classList.add('black');
                 break;
             case VME.CURRENT_SCREEN.SAVE_BROWSER:
