@@ -1,4 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
+import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
 const A5200 = {
     ...PlatformBase,
@@ -14,6 +15,7 @@ const A5200 = {
         '--cursorwidth': '1em'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 2,
     additional_buttons: {
         1: {

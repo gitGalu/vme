@@ -3,12 +3,11 @@ import { SingleTouchButton } from '../touch/SingleTouchButton.js';
 import { TouchButtonListener } from '../touch/TouchButtonListener.js';
 import { SingleTouchButtonJoyListener } from '../touch/SingleTouchButtonJoyListener.js';
 import { SingleTouchButtonKbListener } from '../touch/SingleTouchButtonKbListener.js';
-import { VME } from '../VME.js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { QuickJoy } from '../touch/QuickJoy.js';
 import { QuickShot } from '../touch/QuickShot.js';
 import { Hideaway } from '../touch/Hideaway.js';
-
+import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
 
 export class UiManager {
     #platform_manager;
@@ -160,12 +159,12 @@ export class UiManager {
                         UiManager.hideKeyboard();
                         UiManager.showJoystick();
                     } else {
-                        if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
-                            UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
-                        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
-                            UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.HIDEAWAY);
-                        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
-                            UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+                        if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
+                            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
+                        } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
+                            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.HIDEAWAY);
+                        } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+                            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
                         }
                     }
                 }
@@ -211,7 +210,7 @@ export class UiManager {
     }
 
     static hideJoystick() {
-        if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+        if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
             this.#ha.hide();
         }
         s('#quickshots').style.display = 'none';
@@ -219,11 +218,11 @@ export class UiManager {
     }
 
     static showJoystick() {
-        if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
+        if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
             s('#quickshots').style.display = 'grid';
-        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
+        } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
             s('#quickjoys').style.display = 'grid';
-        } else if (UiManager.currentJoyTouchMode == VME.JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+        } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
         }
     }
 
@@ -242,23 +241,23 @@ export class UiManager {
         }
 
         switch (mode) {
-            case VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY:
-                UiManager.currentJoyTouchMode = VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY;
+            case JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY:
+                UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY;
                 UiManager.osdMessage('QuickJoy', 1000);
                 UiManager.#ha.hide();
                 UiManager.#qs.hide();
                 UiManager.#qj.mode(1);
                 UiManager.#qj.show();
                 break;
-            case VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
-                UiManager.currentJoyTouchMode = VME.JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC;
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
+                UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC;
                 UiManager.osdMessage('QuickShot', 1000);
                 UiManager.#qj.hide();
                 UiManager.#ha.hide();
                 UiManager.#qs.show();
                 break;
-            case VME.JOYSTICK_TOUCH_MODE.HIDEAWAY:
-                UiManager.currentJoyTouchMode = VME.JOYSTICK_TOUCH_MODE.HIDEAWAY;
+            case JOYSTICK_TOUCH_MODE.HIDEAWAY:
+                UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.HIDEAWAY;
                 UiManager.osdMessage('Auto Hide', 1000);
                 UiManager.#qj.hide();
                 UiManager.#qs.hide();

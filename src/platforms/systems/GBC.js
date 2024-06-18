@@ -1,4 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
+import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
 const GBC = {
     ...PlatformBase,
@@ -31,6 +32,7 @@ const GBC = {
         )
     },
     force_scale: true,
+    default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 2,
     additional_buttons: {
         1: {

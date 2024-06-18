@@ -17,6 +17,7 @@ import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { isMobile } from 'react-device-detect';
+import { JOYSTICK_TOUCH_MODE } from './Constants.js';
 
 export class VME {
     #cli;
@@ -29,12 +30,6 @@ export class VME {
     #save_browser;
 
     static whitespace = "&nbsp;";
-
-    static JOYSTICK_TOUCH_MODE = {
-        QUICKJOY_PRIMARY: 100,
-        QUICKSHOT_DYNAMIC: 200,
-        HIDEAWAY: 1000
-    }
 
     static CURRENT_SCREEN = {
         STANDALONE_WARNING: 50,
@@ -121,10 +116,17 @@ export class VME {
         this.#ui.initQuickshot();
         this.#ui.initDesktopUI();
         this.#ui.initHideaway();
-        
+
         this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         EnvironmentManager.updateDeviceType();
-        UiManager.toggleJoystick(VME.JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+
+        let controller = this.#pl.getSelectedPlatform().default_touch_controller;
+        if (controller) {
+            UiManager.toggleJoystick(controller);
+        } else {
+            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+        }
+
         this.#ui.initControllerMenu();
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
     }
