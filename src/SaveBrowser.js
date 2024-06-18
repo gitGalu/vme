@@ -168,9 +168,17 @@ export class SaveBrowser {
                         const id = activePanel.element.getAttribute('data-id');
                         const intId = parseInt(id, 10);
 
+                        const max =  self.#flicking.panelCount - 1; 
+
                         self.#db.deleteSave(intId).then(() => {
                             self.#flicking.remove(activePanel.index);
-                            const newPanelIndex = Math.min(intId, self.#flicking.panelCount - 1);
+                   
+                            let newPanelIndex = activePanel.index;
+
+                            if (newPanelIndex >= max) {
+                                newPanelIndex = max - 1;
+                            }
+
                             if (self.#flicking.panelCount > 0) {
                                 self.#flicking.moveTo(newPanelIndex, 0);
                             }
