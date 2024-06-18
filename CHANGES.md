@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.3] - 2024-06-15
+## [0.5.4] - 2024-06-19
+
+- Save Browser: fix display when deleting saves
+- A5200, GB, GBC, NES and SMS: use Quickshot Dynamic touch controls by default 
+
+## [0.5.3] - 2024-06-17
 
 - Atari 800: initial touch keyboard support
 - Atari 800: fix joystick mapping for touchscreens
