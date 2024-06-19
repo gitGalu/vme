@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2024-06-20
+
+- disable RGUI hotkey globally
+- C64: initial touch & physical keyboard support
+- C64: fix joystick mapping for touchscreens
+- C64: add F1, RUN/STOP and SPACE quick access buttons in touch mode
+
 ## [0.5.4] - 2024-06-19
 
 - Save Browser: fix display when deleting saves
