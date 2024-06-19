@@ -25,10 +25,27 @@ const C64 = {
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     fire_buttons: 1,
     additional_buttons: {
-        // 1: {
-        //     "label": "KB",
-        //     "keyCode": 2
-        // }
+        1: {
+            "label": "SPACE",
+            "key": {
+                "key": 'Space',
+                "code": 'Space'
+            }
+        },
+        2: {
+            "label": "RUN/STOP",
+            "key": {
+                "key": 'Escape',
+                "code": 'Escape'
+            }
+        },
+        3: {
+            "label": "F1",
+            "key": {
+                "key": 'F1',
+                "code": 'F1'
+            }
+        }
     }
 };
 
