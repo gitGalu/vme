@@ -86,6 +86,7 @@ export class PlatformManager {
                 video_smooth: true,
                 savestate_thumbnail_enable: true,
                 video_font_enable: false,
+                input_menu_toggle: 'nul',
                 ...retroarchConfigOverrides
             },
             retroarchCoreConfig: {
