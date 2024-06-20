@@ -34,7 +34,9 @@ export class UiManager {
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new CommandButtonListener('FAST_FORWARD', this.#platform_manager.getNostalgist(), 'Fast Forward'));
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener());
 
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(this.#platform_manager));
+        if (!this.#platform_manager.getSelectedPlatform().savestates_disabled) {
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(this.#platform_manager));
+        }
 
         if (this.#platform_manager.getSelectedPlatform().keyboard) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">KB</span>', undefined, 'fastkb', new KbListener(this.#kb_manager));
@@ -52,6 +54,11 @@ export class UiManager {
 
     initDesktopUI() {
         const desktopUi = document.getElementById('desktopUi');
+
+        if (this.#platform_manager.getSelectedPlatform().savestates_disabled) {
+            document.getElementById('desktopUiSave').style.display = "none";
+        }
+
         let timeout;
 
         function addMouseMoveListenerToCanvas(observer) {

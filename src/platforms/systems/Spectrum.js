@@ -14,6 +14,7 @@ const Spectrum = {
         '--font': 'ZXSpectrum',
         '--cursorwidth': '1em',
     },
+    savestates_disabled: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     fire_buttons: 1,
     additional_buttons: {
