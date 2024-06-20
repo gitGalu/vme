@@ -58,6 +58,13 @@
   src: url('../assets/fonts/PetMe1282Y.ttf') format("truetype");
 }
 
+@font-face {
+  font-family: Shockman;
+  /* src: url('../assets/fonts/shockman-dialog-pc-engine.ttf') format("truetype"); */
+  src: url('../assets/fonts/pc-engine-super-cd-rom2-system-unused.ttf') format("truetype");
+
+}
+
 #warningStandalone {
   display: none;
   padding: 2em;

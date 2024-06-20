@@ -13,6 +13,7 @@ import CPC from './systems/CPC.js';
 import VIC20 from './systems/VIC20.js';
 import ZX80 from './systems/ZX80.js';
 import Spectrum from './systems/Spectrum.js';
+import PCE from './systems/PCE.js';
 import JSZip from 'jszip';
 import { s } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -20,7 +21,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, SMS, C64, C128, C264, A2600, A5200, A800, CPC, VIC20, ZX80, Spectrum
+    NES, GB, GBC, SMS, PCE, C64, C128, C264, A2600, A5200, A800, CPC, VIC20, ZX80, Spectrum
 }
 
 export class PlatformManager {

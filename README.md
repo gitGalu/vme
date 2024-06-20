@@ -89,6 +89,8 @@ gambatte-libretro https://github.com/libretro/gambatte-libretro
 
 stella2014-libretro https://github.com/libretro/stella2014-libretro
 
+pce-fast https://github.com/libretro/beetle-pce-fast-libretro
+
 ### Assets used
 
 https://www.kreativekorp.com/software/fonts/c64/
@@ -96,6 +98,8 @@ https://www.kreativekorp.com/software/fonts/c64/
 https://github.com/spartrekus/8bits-fonts
 
 https://github.com/rewtnull/amigafonts/
+
+https://fontstruct.com/fontstructions/show/1592365/pc-engine-super-cd-rom2-system-unused
 
 ## License
 
