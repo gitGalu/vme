@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.6] - w.i.p.
+
+- add PC Engine / TurboGrafx-16 emulation (uses mednafen_pce_fast core)
+- ZX Spectrum: disable savestates in GUI (not supported by fuse-libretro core)
+
 ## [0.5.5] - 2024-06-20
 
 - disable RGUI hotkey globally
