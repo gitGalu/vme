@@ -339,7 +339,13 @@ export class PlatformManager {
                 const vmeImportJson = await content.file('vme_import.json').async('string');
                 const vmeImport = JSON.parse(vmeImportJson);
 
+                this.#cli.print('&nbsp;');
+                let i = 1;
+                let count = Object.keys(vmeImport.platforms).length;
+
                 for (const platformId in vmeImport.platforms) {
+                    this.#cli.print_progress(`Importing... (${i++}/${count})`);
+
                     const platform = vmeImport.platforms[platformId];
 
                     let result = await this.#processFileInZip(platform.software, `${platformId}.software`, content);
@@ -365,7 +371,7 @@ export class PlatformManager {
             return;
         }
         if (ok) {
-            this.#cli.message("&nbsp;", "Files have been successfully imported.");
+            this.#cli.message("Files have been successfully imported.");
         }
     }
 

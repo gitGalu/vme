@@ -347,6 +347,19 @@ export class CLI {
         });
     }
 
+    print_progress(line) {
+        let p = s("#progress_line");
+        if (p == null) {
+            const table = s("#cors_results");
+            const div = document.createElement('div');
+            p = document.createElement('p');
+            p.id = 'progress_line';
+            div.appendChild(p);
+            table.append(div);
+        }
+        p.innerHTML = line;
+    }
+
     print(line) {
         this.#lines.push(line);
         this.redraw();
