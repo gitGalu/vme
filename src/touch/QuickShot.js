@@ -1,8 +1,10 @@
 import { s, show, hide } from '../dom.js';
 import { SingleTouchButton } from "./SingleTouchButton";
 import { DualTouchButton } from "./DualTouchButton";
+import { TripleTouchButton } from "./TripleTouchButton";
 import { SingleTouchButtonJoyListener } from "./SingleTouchButtonJoyListener";
 import { DualTouchButtonJoyListener } from "./DualTouchButtonJoyListener";
+import { TripleTouchButtonJoyListener } from "./TripleTouchButtonJoyListener";
 
 export class QuickShot {
     static #DEAD_ZONE_RADIUS = 30;
@@ -42,11 +44,15 @@ export class QuickShot {
         bottomContainer.style.gridTemplateRows = 'repeat(10, 1fr)';
         bottomContainer.style.pointerEvents = 'none';
 
-        if (this.#platform_manager.getSelectedPlatform().fire_buttons == 2) {
+        let buttonsCount = this.#platform_manager.getSelectedPlatform().fire_buttons;
+
+        if (buttonsCount == 2) {
             new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
-        } else if (this.#platform_manager.getSelectedPlatform().fire_buttons == 1) {
+        } else if (buttonsCount == 1) {
             new SingleTouchButton(bottomContainer, 'A', undefined, 'qsa', new SingleTouchButtonJoyListener(this.#nostalgist, 'b'));
-        } else if (this.#platform_manager.getSelectedPlatform().fire_buttons == 4) {
+        } else if (buttonsCount == 3) {
+            new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'y', 'b', 'a'));
+        } else if (buttonsCount == 4) {
             new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab4', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
             new DualTouchButton(bottomContainer, true, 'Y', 'X', undefined, 'qsxy4', new DualTouchButtonJoyListener(this.#nostalgist, 1, 9), '12px');
         }

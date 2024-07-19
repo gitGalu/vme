@@ -34,21 +34,20 @@ export class QuickJoy {
         //lr
         new DualTouchButton(bottomContainer, true, '\u21e6', '\u21e8', undefined, 'qjlr', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'left', 'right'));
 
-        if (this.#platform_manager.getSelectedPlatform().fire_buttons == 1) {
+        let btns = this.#platform_manager.getSelectedPlatform().fire_buttons;
+
+        if (btns == 1) {
             //ud
             new DualTouchButton(bottomContainer, false, '\u21e7', '\u21e9', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
             //fire
             new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'qja', new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b'));
-
-            // this.#setCSS(
-
-            // );
-
-        } else if (this.#platform_manager.getSelectedPlatform().fire_buttons == 2) {
+        } else if (btns == 2) {
             //ud
             new DualTouchButton(bottomContainer, false, '\u21e7', '\u21e9', undefined, 'qjud2', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
             //fire
             new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qjab', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b', 'a'));
+        } else if (btns == 3) {
+
         }
 
         bottomContainer.style.display = 'none';
@@ -68,15 +67,5 @@ export class QuickJoy {
         const container = s('#quickjoys');
         container.classList.toggle('primary');
         container.classList.toggle('secondary');
-    }
-
-    #setCSS(...rules) {
-        var style = document.createElement('style');
-        document.head.appendChild(style);
-        var sheet = style.sheet;
-
-        rules.forEach(rule => {
-            sheet.insertRule(rule, sheet.cssRules.length);
-        });
     }
 }

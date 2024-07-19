@@ -60,9 +60,7 @@
 
 @font-face {
   font-family: Shockman;
-  /* src: url('../assets/fonts/shockman-dialog-pc-engine.ttf') format("truetype"); */
   src: url('../assets/fonts/pc-engine-super-cd-rom2-system-unused.ttf') format("truetype");
-
 }
 
 #warningStandalone {
@@ -588,6 +586,10 @@ a {
     grid-area: -3 / 13 / span 2 / span 11;
   }
 
+  #qsabc3 {
+    grid-area: -3 / 15 / span 1 / span 9;
+  }
+
   #qsab4 {
     grid-area: -2 / 15 / span 1 / span 9;
   }
@@ -673,6 +675,10 @@ a {
 
   #qsab {
     grid-area: -4 / 17 / span 3 / span 7;
+  }
+
+  #qsabc3 {
+    grid-area: -5 / -8 / span 2 / span 8;
   }
 
   #qsab4 {
