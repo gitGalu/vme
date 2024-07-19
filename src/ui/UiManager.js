@@ -111,16 +111,11 @@ export class UiManager {
 
                 if (pressed) {
                     let state = this.#platform_manager.saveState();
-                    console.log(state);
                     state.then((data) => {
+                        console.log(data);
                     }).catch((error) => {
                         console.error('Error resolving state:', error);
                     });
-
-                    self.#platform_manager.getNostalgist().sendCommand('REWIND');
-                    intervalId = setInterval(() => {
-                        self.#platform_manager.getNostalgist().sendCommand('REWIND');
-                    }, 5);
                 } else {
                     clearInterval(intervalId);
                 }
@@ -156,6 +151,8 @@ export class UiManager {
     }
 
     initControllerMenu() {
+        let buttonCount = this.#platform_manager.getSelectedPlatform().fire_buttons;
+
         new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new class extends TouchButtonListener {
             constructor() {
                 super();
@@ -171,7 +168,11 @@ export class UiManager {
                         } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
                             UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.HIDEAWAY);
                         } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
-                            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+                            if (buttonCount == 3) {
+                                UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
+                            } else {
+                                UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
+                            }
                         }
                     }
                 }
