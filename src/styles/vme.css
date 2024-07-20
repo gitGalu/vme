@@ -487,12 +487,15 @@ body {
   padding-right: max(2em, env(safe-area-inset-right));
 }
 
+#settings.dragging {
+  box-shadow: inset 0 0 0 1em var(--color1); 
+}
+
 a {
   color: var(--color0);
   text-decoration: none;
   background-color: var(--color1);
 }
-
 
 @media (orientation: portrait) {
   #settings {

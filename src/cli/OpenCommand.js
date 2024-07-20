@@ -8,6 +8,61 @@ export class OpenCommand extends CommandBase {
     constructor(platform_manager) {
         super();
         this.#platform_manager = platform_manager;
+        this.#initDragArea();
+    }
+
+    #initDragArea() {
+        const dropArea = document.getElementById('settings');
+
+        let dragging = false;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight.bind(this), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight.bind(this), false);
+        });
+
+        dropArea.addEventListener('drop', handleDrop.bind(this), false);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            dropArea.classList.add('dragging');
+            if (!dragging) {
+                dragging = true;
+                this.cli.clear();
+                this.cli.soft_msg("<span class='blinking2'>Drop the file to open it.</span>");
+            }
+        }
+
+        function unhighlight(e) {
+            dragging = false;
+            this.cli.clear();
+            dropArea.classList.remove('dragging');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                this.#openFromDrag(files[0]);
+            }
+        }
+    }
+
+    #openFromDrag(file) {
+        this.#import(file, file.name);
     }
 
     get_keywords() {
@@ -46,6 +101,52 @@ export class OpenCommand extends CommandBase {
         }
     }
 
+    #import(file, filename) {
+        const self = this;
+
+        if (filename.endsWith(".json")) { // software dir
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const textContent = e.target.result;
+                let key = "" + self.#platform_manager.getSelectedPlatform().platform_id + ".software";
+                try {
+                    let json = JSON.parse(textContent);
+                    self.#platform_manager.loadCorsFile(key, json);
+                    self.cli.message("&nbsp;", "Successfully imported software directory.");
+                } catch (error) {
+                    self.cli.message("&nbsp;", "Failed to read file.", "Not a valid software directory file.");
+                    return;
+                }
+            };
+
+            reader.onerror = function (e) {
+                console.error("Failed to read file!", e);
+            };
+
+            reader.readAsText(file);
+        } else if (filename.endsWith("vme_import.zip")) { // dependency bundle
+            self.#platform_manager.loadVmeImportFile(file);
+        } else { 
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                var wordArray = lib.WordArray.create(e.target.result);
+                var md5 = MD5(wordArray).toString();
+                let dep = self.#findDep(md5);
+                if (dep != undefined) { // single dependency
+                    self.#platform_manager.importFile(dep.key, file);
+                    self.cli.message("&nbsp;", "Successfully imported " + dep.type);
+                } else { // other file (rom)
+                    const blob = new Blob([e.target.result], { type: file.type });
+                    self.#platform_manager.loadRomFile(blob, filename);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+    }
+
     #openFile() {
         const self = this;
 
@@ -63,47 +164,7 @@ export class OpenCommand extends CommandBase {
             self.cli.clear();
             self.cli.print("Loading " + filename + " ...");
 
-            if (filename.endsWith(".json")) { // software dir
-                const reader = new FileReader();
-
-                reader.onload = function (e) {
-                    const textContent = e.target.result;
-                    let key = "" + self.#platform_manager.getSelectedPlatform().platform_id + ".software";
-                    try {
-                        let json = JSON.parse(textContent);
-                        self.#platform_manager.loadCorsFile(key, json);
-                        self.cli.message("&nbsp;", "Successfully imported software directory.");
-                    } catch (error) {
-                        self.cli.message("&nbsp;", "Failed to read file.", "Not a valid software directory file.");
-                        return;
-                    }
-                };
-
-                reader.onerror = function (e) {
-                    console.error("Failed to read file!", e);
-                };
-
-                reader.readAsText(file);
-            } else if (filename.endsWith("vme_import.zip")) { // dependency bundle
-                self.#platform_manager.loadVmeImportFile(file);
-            } else { 
-                var reader = new FileReader();
-
-                reader.onload = function (e) {
-                    var wordArray = lib.WordArray.create(e.target.result);
-                    var md5 = MD5(wordArray).toString();
-                    let dep = self.#findDep(md5);
-                    if (dep != undefined) { // single dependency
-                        self.#platform_manager.importFile(dep.key, file);
-                        self.cli.message("&nbsp;", "Successfully imported " + dep.type);
-                    } else { // other file (rom)
-                        const blob = new Blob([e.target.result], { type: file.type });
-                        self.#platform_manager.loadRomFile(blob, filename);
-                    }
-                };
-
-                reader.readAsArrayBuffer(file);
-            }
+            self.#import(file, filename);
         });
     }
 }
