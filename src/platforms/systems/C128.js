@@ -17,7 +17,8 @@ const C128 = {
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     fire_buttons: 1,
     additional_buttons: {
-    }
+    },
+    message: ["C128 support is under development and mostly broken or non-functional."]
 };
 
 export default C128;

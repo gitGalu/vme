@@ -65,7 +65,8 @@ const C64 = {
                 "code": 'F1'
             }
         }
-    }
+    },
+    message: ["C64 support is under development and mostly broken or non-functional."]
 };
 
 export default C64;
