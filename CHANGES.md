@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.6] - w.i.p.
+## [0.6.0] - 2024-07-20
+
+- add Sega Mega Drive / Genesis support (uses genesis_plus_gx core)
+- add warning message for unsupported/w.i.p. platforms
+- Desktop: add drag&drop support for opening files
+- add progress counter when opening vme_import.zip
+
+## [0.5.6] - 2024-06-20
 
 - add PC Engine / TurboGrafx-16 emulation (uses mednafen_pce_fast core)
 - ZX Spectrum: disable savestates in GUI (not supported by fuse-libretro core)
