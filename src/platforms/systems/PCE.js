@@ -23,7 +23,7 @@ const PCE = {
             "keyCode": 'select'
         },
         2: {
-            "label": "START",
+            "label": "RUN",
             "keyCode": 'start'
         }
     }
