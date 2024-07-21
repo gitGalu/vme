@@ -3,7 +3,7 @@ import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
 const MD = {
     ...PlatformBase,
-    platform_id: 'md',
+    platform_id: 'smd',
     core: 'genesis_plus_gx',
     platform_name: 'Sega Mega Drive',
     short_name: 'SMD',
