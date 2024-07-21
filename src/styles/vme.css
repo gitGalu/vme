@@ -68,6 +68,11 @@
   src: url('../assets/fonts/genesis.ttf') format("truetype");
 }
 
+@font-face {
+  font-family: Lynx;
+  src: url('../assets/fonts/classic-5x7-sans.ttf') format("truetype");
+}
+
 #warningStandalone {
   display: none;
   padding: 2em;

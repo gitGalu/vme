@@ -101,6 +101,8 @@ https://github.com/rewtnull/amigafonts/
 
 https://fontstruct.com/fontstructions/show/1592365/pc-engine-super-cd-rom2-system-unused
 
+https://fontstruct.com/fontstructions/show/2066750
+
 ## License
 
 The source code license is GPL v3, as described in the LICENSE file.
