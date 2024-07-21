@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2024-07-21
+
+- add Atari Lynx support (uses handy core)
+- VIC20: add touchscreen mode support
+- C264: add touchscreen mode support
+
 ## [0.6.0] - 2024-07-20
 
 - add Sega Mega Drive / Genesis support (uses genesis_plus_gx core)
