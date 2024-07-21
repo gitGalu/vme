@@ -446,6 +446,8 @@ export class PlatformManager {
     }
 
     async loadState(platform_id, state, blob, caption) {
+        if (platform_id == "md") platform_id = "smd"; //temp fix
+        
         if (platform_id != this.#selected_platform.platform_id) {
             let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
             this.setSelectedPlatform(selected);

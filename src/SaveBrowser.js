@@ -40,6 +40,8 @@ export class SaveBrowser {
     }
 
     #createPanelHTML(item) {
+        if (item.platform_id == "md") item.platform_id = "smd"; //temp fix
+
         const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
 
         let screenshotBlob = new Blob([item.screenshot], { type: 'image/png' });
