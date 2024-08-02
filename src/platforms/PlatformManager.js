@@ -130,6 +130,17 @@ export class PlatformManager {
         this.startEmulation(blob, caption);
     }
 
+    async loadRomFromCollection(platform_id, blob, caption) {
+        if (platform_id == "md") platform_id = "smd"; //temp fix
+
+        if (platform_id != this.#selected_platform.platform_id) {
+            let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
+            this.setSelectedPlatform(selected);
+            this.updatePlatform();
+        }
+        await this.loadRomFile(blob, caption);
+    }
+
     async startEmulation(blob, caption) {
         let self = this;
 
@@ -345,6 +356,97 @@ export class PlatformManager {
         } catch (error) {
             this.#cli.message('Error loading file.');
             console.log('error', error);
+        }
+    }
+
+
+    async loadCollectionFile(blob) {
+        const zip = new JSZip();
+        let roms = [];
+
+        try {
+            const content = await zip.loadAsync(blob);
+
+            if (content.files['vme_collection.json']) {
+                const vmeImportJson = await content.file('vme_collection.json').async('string');
+                const vmeImport = JSON.parse(vmeImportJson);
+
+                this.#cli.print('&nbsp;');
+                this.#cli.print_progress(`Importing ...`);
+
+                let itemCounts = vmeImport.list.length;
+
+                let i = 0;
+
+                let collectionUniqueName = vmeImport.id;
+                let collectionTitle = vmeImport.name;
+
+                const collectionImgFile = zip.file(vmeImport.image);
+                let collectionImgBlob = null;
+                if (collectionImgFile) {
+                    collectionImgBlob = await collectionImgFile.async('blob');
+                } else {
+                    throw new Error("The image file is invalid: " + item.image);
+                }
+
+                for (const item of vmeImport.list) {
+                    i++;
+                    this.#cli.print_progress(`Importing ... (${i}/${itemCounts})`);
+
+                    const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
+                    if (platform == undefined) {
+                        throw new Error("Unsupported platform found.");
+                    }
+
+                    const [depsData, missingDeps, softwareFile] = await this.#storage_manager.checkFiles(platform);
+                    if (missingDeps.length > 0) {
+                        throw new Error("You are missing " + item.platform_id + " requirements.");
+                    }
+
+                    const imgFile = zip.file(item.image);
+                    let imgBlob = null;
+                    if (imgFile) {
+                        imgBlob = await imgFile.async('blob');
+                    } else {
+                        throw new Error("The image file is invalid: " + item.image);
+                    }
+
+                    let blob = null;
+                    if (item.url) {
+                        const response = await fetch(item.url);
+                        blob = await response.blob();
+                    } else {
+                        throw new Error("The rom file is invalid: " + item.url);
+                    }
+
+                    roms.push({
+                        title: (item.title != null) ? item.title : "",
+                        credits: (item.credits != null) ? item.credits : "",
+                        description: (item.description != null) ? item.description : "",
+                        platform_id: item.platform_id,
+                        file: blob,
+                        data_type: 'blob',
+                        filename: item.filename,
+                        image: imgBlob
+                    });
+                }
+
+                const ok = await this.#storage_manager.storeCollection(collectionUniqueName, collectionTitle, collectionImgBlob, roms);
+
+                if (ok) {
+                    this.#cli.message("A new collection have been successfully imported.");
+                } else {
+                    throw new Error();
+                }
+
+            } else {
+                this.#cli.message("&nbsp;", "Error importing VME Collection archive.", "vme_collection.json not found in the ZIP file.");
+                return;
+            }
+        } catch (error) {
+            console.error('An error occurred:', error);
+            this.#cli.message("&nbsp;", "Error importing VME Collection archive.");
+            return;
         }
     }
 

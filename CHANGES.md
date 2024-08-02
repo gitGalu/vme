@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2024-08-03
+
+- add Game Boy Advance support (uses mgba core)
+- add Compilations Browser: a new way of loading programs
+
 ## [0.6.1] - 2024-07-21
 
 - add Atari Lynx support (uses handy core)

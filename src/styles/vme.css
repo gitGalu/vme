@@ -1766,6 +1766,15 @@ a {
   color: lightgray;
 }
 
+.flicking-primary-label {
+  color: white;
+  font-weight: bold;
+}
+
+.flicking-secondary-label {
+  color: grey;
+}
+
 .flicking-title-name {
   color: lightgray !important;
   z-index: 900;
@@ -1780,7 +1789,7 @@ a {
   display: inline-block;
 }
 
-.flicking-background {
+.flicking-background, .collection-flicking-background {
   position: fixed;
   top: 0;
   left: 0;
@@ -1894,4 +1903,96 @@ a {
 
 #next-button {
   right: 10px;
+}
+
+
+#collection-browser {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.35s ease-in-out;
+  z-index: 999999999999999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#collection-browser.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+#collectionBrowserUi {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2000 !important;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-size: 80%;
+}
+
+#collectionBrowserUiBack {
+  width: 25%;
+  float: left;
+  justify-content: left;
+  align-items: center;
+  padding-left: 32px;
+}
+
+#collectionBrowserUiBack img {
+  height: 30%;
+  width: auto;
+  transition: filter 0.5s ease;
+  filter: brightness(0) invert(0.8);
+}
+
+.collectionBrowserUiBack img::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#collectionBrowserEmpty {
+  color: lightgray;
+  margin: auto;
+  justify-content: center;
+  align-items: center;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+}
+
+#collectionBrowserUiBack img:hover {
+  filter: brightness(0) invert(1);
+}
+
+.collection-flicking-background {
+  width: 100%;
+  height: 100vh;
+  animation: changeColor 30s infinite;
+}
+
+@keyframes changeColor {
+  0% { background-color: #6666FF; }
+  16.67% { background-color: #6666FF; }
+  33.33% { background-color: #66FF66; }
+  50% { background-color: #66FF66; }
+  66.67% { background-color: #FF6666; }
+  83.33% { background-color: #FF6666; }
+  100% { background-color: #6666FF; }
+}
+
+canvas {
+  image-rendering: crisp-edges !important;
 }

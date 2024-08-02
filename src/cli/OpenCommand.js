@@ -127,6 +127,8 @@ export class OpenCommand extends CommandBase {
             reader.readAsText(file);
         } else if (filename.includes("vme_import")) { // dependency bundle
             self.#platform_manager.loadVmeImportFile(file);
+        } else if (filename.includes("vme_collection")) { // collection file
+            self.#platform_manager.loadCollectionFile(file);
         } else { 
             var reader = new FileReader();
 

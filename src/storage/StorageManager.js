@@ -6,15 +6,28 @@ export class StorageManager {
 
     static #LS_KEY_PREFIX = "VME_INTERNAL.";
     static #STORE_NAME = "VME";
-    static #STORE_VERSION = 2;
 
     constructor() {
         this.#db = new Dexie(StorageManager.#STORE_NAME);
-        this.#db.version(StorageManager.#STORE_VERSION).stores({
+
+        this.#db.version(2).stores({
             files: "key, data",
             saveMeta: '++id, platform_id, program_name, save_data_id, rom_data_id, timestamp',
             saveData: '++id, save_data',
             romData: '++id, rom_data, hash'
+        });
+
+        this.#db.version(3).stores({
+            files: "key, data",
+            saveMeta: '++id, platform_id, program_name, save_data_id, rom_data_id, timestamp',
+            saveData: '++id, save_data',
+            romData: '++id, rom_data, hash, data_type',
+            collectionMeta: '++id, collection_unique_name, collection_title, collection_image',
+            collectionItemData: '++id, collection_id, platform_id, title, credits, description, image, rom_name, rom_data_id, rom_url, launched'
+        }).upgrade(tx => {
+            return tx.table('romData').toCollection().modify(item => {
+                item.data_type = 'base64';
+            });
         });
     }
 
@@ -89,11 +102,80 @@ export class StorageManager {
         });
     }
 
+    async storeCollection(collection_unique_name, collection_title, collection_image, items) {
+        const precomputedItems = [];
+        for (const item of items) {
+            const hash = await this.#computeHash(item.file);
+            const itemImageB64 = await this.blobToBase64(item.image);
+            const existing = await this.#db.romData.where({ hash }).first();
+            precomputedItems.push({ item, hash, existing, itemImageB64 });
+        }
+
+        try {
+            await this.#db.transaction('rw', this.#db.collectionMeta, this.#db.collectionItemData, this.#db.romData, async () => {
+                const collectionId = await this.#db.collectionMeta.add({
+                    collection_unique_name: collection_unique_name,
+                    collection_title: collection_title,
+                    collection_image: collection_image
+                });
+
+                for (const { item, hash, existing, itemImageB64 } of precomputedItems) {
+                    let romDataId;
+                    if (!existing) {
+                        romDataId = await this.#db.romData.add({ rom_data: item.file, hash, data_type: 'blob' });
+                    } else {
+                        romDataId = existing.id;
+                    }
+
+                    await this.#db.collectionItemData.add({
+                        collection_id: collectionId,
+                        platform_id: item.platform_id,
+                        title: item.title,
+                        credits: item.credits,
+                        description: item.description,
+                        image: itemImageB64,
+                        rom_name: item.filename,
+                        rom_data_id: romDataId,
+                        launched: false
+                    });
+                }
+            });
+            return true;
+        } catch (error) {
+            console.error("Failed to save collection:", error);
+            return false;
+        }
+    }
+
+    async getCollectionItems() {
+        const collectioneDataArray = await this.#db.collectionItemData.toArray();
+        return collectioneDataArray.map(item => {
+            if (item.screenshot) {
+                item.collection_id = item.id;
+                item.name = item.collection_name;
+                item.image = this.base64ToBlob(item.collection_image);
+            }
+            return item;
+        });
+    }
+
+    async getCollections() {
+        const collectioneMetaArray = await this.#db.collectionMeta.toArray();
+        return collectioneMetaArray.map(item => {
+            if (item.screenshot) {
+                item.collection_id = item.id;
+                item.name = item.collection_name;
+                item.image = this.base64ToBlob(item.collection_image);
+            }
+            return item;
+        });
+    }
+
     async storeState(save_data, rom_data, screenshot, platform_id, program_name) {
         const hash = await this.#computeHash(rom_data);
 
         const screenshotB64 = await this.blobToBase64(screenshot);
-        const romB64 = await this.blobToBase64(rom_data);
+        const romB64 = rom_data;
         const saveB64 = await this.blobToBase64(save_data);
 
         try {
@@ -102,7 +184,7 @@ export class StorageManager {
 
                 let romDataId;
                 if (existing == undefined) {
-                    romDataId = await this.#db.romData.add({ rom_data: romB64, hash });
+                    romDataId = await this.#db.romData.add({ rom_data: romB64, hash, data_type: 'blob' });
                 } else {
                     romDataId = existing.id;
                 }
@@ -154,6 +236,16 @@ export class StorageManager {
         });
     }
 
+    async getRomData(id) {
+        const rom = await this.#db.romData.get(id);
+
+        if (rom.data_type == 'base64') {
+            rom.rom_data = this.base64ToBlob(rom.rom_data);
+        }
+
+        return rom;
+    }
+
     async getSaveData(saveId) {
         const saveMeta = await this.#db.saveMeta.get(saveId);
 
@@ -164,12 +256,18 @@ export class StorageManager {
         const saveData = await this.#db.saveData.get(saveMeta.save_data_id);
         const romData = await this.#db.romData.get(saveMeta.rom_data_id);
 
+        let romBlob;
+        if (romData.data_type == 'base64') {
+            romBlob = this.base64ToBlob(romData.rom_data);
+        } else {
+            romBlob = romData.rom_data;
+        }
+
         if (!saveData || !romData) {
             throw new Error('Save state or program data is missing.');
         }
 
         const saveBlob = this.base64ToBlob(saveData.save_data);
-        const romBlob = this.base64ToBlob(romData.rom_data);
 
         return {
             platform_id: saveMeta.platform_id,

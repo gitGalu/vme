@@ -1,6 +1,7 @@
 import { s, show, hide, addButtonEventListeners } from './dom.js';
 import { CLI } from './cli/CLI.js';
 import { SaveBrowser } from './SaveBrowser.js';
+import { CollectionBrowser } from './CollectionBrowser.js';
 import { KeyboardManager } from './keyboard/KeyboardManager.js';
 import { StorageManager } from './storage/StorageManager.js';
 import { HelpCommand } from './cli/HelpCommand.js';
@@ -13,11 +14,12 @@ import { AboutCommand } from './cli/AboutCommand.js';
 import { LastCommand } from './cli/LastCommand.js';
 import { WikiCommand } from './cli/WikiCommand.js';
 import { RestoreCommand } from './cli/RestoreCommand.js';
+import { BrowseCommand } from './cli/BrowseCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { isMobile } from 'react-device-detect';
-import { JOYSTICK_TOUCH_MODE } from './Constants.js';
+import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER } from './Constants.js';
 
 export class VME {
     #cli;
@@ -28,6 +30,7 @@ export class VME {
     #ui;
 
     #save_browser;
+    #collection_browser;
 
     static whitespace = "&nbsp;";
 
@@ -35,7 +38,8 @@ export class VME {
         STANDALONE_WARNING: 50,
         MENU: 100,
         EMULATION: 200,
-        SAVE_BROWSER: 220
+        SAVE_BROWSER: 220,
+        COLLECTION_BROWSER: 300
     };
 
     static CURRENT_ENV = {
@@ -71,11 +75,13 @@ export class VME {
         this.#ui = new UiManager(this.#pl, this.#kb);
 
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);
+        this.#collection_browser = new CollectionBrowser(this, this.#pl, this.#db, this.#cli);
 
         this.#kb.clicks_on();
 
         this.#cli.register_command(new HelpCommand());
         this.#cli.register_command(new RestoreCommand(this.#save_browser));
+        this.#cli.register_command(new BrowseCommand(this.#collection_browser));
         this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new ListCommand(this.#pl));
         this.#cli.register_command(new FindCommand(this.#pl));
@@ -93,6 +99,9 @@ export class VME {
 
         s('#versionLabel').innerHTML = `v${__APP_VERSION__}`;
         this.toggleScreen(VME.CURRENT_SCREEN.MENU);
+        if (StorageManager.getValue(BOOT_TO) == BOOT_TO_COLLECTION_BROWSER) {
+            this.#collection_browser.open();
+        }
     }
 
     #addListeners() {
@@ -136,6 +145,7 @@ export class VME {
             case VME.CURRENT_SCREEN.MENU:
                 hide('#warningStandalone');
                 hide('#save-browser');
+                hide('#collection-browser');
                 hide('#emulator');
                 hide('#quickjoys');
                 hide('#fastui');
@@ -151,6 +161,7 @@ export class VME {
                 hide('#warningStandalone');
                 hide('#settings');
                 hide('#save-browser');
+                hide('#collection-browser');
                 show('#emulator', 'block');
 
                 if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
@@ -172,7 +183,20 @@ export class VME {
                 hide('#warningStandalone');
                 hide('#settings');
                 hide('#emulator');
+                hide('#collection-browser');
                 show('#save-browser', 'flex');
+                document.body.classList.add('black');
+                break;
+            case VME.CURRENT_SCREEN.COLLECTION_BROWSER:
+                this.#cli.off();
+                hide('#warningStandalone');
+                hide('#save-browser');
+                hide('#emulator');
+                hide('#settings');
+                hide('#quickjoys');
+                hide('#fastui');
+                hide('#quickshot');
+                show('#collection-browser', 'flex');
                 document.body.classList.add('black');
                 break;
         }
