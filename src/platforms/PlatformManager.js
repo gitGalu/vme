@@ -256,8 +256,7 @@ export class PlatformManager {
                     this.#cli.print('SOFTWARE DIRECTORY missing!');
                     this.#model = undefined;
                 } else {
-                    let key = this.#selected_platform.platform_id + PlatformManager.SOFTWARE_DIR_KEY;
-                    this.loadCorsFile(key, softFile);
+                    this.loadCorsFile(softFile);
                 }
 
                 this.#cli.print('&nbsp;');
@@ -314,7 +313,24 @@ export class PlatformManager {
         this.#storage_manager.storeFile(this.#selected_platform.platform_id + "." + key, file);
     }
 
-    loadCorsFile(key, json) {
+    loadCorsFile(json) {
+        try {
+            var tryItems = [];
+            json.items.forEach(disk => {
+                var item = {};
+                item.txt = (String)[disk[0]];
+                item.url = json.root + json.bases[disk[1]] + disk[2];
+                tryItems.push(item);
+            });
+
+            this.#model = json;
+        } catch (error) {
+            this.#cli.message('Error loading file.');
+            console.log('error', error);
+        }
+    }
+
+    importCorsFile(key, json) {
         try {
             var tryItems = [];
             json.items.forEach(disk => {
@@ -383,7 +399,7 @@ export class PlatformManager {
             if (filePath.endsWith('.json')) {
                 fileData = await zipContent.file(filePath).async('string');
                 let json = JSON.parse(fileData);
-                this.loadCorsFile(tag, json);
+                this.importCorsFile(tag, json);
             } else {
                 fileData = await zipContent.file(filePath).async('arraybuffer');
                 var wordArray = lib.WordArray.create(fileData);

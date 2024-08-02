@@ -112,7 +112,7 @@ export class OpenCommand extends CommandBase {
                 let key = "" + self.#platform_manager.getSelectedPlatform().platform_id + ".software";
                 try {
                     let json = JSON.parse(textContent);
-                    self.#platform_manager.loadCorsFile(key, json);
+                    self.#platform_manager.importCorsFile(key, json);
                     self.cli.message("&nbsp;", "Successfully imported software directory.");
                 } catch (error) {
                     self.cli.message("&nbsp;", "Failed to read file.", "Not a valid software directory file.");
