@@ -91,6 +91,10 @@ stella2014-libretro https://github.com/libretro/stella2014-libretro
 
 pce-fast https://github.com/libretro/beetle-pce-fast-libretro
 
+genesis-plus-gx https://github.com/libretro/Genesis-Plus-GX
+
+mgba https://github.com/FunKey-Project/mgba-libretro
+
 ### Assets used
 
 https://www.kreativekorp.com/software/fonts/c64/
