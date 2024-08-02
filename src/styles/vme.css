@@ -73,6 +73,11 @@
   src: url('../assets/fonts/classic-5x7-sans.ttf') format("truetype");
 }
 
+@font-face {
+  font-family: PublicPixel;
+  src: url('../assets/fonts/PublicPixel-E447g.ttf') format("truetype");
+}
+
 #warningStandalone {
   display: none;
   padding: 2em;
@@ -603,6 +608,10 @@ a {
     grid-area: -3 / 15 / span 1 / span 9;
   }
 
+  #qs4 {
+    grid-area: -3 / 14 / span 2 / span 10;
+  }
+
   #qsab4 {
     grid-area: -2 / 15 / span 1 / span 9;
   }
@@ -688,6 +697,10 @@ a {
 
   #qsab {
     grid-area: -4 / 17 / span 3 / span 7;
+  }
+
+  #qs4 {
+    grid-area: -5 / -7 / span 4 / span 6;
   }
 
   #qsabc3 {

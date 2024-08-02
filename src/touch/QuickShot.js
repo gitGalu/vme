@@ -5,6 +5,8 @@ import { TripleTouchButton } from "./TripleTouchButton";
 import { SingleTouchButtonJoyListener } from "./SingleTouchButtonJoyListener";
 import { DualTouchButtonJoyListener } from "./DualTouchButtonJoyListener";
 import { TripleTouchButtonJoyListener } from "./TripleTouchButtonJoyListener";
+import { QuadrupleTouchButton } from './QuadrupleTouchButton.js';
+import { QuadrupleTouchButtonJoyListener } from './QuadrupleTouchButtonJoyListener.js';
 
 export class QuickShot {
     static #DEAD_ZONE_RADIUS = 30;
@@ -53,8 +55,7 @@ export class QuickShot {
         } else if (buttonsCount == 3) {
             new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'y', 'b', 'a'));
         } else if (buttonsCount == 4) {
-            new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab4', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
-            new DualTouchButton(bottomContainer, true, 'Y', 'X', undefined, 'qsxy4', new DualTouchButtonJoyListener(this.#nostalgist, 1, 9), '12px');
+            new QuadrupleTouchButton(bottomContainer, 'L', 'R', 'B', 'A', undefined, 'qs4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'l', 'r', 'b', 'a'));
         }
 
         document.body.appendChild(bottomContainer);
@@ -74,7 +75,7 @@ export class QuickShot {
 
         this.#joystickContainer.addEventListener('touchstart', this.#onTouchStart);
         this.#joystickContainer.addEventListener('touchmove', this.#onTouchMove);
-        this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd);   
+        this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd);
         this.#joystickContainer.addEventListener('touchcancel', this.#onTouchEnd);
     }
 
