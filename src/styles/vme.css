@@ -761,8 +761,7 @@ a {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
-
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(200, 200, 200, 0.3);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border-top: 1px solid rgba(255, 255, 255, 0.3);
@@ -771,7 +770,7 @@ a {
 
 .kbCtrl {
   right: 0;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(200, 200, 200, 0.3);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border-radius: 2px;
@@ -1355,7 +1354,6 @@ a {
   transform: scaleX(4);
 }
 
-
 #menu-button-strip {
   white-space: nowrap;
   overflow: hidden;
@@ -1905,7 +1903,6 @@ a {
   right: 10px;
 }
 
-
 #collection-browser {
   position: fixed;
   top: 0;
@@ -1995,4 +1992,42 @@ a {
 
 canvas {
   image-rendering: crisp-edges !important;
+}
+
+.driver-popover-close-btn {
+  font-family: Helvetica Neue, Inter, ui-sans-serif, "Apple Color Emoji", Helvetica, Arial, sans-serif !important;
+  font-size: 22px !important;
+}
+
+.driver-popover-footer button {
+  padding: 8px !important;
+}
+
+#toggle-keyboard {
+  position: fixed;
+  bottom: 0px;
+  right: 0px;
+  background: rgba(150, 150, 150, 0.3);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: #f5f5f5;
+  font-family: Arial, Helvetica, sans-serif !important;
+  text-transform: none !important;
+  margin-right: max(2em, env(safe-area-inset-right));
+  margin-bottom: max(2em, env(safe-area-inset-bottom));
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  font-size: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 9999;
+  padding: 16px;
+}
+
+#toggle-keyboard:active {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: #f5f5f5 !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1.0) !important;
 }

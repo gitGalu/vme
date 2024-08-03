@@ -26,16 +26,6 @@ export class CLI {
         this.#kb_event_bound = this.#kb_event.bind(this);
 
         this.set_loading(false);
-
-        createGuiButton('menu-item-system', 'System', 'sys', () => {
-            CLI.#corsQuery.textContent = 'sys ';
-            this.parse_input(CLI.#corsQuery.textContent);
-        });
-
-        createGuiButton('menu-item-help', 'Help', '?', () => {
-            CLI.#corsQuery.textContent = 'help';
-            this.parse_input(CLI.#corsQuery.textContent);
-        });
     }
 
     #showCursor() {
@@ -229,6 +219,11 @@ export class CLI {
     parse_hidden_input() {
         let query = CLI.#corsQuery.textContent;
         this.parse_input(CLI.#corsQuery.textContent, query == "open");
+    }
+
+    inject(input, is_enter) {
+        CLI.#corsQuery.textContent = input;
+        this.parse_input(input, is_enter);
     }
 
     parse_input(input, is_enter) {

@@ -1,5 +1,4 @@
 import { CommandBase } from './CommandBase.js';
-import { PlatformManager, SelectedPlatforms } from '../platforms/PlatformManager.js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 
 export class AboutCommand extends CommandBase {

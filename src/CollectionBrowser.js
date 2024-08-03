@@ -158,11 +158,9 @@ export class CollectionBrowser {
     close() {
         document.removeEventListener("keydown", this.#kb_event_bound);
         this.#cli.reset();
-        this.#platform_manager.updatePlatform();
     }
 
     async #loadSelected() {
-        this.close();
         if (this.#selected && !this.#launched) {
             this.#launched = true;
             const activePanel = this.#flicking.currentPanel;
@@ -175,6 +173,7 @@ export class CollectionBrowser {
                     const item = filteredItems[0];
                     const rom = await this.#db.getRomData(item.rom_data_id);
                     this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name);
+                    this.close();
                 } else {
                     throw new Exception("Cannot load selected program.");
                 }
@@ -193,7 +192,7 @@ export class CollectionBrowser {
         }
     }
 
-    #handleKeyboard(event) {
+    async #handleKeyboard(event) {
         if (!this.#flicking || this.#flicking.animating) {
             return;
         }

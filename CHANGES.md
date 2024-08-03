@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - add Game Boy Advance support (uses mgba core)
 - add Compilations Browser: a new way of loading programs
+- CLI: UX changes
 
 ## [0.6.1] - 2024-07-21
 

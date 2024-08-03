@@ -4,52 +4,11 @@ import { s, show, hide } from './dom.js';
 import { isMobile, isTablet } from 'react-device-detect';
 
 export class EnvironmentManager {
-    static #container = document.getElementById('menu-button-strip');
     static #deviceTypes = new Set();
 
     constructor() {
         EnvironmentManager.detectDevice();
         EnvironmentManager.updateDeviceType(); 
-
-        if (EnvironmentManager.isQuest()) {
-            createGuiButton('full-screen', 'Fullscreen', 'Fs', () => {
-                let element = document.documentElement;
-
-                const requestFullscreen = () => {
-                    if (element.requestFullscreen) {
-                        element.requestFullscreen();
-                    } else if (element.mozRequestFullScreen) {
-                        element.mozRequestFullScreen();
-                    } else if (element.webkitRequestFullscreen) {
-                        element.webkitRequestFullscreen();
-                    } else if (element.msRequestFullscreen) {
-                        element.msRequestFullscreen();
-                    }
-                };
-
-                const exitFullscreen = () => {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    } else if (document.mozCancelFullScreen) {
-                        document.mozCancelFullScreen();
-                    } else if (document.webkitExitFullscreen) {
-                        document.webkitExitFullscreen();
-                    } else if (document.msExitFullscreen) {
-                        document.msExitFullscreen();
-                    }
-                };
-
-                if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                    requestFullscreen();
-                } else {
-                    exitFullscreen();
-                }
-            });
-        }
-
-        document.querySelectorAll('.clabel').forEach(label => {
-            label.dataset.originalText = label.textContent;
-        });
     }
 
     static updateDeviceType() {
@@ -113,12 +72,13 @@ export class EnvironmentManager {
     static forceDesktop() {
         hide('#fastui');
         show('#desktopUi', 'flex');
+        UiManager.toggleJoystick(); //todo
         if (EnvironmentManager.isDesktop()) {
             hide("#toggle-keyboard");
         } else {
+            console.log('show tk');
             show("#toggle-keyboard");
         }
-        UiManager.toggleJoystick(); //todo
     }
 
     static isGamepadConnected() {
@@ -145,33 +105,6 @@ export class EnvironmentManager {
         }
 
         EnvironmentManager.updateDeviceType();
-    }
-
-    static ellipsizeLabels = (theme) => {
-        let scale = 1;
-
-        if (theme["--width"] == "double") {
-            scale = 2;
-        }
-
-        let labels = document.querySelectorAll('.clabel');
-
-        labels.forEach(label => {
-            label.innerHTML = label.dataset.originalText;
-        });
-
-        let totalWidth = 0;
-        labels.forEach(label => {
-            totalWidth += label.offsetWidth;
-            const style = window.getComputedStyle(label);
-            totalWidth += parseFloat(style.marginLeft) + parseFloat(style.marginRight);
-        });
-
-        if (totalWidth > EnvironmentManager.#container.offsetWidth / scale) {
-            labels.forEach(label => {
-                label.innerHTML = "&nbsp;" + label.dataset.shortcut + "&nbsp;";
-            });
-        }
     }
 
     static resizeCanvas = (nostalgist) => {

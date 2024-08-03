@@ -20,6 +20,7 @@ import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { isMobile } from 'react-device-detect';
 import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER } from './Constants.js';
+import { ButtonManager } from './ButtonManager.js';
 
 export class VME {
     #cli;
@@ -65,15 +66,13 @@ export class VME {
             show("html");
             return;
         }
-
+   
         this.#cli = new CLI();
-        this.#db = new StorageManager();
         this.#kb = new KeyboardManager(this.#cli);
-
+        this.#db = new StorageManager();
         this.#pl = new PlatformManager(this, this.#cli, this.#db);
         this.#env = new EnvironmentManager(this.#pl);
         this.#ui = new UiManager(this.#pl, this.#kb);
-
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);
         this.#collection_browser = new CollectionBrowser(this, this.#pl, this.#db, this.#cli);
 
@@ -85,7 +84,6 @@ export class VME {
         this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new ListCommand(this.#pl));
         this.#cli.register_command(new FindCommand(this.#pl));
-        this.#cli.register_command(new AboutCommand(this.#pl));
         this.#cli.register_command(new SystemCommand(this.#pl));
         this.#cli.register_command(new SetCommand());
         this.#cli.register_command(new LastCommand(this.#pl));
@@ -95,7 +93,14 @@ export class VME {
 
         this.#addListeners();
 
-        setTimeout(() => { EnvironmentManager.ellipsizeLabels(this.#pl.getActiveTheme()) }, 1000);
+        this.#kb.initButtons();
+
+        this.#cli.register_command(new AboutCommand(this.#pl));
+
+        let bm = new ButtonManager(this.#cli);
+        bm.addButtons();
+
+        EnvironmentManager.detectDevice(); 
 
         s('#versionLabel').innerHTML = `v${__APP_VERSION__}`;
         this.toggleScreen(VME.CURRENT_SCREEN.MENU);
@@ -105,7 +110,6 @@ export class VME {
     }
 
     #addListeners() {
-        window.addEventListener('resize', () => EnvironmentManager.ellipsizeLabels(this.#pl.getActiveTheme()));
         window.addEventListener('resize', () => EnvironmentManager.resizeCanvas(this.#pl.getNostalgist()));
         window.addEventListener('resize', () => EnvironmentManager.detectDevice());
         window.addEventListener('orientationchange', () => EnvironmentManager.detectDevice());

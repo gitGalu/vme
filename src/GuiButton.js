@@ -1,11 +1,11 @@
 import { s } from "./dom";
 import { EnvironmentManager } from "./EnvironmentManager";
 
-export function createGuiButton(buttonId, buttonText, shortcutKey, callback, visualFeedback = true, customFeedbackClass) {
+export function createGuiButton(buttonId, buttonText, shortcutKey, callback, visualFeedback = true, customFeedbackClass, targetContainer = 'menu-button-strip') {
     const button = createButtonElement(buttonId, buttonText, shortcutKey);
     const feedbackClass = customFeedbackClass || "guiBtn-pressed";
 
-    addButtonToContainer(button, 'menu-button-strip');
+    addButtonToContainer(button, targetContainer);
     setupButtonInteractions(button, callback, visualFeedback, feedbackClass);
 }
 

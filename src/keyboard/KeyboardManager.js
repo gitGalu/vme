@@ -124,10 +124,19 @@ export class KeyboardManager {
         this.#initTouchKeyboard();
         this.#initHiddenInputs();
 
-        createGuiButton('toggle-keyboard', 'Keyboard', 'kb', () => {
-            this.initAudioContext();
-            this.toggleTouchKeyboard();
+        const elements = document.querySelectorAll('.kbCtrl');
+        elements.forEach(element => {
+            element.style.paddingTop = '0px';
         });
+    }
+
+    initButtons() {
+        createGuiButton('toggle-keyboard', 'Show Keyboard', 'Kb', () => {
+            this.initAudioContext();
+            setTimeout(() => {
+                this.showTouchKeyboard();
+            }, 50);
+        }, true, ".xx", "settings");
     }
 
     clicks_on() {
@@ -205,7 +214,6 @@ export class KeyboardManager {
                 s('#keyboard').classList.add('keyboardStrip');
                 s('#kbCtrlArrow').innerHTML = '&#x25B3;';
 
-
                 document.querySelectorAll('.layerA').forEach(function (el) {
                     el.style.visibility = 'visible';
                 });
@@ -260,7 +268,7 @@ export class KeyboardManager {
                 });
                 document.querySelectorAll('.layerC').forEach(function (el) {
                     el.style.visibility = 'visible';
-                }); 
+                });
             } else if (this.#layer == KeyboardManager.Layer.C) {
                 this.#layer = KeyboardManager.Layer.B;
                 document.querySelectorAll('.layerC').forEach(function (el) {
@@ -298,6 +306,21 @@ export class KeyboardManager {
                     el.style.visibility = 'visible';
                 });
             }
+        });
+
+
+        document.querySelectorAll('.key').forEach(function (el) {
+            el.addEventListener('touchstart', function () {
+                el.classList.add('active');
+            });
+
+            el.addEventListener('touchend', function () {
+                el.classList.remove('active');
+            });
+
+            el.addEventListener('touchcancel', function () {
+                el.classList.remove('active');
+            });
         });
     }
 
@@ -377,7 +400,7 @@ export class KeyboardManager {
                 break;
             case VME.CURRENT_SCREEN.EMULATION:
                 this.#mute = true;
-                document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound); 
+                document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound);
                 document.querySelector('#keyboard').addEventListener('touchstart', this.#handleEmulationInputBound);
                 document.querySelector('#keyboard').addEventListener('touchend', this.#handleEmulationInputBound);
 
@@ -417,6 +440,9 @@ export class KeyboardManager {
     }
 
     showTouchKeyboard() {
+        const btn = document.querySelector('#toggle-keyboard');
+        btn.style.visibility = "hidden";
+
         const elements = document.querySelectorAll('.kbCtrl');
         elements.forEach(element => {
             element.style.paddingTop = '6px';
@@ -434,5 +460,8 @@ export class KeyboardManager {
         });
 
         s('#keyboardContainer').classList.remove('visible');
+
+        const btn = document.querySelector('#toggle-keyboard');
+        btn.style.visibility = "visible";
     }
 }

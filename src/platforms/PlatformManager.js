@@ -132,13 +132,14 @@ export class PlatformManager {
 
     async loadRomFromCollection(platform_id, blob, caption) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
-
-        if (platform_id != this.#selected_platform.platform_id) {
-            let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
-            this.setSelectedPlatform(selected);
-            this.updatePlatform();
-        }
-        await this.loadRomFile(blob, caption);
+        let platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
+        this.#storage_manager.checkFiles(platform)
+            .then(([deps, missingDeps, softFile]) => {
+                this.#resolved_deps = deps;
+                let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
+                this.setSelectedPlatform(selected);
+                this.loadRomFile(blob, caption);
+            });
     }
 
     async startEmulation(blob, caption) {
@@ -219,7 +220,6 @@ export class PlatformManager {
         s('#platformLabel').innerHTML = "(" + this.#selected_platform.short_name + ")";
         this.theme(this.#selected_platform.theme);
         this.#print_platform_status();
-        EnvironmentManager.ellipsizeLabels(this.#active_theme);
     }
 
     #printPlatformStatus(platformName, reqs, soft) {
@@ -464,7 +464,7 @@ export class PlatformManager {
                 let count = Object.keys(vmeImport.platforms).length;
 
                 for (const platformId in vmeImport.platforms) {
-                    this.#cli.print_progress(`Importing... (${i++}/${count})`);
+                    this.#cli.print_progress(`Importing ... (${i++}/${count})`);
 
                     const platform = vmeImport.platforms[platformId];
 
@@ -566,7 +566,7 @@ export class PlatformManager {
 
     async loadState(platform_id, state, blob, caption) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
-        
+
         if (platform_id != this.#selected_platform.platform_id) {
             let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
             this.setSelectedPlatform(selected);

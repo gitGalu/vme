@@ -1,5 +1,4 @@
 import { s, addButtonEventListeners } from "./dom";
-import { createGuiButton } from './GuiButton.js';
 import { VME } from './VME.js';
 import Flicking from "@egjs/flicking";
 import { Arrow } from "@egjs/flicking-plugins";
@@ -33,10 +32,6 @@ export class SaveBrowser {
                     this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
                 }
             });
-
-        createGuiButton('menu-item-save-browser', 'Restore', 'R', () => {
-            this.open();
-        });
     }
 
     #createPanelHTML(item) {
