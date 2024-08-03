@@ -103,6 +103,7 @@ export class StorageManager {
     }
 
     async storeCollection(collection_unique_name, collection_title, collection_image, items) {
+        await this.deleteAllCollections();
         const precomputedItems = [];
         for (const item of items) {
             const hash = await this.#computeHash(item.file);
@@ -297,6 +298,34 @@ export class StorageManager {
             });
         } catch (error) {
             console.error(`Failed to delete entries with id ${id}:`, error);
+        }
+    }
+
+    async deleteAllCollections() {
+        try {
+            await this.#db.transaction('rw', this.#db.collectionMeta, this.#db.collectionItemData, this.#db.saveMeta, this.#db.romData, async () => {
+                const allCollections = await this.#db.collectionMeta.toArray();
+                
+                for (let collection of allCollections) {
+                    const collectionId = collection.id;
+                    const collectionItems = await this.#db.collectionItemData.where('collection_id').equals(collectionId).toArray();
+                    if (collectionItems.length > 0) {
+                        await this.#db.collectionItemData.where('collection_id').equals(collectionId).delete();
+                        await this.#db.collectionMeta.delete(collectionId);
+
+                        for (let item of collectionItems) {
+                            const romDataId = item.rom_data_id;
+                            let saveSameRomCount = await this.#db.saveMeta.where('rom_data_id').equals(romDataId).count();
+                            let collectionSameRomCount = await this.#db.collectionItemData.where('rom_data_id').equals(romDataId).count();
+                            if ((collectionSameRomCount + saveSameRomCount) == 0) {
+                                await this.#db.romData.where('id').equals(romDataId).delete();
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Failed to delete collections:', error);
         }
     }
 }
