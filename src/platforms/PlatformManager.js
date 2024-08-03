@@ -105,6 +105,19 @@ export class PlatformManager {
     }
 
     async loadRomFileFromUrl(filename, caption) {
+        console.log(`
+
+        {
+            "title": "${caption}",
+            "credits": "",
+            "platform_id": "${this.#selected_platform.platform_id}",
+            "image": "",
+            "filename": "${caption}",
+            "url": "${filename}"
+        }
+
+        `);
+
         try {
             this.#prepareNostalgist(caption);
             const response = await fetch(filename);
@@ -358,7 +371,6 @@ export class PlatformManager {
             console.log('error', error);
         }
     }
-
 
     async loadCollectionFile(blob) {
         const zip = new JSZip();
