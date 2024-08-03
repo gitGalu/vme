@@ -251,7 +251,9 @@ export class KeyboardManager {
         });
 
         document.querySelector('#kbCtrlClear').addEventListener('click', (e) => {
-            this.#cli.reset();
+            if (!this.#cli.is_loading()) {
+                this.#cli.reset();
+            }
         });
 
         document.querySelector('#kbCtrlCross').addEventListener('click', (e) => {
@@ -259,7 +261,7 @@ export class KeyboardManager {
         });
 
         document.querySelector('#keyShift').addEventListener('click', (e) => {
-            if (this.#layer  == KeyboardManager.Layer.A) {
+            if (this.#layer == KeyboardManager.Layer.A) {
                 //todo caps
             } else if (this.#layer == KeyboardManager.Layer.B) {
                 this.#layer = KeyboardManager.Layer.C;
@@ -276,7 +278,7 @@ export class KeyboardManager {
                 });
                 document.querySelectorAll('.layerB').forEach(function (el) {
                     el.style.visibility = 'visible';
-                }); 
+                });
             }
         });
 
@@ -330,7 +332,9 @@ export class KeyboardManager {
             const keyValue = target.getAttribute('data-value');
             const keyCode = target.getAttribute('data-code');
             this.playSound(keyCode);
-            this.#cli.process_input(keyValue);
+            if (!this.#cli.is_loading()) {
+                this.#cli.process_input(keyValue);
+            }
         }
     }
 

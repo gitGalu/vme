@@ -11,7 +11,6 @@ export class CLI {
     static #corsQuery = document.getElementById('cors_query');;
     #articleMode;
 
-
     constructor() {
         this.#currentIndex = -1;
         this.#articleMode = false;
@@ -45,6 +44,10 @@ export class CLI {
                 this.selected_command.selection_changed();
             }
         }
+    }
+
+    is_loading() {
+        return this.#is_loading;
     }
 
     set_loading(val) {
@@ -222,6 +225,7 @@ export class CLI {
     }
 
     inject(input, is_enter) {
+        if (this.is_loading()) return;
         CLI.#corsQuery.textContent = input;
         this.parse_input(input, is_enter);
     }

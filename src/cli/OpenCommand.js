@@ -102,6 +102,8 @@ export class OpenCommand extends CommandBase {
     }
 
     #import(file, filename) {
+        this.cli.set_loading(true);
+
         const self = this;
 
         if (filename.endsWith(".json")) { // software dir
@@ -159,10 +161,11 @@ export class OpenCommand extends CommandBase {
         document.body.appendChild(input);
         document.getElementById('vme-file-input').click();
         document.getElementById('vme-file-input').addEventListener('change', function (event) {
+            self.cli.set_loading(true);
+
             var file = event.target.files[0];
             var filename = file.name;
 
-            self.cli.set_loading(true);
             self.cli.clear();
             self.cli.print("Loading " + filename + " ...");
 
