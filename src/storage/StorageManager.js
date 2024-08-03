@@ -280,15 +280,17 @@ export class StorageManager {
 
     async deleteSave(id) {
         try {
-            await this.#db.transaction('rw', this.#db.saveMeta, this.#db.saveData, this.#db.romData, async () => {
+            await this.#db.transaction('rw', this.#db.saveMeta, this.#db.saveData, this.#db.collectionItemData, this.#db.romData, async () => {
                 const saveMetaEntry = await this.#db.saveMeta.get(id);
                 if (saveMetaEntry) {
                     await this.#db.saveData.where('id').equals(saveMetaEntry.save_data_id).delete();
                     await this.#db.saveMeta.delete(id);
 
-                    let sameRomCount = await this.#db.saveMeta.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
+                    let saveSameRomCount = await this.#db.saveMeta.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
+                    
+                    let collectionSameRomCount = await this.#db.collectionItemData.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
 
-                    if (sameRomCount == 0) {
+                    if ((collectionSameRomCount + saveSameRomCount) == 0) {
                         await this.#db.romData.where('id').equals(saveMetaEntry.rom_data_id).delete();
                     }
                 }
