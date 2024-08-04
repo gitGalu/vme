@@ -5,7 +5,7 @@ import { Arrow } from "@egjs/flicking-plugins";
 import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { StorageManager } from "./storage/StorageManager.js";
-import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER } from './Constants.js';
+import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 
 
 export class CollectionBrowser {
@@ -33,6 +33,8 @@ export class CollectionBrowser {
             (pressed) => {
                 if (pressed) {
                     StorageManager.clearValue(BOOT_TO);
+                    StorageManager.clearValue(COLLECTION_BROWSER_COLLECTION_INDEX);
+                    StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
                     this.close();
                     this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
                 }
@@ -78,7 +80,7 @@ export class CollectionBrowser {
         }
     }
 
-    open() {
+    open(collectionIndex = 1, collectionItemIndex = 1) {
         let div = document.querySelector('#collection-browser');
         div.classList.add('show');
         div.style.opacity = 1;
@@ -135,6 +137,10 @@ export class CollectionBrowser {
                         this.#selected = false;
                     });
 
+                    if (collectionIndex >= 1) {
+                        self.#flicking.moveTo(collectionItemIndex - 1, 0);
+                    }
+
                     self.#updateActivePanel();
 
                     this.#launched = false;
@@ -167,6 +173,10 @@ export class CollectionBrowser {
             if (activePanel != null) {
                 const id = activePanel.element.getAttribute('data-id');
                 const intId = parseInt(id, 10);
+
+                StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
+                StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
+
                 const filteredItems = this.#items.filter(item => item.id === intId);
 
                 if (filteredItems.length > 0) {

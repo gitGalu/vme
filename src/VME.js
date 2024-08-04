@@ -19,7 +19,7 @@ import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { isMobile } from 'react-device-detect';
-import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER } from './Constants.js';
+import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 import { ButtonManager } from './ButtonManager.js';
 
 export class VME {
@@ -105,7 +105,15 @@ export class VME {
         s('#versionLabel').innerHTML = `v${__APP_VERSION__}`;
         this.toggleScreen(VME.CURRENT_SCREEN.MENU);
         if (StorageManager.getValue(BOOT_TO) == BOOT_TO_COLLECTION_BROWSER) {
-            this.#collection_browser.open();
+            let bootToCollectionIndex = StorageManager.getValue(COLLECTION_BROWSER_COLLECTION_INDEX);
+            let bootToCollectionItemIndex = StorageManager.getValue(COLLECTION_BROWSER_ITEM_INDEX);
+
+            if (bootToCollectionIndex && bootToCollectionItemIndex) {
+                this.#collection_browser.open(bootToCollectionIndex, bootToCollectionItemIndex);
+            } else {
+                this.#collection_browser.open();
+            }
+
         }
     }
 
