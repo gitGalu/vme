@@ -188,31 +188,33 @@ export class CollectionBrowser {
     }
 
     async #restoreSelected() {
-        const activePanel = this.#flicking.currentPanel;
-        if (activePanel != null) {
-            if (document.getElementById('collectionBrowserUiRestore').classList.contains('disabled')) {
-                return;
-            }
-            this.#launched = true;
+        if (this.#selected && !this.#launched) {
+            const activePanel = this.#flicking.currentPanel;
+            if (activePanel != null) {
+                if (document.getElementById('collectionBrowserUiRestore').classList.contains('disabled')) {
+                    return;
+                }
+                this.#launched = true;
 
-            const id = activePanel.element.getAttribute('data-id');
-            const intId = parseInt(id, 10);
+                const id = activePanel.element.getAttribute('data-id');
+                const intId = parseInt(id, 10);
 
-            StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
-            StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
+                StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
+                StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
 
-            const filteredItems = this.#items.filter(item => item.id === intId);
+                const filteredItems = this.#items.filter(item => item.id === intId);
 
-            if (filteredItems.length > 0) {
-                const saveId = activePanel.element.dataset.save;
-                const saveIntId = parseInt(saveId, 10);
-                const state = await this.#db.getSaveData(saveIntId);
-                const item = filteredItems[0];
-                const rom = await this.#db.getRomData(item.rom_data_id);
-                this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, state.save_data);
-                this.close();
-            } else {
-                throw new Exception("Cannot load selected program.");
+                if (filteredItems.length > 0) {
+                    const saveId = activePanel.element.dataset.save;
+                    const saveIntId = parseInt(saveId, 10);
+                    const state = await this.#db.getSaveData(saveIntId);
+                    const item = filteredItems[0];
+                    const rom = await this.#db.getRomData(item.rom_data_id);
+                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, state.save_data);
+                    this.close();
+                } else {
+                    throw new Exception("Cannot load selected program.");
+                }
             }
         }
     }
