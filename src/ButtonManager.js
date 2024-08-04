@@ -21,7 +21,7 @@ export class ButtonManager {
     }
 
     addSystemButton() {
-        createGuiButton('menu-item-system', 'Sys', 'S', () => {
+        createGuiButton('menu-item-system', 'S', 'S', () => {
             this.#cli.inject('sys ');
         });
     }
