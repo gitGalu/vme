@@ -26,8 +26,7 @@ const Spectrum = {
             input_libretro_device_p2: "0",
             input_libretro_device_p3: "259",
             input_libretro_device_p4: "1",
-            input_libretro_device_p5: "1",
-            fuse_machine: "Spectrum 128K"
+            input_libretro_device_p5: "1"
         };
 
         let config = { ...defaultOptions };
