@@ -143,7 +143,7 @@ export class PlatformManager {
         this.startEmulation(blob, caption);
     }
 
-    async loadRomFromCollection(platform_id, blob, caption) {
+    async loadRomFromCollection(platform_id, blob, caption, state) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
         let platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
         this.#storage_manager.checkFiles(platform)
@@ -151,6 +151,7 @@ export class PlatformManager {
                 this.#resolved_deps = deps;
                 let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
                 this.setSelectedPlatform(selected);
+                this.#state = state;
                 this.loadRomFile(blob, caption);
             });
     }
@@ -373,6 +374,9 @@ export class PlatformManager {
     }
 
     async loadCollectionFile(blob) {
+
+
+
         const zip = new JSZip();
         let roms = [];
 
