@@ -15,6 +15,7 @@ export class ButtonManager {
         this.addHelpButton();
         this.addSaveBrowserButton();
         this.addCollectionButton();
+        this.addOpenButton();
         this.addFsButton();
         this.addAboutButton();
         this.addTourButton();
@@ -41,6 +42,12 @@ export class ButtonManager {
     addCollectionButton() {
         createGuiButton('menu-item-compilations', 'C', 'C', () => {
             this.#cli.inject('c', true);
+        });
+    }
+
+    addOpenButton() {
+        createGuiButton('menu-item-open', 'O', 'O', () => {
+            this.#cli.inject('open', true);
         });
     }
 
@@ -101,6 +108,7 @@ export class ButtonManager {
                 steps.push({ element: '#toggle-keyboard', popover: { title: 'Toggle on-screen keyboard', description: '<p>Click here to show the on-screen keyboard.</p>', side: "right", align: 'start' } });
             }
             steps.push({ element: '#menu-item-compilations', popover: { title: 'Open Compilations Browser', description: '<p>Click here to browse software compilations.</p>', side: "right", align: 'start' } });
+            steps.push({ element: '#menu-item-open', popover: { title: 'Import file', description: '<p>Click here to open the system file dialog, where you can load a program to run and import programs and VME files.</p><p>You can import *vme_import*.zip files. These files contain a list of software for one or multiple platforms, which you can easily access from the VM/E Shell by typing a few letters of the desired programs\`s name.</p>', side: "right", align: 'start' } });
             steps.push({ element: '#menu-item-about', popover: { title: 'About VM/E', description: '<p>Click here to display the "About VM/E" information, including credits and licensing details.</p>', side: "right", align: 'start' } });
             steps.push({ element: '#cors_interface', popover: { title: 'VM/E CLI Shell', description: '<p>Use the VM/E shell by entering CLI commands or performing search queries.</p><p>If you have imported a software list for the current platform, you can start typing the name of the file you are looking for. After entering a few characters, you will see a list of files that match your search query.</p>', side: "right", align: 'start' } });
 
