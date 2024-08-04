@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2024-08-04
+
+- bug fixes
+
 ## [0.7.0] - 2024-08-03
 
 - add Game Boy Advance support (uses mgba core)
