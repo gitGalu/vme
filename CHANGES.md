@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.3] - w.i.p.
+
+- Compilations Browser: add restore button to load the most recent savestate
+
 ## [0.7.2] - 2024-08-04
 
 - bug fixes
