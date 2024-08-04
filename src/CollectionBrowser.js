@@ -119,7 +119,10 @@ export class CollectionBrowser {
                     self.#updateActivePanel();
                 } else {
                     items.forEach(item => {
-                        const saveAvailable = saveMeta.find(save => save.platform_id == item.platform_id);
+                        const saveAvailable = saveMeta.
+                            filter(save => save.platform_id == item.platform_id && save.rom_data_id == item.rom_data_id)
+                            .sort((a, b) => b.timestamp - a.timestamp)[0];
+
                         if (saveAvailable != undefined) {
                             item.save_data_id = saveAvailable.save_data_id;
                         };
