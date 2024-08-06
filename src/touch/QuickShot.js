@@ -61,14 +61,13 @@ export class QuickShot {
         document.body.appendChild(bottomContainer);
 
         this.#joystickContainer = document.createElement('div');
-        this.#joystickContainer.style.display = 'non';
         this.#joystickContainer.id = 'quickshot';
+        this.#joystickContainer.style.overflow = 'hidden';
         this.#joystickContainer.style.position = 'absolute';
         this.#joystickContainer.style.right = '0';
         this.#joystickContainer.style.bottom = '0';
         this.#joystickContainer.style.width = '100%';
         this.#joystickContainer.style.height = '100%';
-        this.#joystickContainer.style.height = '375px !important';
         this.#joystickContainer.style.zIndex = '666';
         this.#joystickContainer.style.display = 'none';
         document.body.appendChild(this.#joystickContainer);
