@@ -1,7 +1,16 @@
 import { QJ_LABEL_COLOR, QJ_IDLE_COLOR, QJ_ACTIVE_COLOR } from '../Constants.js';
 
 export class QuadrupleTouchButton {
-    constructor(parent, label1, label2, label3, label4, gridArea, id, elListener, radius = '12px', allowSimultaneous = false) {
+
+    static Layout = {
+        ABCD: 10,
+        ABLR: 50
+    };
+
+    #layout;
+
+    constructor(parent, label1, label2, label3, label4, gridArea, id, elListener, layout = QuadrupleTouchButton.Layout.ABCD, radius = '12px', allowSimultaneous = false,) {
+        this.#layout = layout;
         var container = document.createElement('div');
         container.classList.add('fast-button');
         if (gridArea != undefined) {
@@ -12,7 +21,13 @@ export class QuadrupleTouchButton {
         }
         container.style.display = 'grid';
         container.style.gridTemplateColumns = '1fr 1fr';
-        container.style.gridTemplateRows = '1fr 3fr';
+
+        if (layout == QuadrupleTouchButton.Layout.ABCD) {
+        container.style.gridTemplateRows = '1fr 1fr';
+        } else if (layout == QuadrupleTouchButton.Layout.ABLR) {
+            container.style.gridTemplateRows = '1fr 3fr';
+        }
+        
         container.style.gap = '8px';
 
         var el1 = document.createElement('div');
@@ -39,7 +54,7 @@ export class QuadrupleTouchButton {
         const d = '100%';
         el1.style.width = d;
         el2.style.width = d;
-        el3.style.width = d; 
+        el3.style.width = d;
         el4.style.width = d;
         el1.style.height = d;
         el2.style.height = d;
@@ -92,11 +107,18 @@ export class QuadrupleTouchButton {
             var vX = e.changedTouches[0].clientX - this.container.getBoundingClientRect().left;
             var vY = e.changedTouches[0].clientY - this.container.getBoundingClientRect().top;
 
-            if (vX < d / 2 && vY < dHeight / 4) {
+            let topRowHeightFraction;
+            if (this.#layout == QuadrupleTouchButton.Layout.ABCD) {
+                topRowHeightFraction = 2;
+            } else {
+                topRowHeightFraction = 4;
+            }
+
+            if (vX < d / 2 && vY < dHeight / topRowHeightFraction) {
                 newState = 1;
-            } else if (vX >= d / 2 && vY < dHeight / 4) {
+            } else if (vX >= d / 2 && vY < dHeight / topRowHeightFraction) {
                 newState = 2;
-            } else if (vX < d / 2 && vY >= dHeight / 4) {
+            } else if (vX < d / 2 && vY >= dHeight / topRowHeightFraction) {
                 newState = 3;
             } else {
                 newState = 4;

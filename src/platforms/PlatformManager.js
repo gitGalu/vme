@@ -17,6 +17,7 @@ import PCE from './systems/PCE.js';
 import MD from './systems/MD.js';
 import Lynx from './systems/Lynx.js';
 import GBA from './systems/GBA.js';
+import SNK from './systems/SNK.js';
 import JSZip from 'jszip';
 import { s } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -24,7 +25,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SMS, PCE, MD, C64, C128, C264, A2600, A5200, A800, Lynx, CPC, VIC20, ZX80, Spectrum
+    NES, GB, GBC, GBA, SMS, PCE, MD, C64, C128, C264, A2600, A5200, A800, Lynx, CPC, VIC20, ZX80, Spectrum, SNK
 }
 
 export class PlatformManager {
@@ -211,6 +212,10 @@ export class PlatformManager {
 
     getNostalgist() {
         return this.#nostalgist;
+    }
+
+    getProgramName() {
+        return this.#program_name;
     }
 
     get_software_dir() {

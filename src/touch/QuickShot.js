@@ -27,6 +27,14 @@ export class QuickShot {
         this.#activeDirections = new Set();
     }
 
+    #getFilenameWithoutExtension(filename) {
+        const lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex === -1) {
+            return filename;
+        }
+        return filename.substring(0, lastDotIndex);
+    }
+
     #init() {
         var bottomContainer = document.createElement('div');
         bottomContainer.id = 'quickshots';
@@ -47,15 +55,34 @@ export class QuickShot {
         bottomContainer.style.pointerEvents = 'none';
 
         let buttonsCount = this.#platform_manager.getSelectedPlatform().fire_buttons;
+        let platform_id = this.#platform_manager.getSelectedPlatform().platform_id;
+        let button_overrides = this.#platform_manager.getSelectedPlatform().button_overrides;
+        let program_id = this.#getFilenameWithoutExtension(this.#platform_manager.getProgramName());
 
-        if (buttonsCount == 2) {
-            new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
-        } else if (buttonsCount == 1) {
+        if (button_overrides && button_overrides[program_id]) {
+            buttonsCount = button_overrides[program_id];
+        }
+
+        if (buttonsCount == 1) {
             new SingleTouchButton(bottomContainer, 'A', undefined, 'qsa', new SingleTouchButtonJoyListener(this.#nostalgist, 'b'));
+        } else if (buttonsCount == 2) {
+            if (platform_id == "snk") {
+                new DualTouchButton(bottomContainer, true, 'A', 'B', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
+            } else {
+                new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
+            }
         } else if (buttonsCount == 3) {
-            new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'y', 'b', 'a'));
+            if (platform_id == "snk") {
+                new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'b', 'a', 'y'));
+            } else {
+                new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'y', 'b', 'a'));
+            }
         } else if (buttonsCount == 4) {
-            new QuadrupleTouchButton(bottomContainer, 'L', 'R', 'B', 'A', undefined, 'qs4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'l', 'r', 'b', 'a'));
+            if (platform_id == "gba") {
+                new QuadrupleTouchButton(bottomContainer, 'L', 'R', 'B', 'A', undefined, 'qs4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'l', 'r', 'b', 'a'), QuadrupleTouchButton.Layout.ABLR);
+            } else if (platform_id == "snk") {
+                new QuadrupleTouchButton(bottomContainer, 'C', 'D', 'A', 'B', undefined, 'qsab4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'x', 'y', 'a', 'b'), QuadrupleTouchButton.Layout.ABCD);
+            }
         }
 
         document.body.appendChild(bottomContainer);
