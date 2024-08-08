@@ -2,9 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.7.3] - w.i.p.
+## [0.7.4] - 2024-08-08
+
+- add Neo Geo MVS / AES support (uses fbalpha2012_neogeo core)
+- Desktop: add Controls button with quick access to special buttons/keys
+
+## [0.7.3] - 2024-08-05 
 
 - Compilations Browser: add restore button to load the most recent savestate
+- Touch: fix Quickshot controler issues
 
 ## [0.7.2] - 2024-08-04
 
