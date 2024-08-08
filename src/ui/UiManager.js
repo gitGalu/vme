@@ -137,7 +137,6 @@ export class UiManager {
         addButtonEventListeners(s('#desktopUiFfd'),
             (pressed) => {
                 if (pressed) {
-
                     self.#platform_manager.getNostalgist().sendCommand('FAST_FORWARD');
                 } else {
                     self.#platform_manager.getNostalgist().sendCommand('FAST_FORWARD');
@@ -148,6 +147,8 @@ export class UiManager {
             (pressed) => {
                 location.reload();
             });
+
+        this.initControlsButton();
     }
 
     initControllerMenu() {
@@ -178,6 +179,98 @@ export class UiManager {
                 }
             }
         });
+    }
+
+    initControlsButton() {
+        const controlsButton = document.getElementById('desktopUiControls');
+        const controlsMenu = document.getElementById('controlsMenu');
+        const nostalgist = this.#platform_manager.getNostalgist();
+
+        const menuOptions = [];
+
+        let keys = Object.keys(this.#platform_manager.getSelectedPlatform().additional_buttons);
+        if (keys.length > 0) {
+            for (let i = 0; i < keys.length; i++) {
+                let key = keys[i];
+                let label = this.#platform_manager.getSelectedPlatform().additional_buttons[key].label;
+                let keyCode = this.#platform_manager.getSelectedPlatform().additional_buttons[key].keyCode;
+                let kbKey = this.#platform_manager.getSelectedPlatform().additional_buttons[key].key;
+
+                menuOptions.push({
+                    name: label, action: () => {
+                        if (kbKey) {
+                            simulateKeypress(kbKey.key, kbKey.code, kbKey.key.keyCode);
+                        } else {
+                            nostalgist.press({ button: keyCode, player: 1, time: 100 });
+                        }
+                    }
+                });
+            }
+
+        } else {
+            controlsButton.style.display = "none";
+        }
+
+        function simulateKeydown(key, code, keyCode) {
+            let event = new KeyboardEvent('keydown', {
+                key: key,
+                code: code,
+                keyCode: keyCode,
+                charCode: keyCode,
+                bubbles: true,
+                cancelable: true
+            });
+        
+            document.dispatchEvent(event);
+        }
+    
+        function simulateKeyup(key, code, keyCode) {
+            let event = new KeyboardEvent('keyup', {
+                key: key,
+                code: code,
+                keyCode: keyCode,
+                charCode: keyCode,
+                bubbles: true,
+                cancelable: true
+            });
+        
+            document.dispatchEvent(event);
+        }
+
+        function simulateKeypress(key, code, keyCode) {
+            simulateKeydown(key, code, keyCode);
+            setTimeout(() => {
+                simulateKeyup(key, code, keyCode);
+            }, 50);
+        }
+
+        function createMenu() {
+            controlsMenu.innerHTML = '';
+            menuOptions.forEach(option => {
+                const menuItem = document.createElement('div');
+                menuItem.textContent = option.name;
+                menuItem.className = 'menu-item';
+                menuItem.addEventListener('click', option.action);
+                controlsMenu.appendChild(menuItem);
+            });
+        }
+
+        function toggleMenu() {
+            if (controlsMenu.style.display === 'none' || controlsMenu.style.display === '') {
+                const rect = controlsButton.getBoundingClientRect();
+                controlsMenu.style.position = 'absolute';
+                controlsMenu.style.padding = '8px 16px';
+                controlsMenu.style.top = `${rect.bottom}px`;
+                controlsMenu.style.left = `${rect.left}px`;
+                controlsMenu.style.display = 'block';
+                controlsMenu.style.fontSize = '10pt';
+            } else {
+                controlsMenu.style.display = 'none';
+            }
+        }
+
+        controlsButton.addEventListener('click', toggleMenu);
+        createMenu();
     }
 
     initQuickJoy() {
