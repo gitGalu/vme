@@ -19,7 +19,7 @@ const A800 = {
     guessConfig: (fileName) => {
         const tagRules = {
             "[BASIC]": {
-                atari800_cassboot: "enabled",
+                atari800_cassboot: "disabled",
                 atari800_internalbasic: "enabled"
             },
             "(130XE)": {
