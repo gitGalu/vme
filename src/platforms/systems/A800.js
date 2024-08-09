@@ -16,6 +16,23 @@ const A800 = {
         '--cursorwidth': '1em'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    guessBIOS: (fileName) => {
+        let defaultBios = ['ATARIXL.ROM', 'ATARIBAS.ROM'];
+
+        const biosTags = {
+            "[400-800]": ['ATARIOSB.ROM', 'ATARIBAS.ROM'],
+            "[REQ OSA]": ['ATARIOSA.ROM', 'ATARIBAS.ROM'],
+            "[REQ OSB]": ['ATARIOSB.ROM', 'ATARIBAS.ROM']
+        };
+
+        for (let tag in biosTags) {
+            if (fileName.toUpperCase().includes(tag)) {
+                return biosTags[tag];
+            }
+        }
+    
+        return defaultBios;
+    },
     guessConfig: (fileName) => {
         const tagRules = {
             "[BASIC]": {
@@ -41,18 +58,18 @@ const A800 = {
                 atari800_system: "Modern XL/XE(1088K)"
             },
             "[400-800]": {
-                atari800_system: "400/800 (OS B)"
+                atari800_system: "400/800 (OS B)",
             },
             "[REQ OSA]": {
-                atari800_system: "400/800 (OS B)"
+                atari800_system: "400/800 (OS A)",
             },
             "[REQ OSB]": {
-                atari800_system: "400/800 (OS B)"
+                atari800_system: "400/800 (OS B)",
+                atari800_ntscpal: 'NTSC'
             },
             "[STEREO]": {
             }
         };
-
         const defaultOptions = {
             atari800_ntscpal: 'PAL',
             atari800_resolution: '336x240',

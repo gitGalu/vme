@@ -81,7 +81,7 @@ export class PlatformManager {
         }
 
         Nostalgist.configure({
-            bios: this.#selected_platform.bios,
+            bios: (typeof this.#selected_platform.guessBIOS === 'function') ? this.#selected_platform.guessBIOS(caption) : this.#selected_platform.bios,
             retroarchConfig: {
                 rewind_enable: true,
                 rewind_buffer_size: 20,
