@@ -58,6 +58,7 @@ export default defineConfig({
         }),
         VitePWA({
             registerType: 'autoUpdate',
+            injectRegister: 'auto',
             manifest: {
                 name: 'VM/E',
                 short_name: 'VM/E',
@@ -72,6 +73,13 @@ export default defineConfig({
                     },
                 ],
             }
+            ,
+            srcDir: '.',
+            filename: 'sw.js',
+            strategies: 'injectManifest',
+            injectManifest: {
+                globPatterns: ['**/*.{js,css,html,png}'],
+            },
         }),
         obfuscator({
             exclude: ['node_modules/**'],
