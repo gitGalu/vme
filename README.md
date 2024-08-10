@@ -95,6 +95,8 @@ genesis-plus-gx https://github.com/libretro/Genesis-Plus-GX
 
 mgba https://github.com/FunKey-Project/mgba-libretro
 
+fbalpha2012_neogeo https://github.com/libretro/fbalpha2012_neogeo
+
 ### Assets used
 
 https://www.kreativekorp.com/software/fonts/c64/
