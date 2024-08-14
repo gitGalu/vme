@@ -1776,31 +1776,6 @@ a {
   transition: all 1s ease;
 }
 
-.collection-flicking-background {
-  width: 200px;
-  height: 200px;
-  background: #fff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.collection-flicking-background:before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, transparent, transparent 70%, rgba(0, 0, 0, 0.5)),
-    linear-gradient(to right, rgba(0, 0, 0, 0.5), transparent 50%),
-    linear-gradient(to left, rgba(0, 0, 0, 0.5), transparent 50%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent 50%),
-    linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent 50%);
-  z-index: 1;
-  pointer-events: none;
-}
-
 .panel-buttons button {
   padding: 16px;
   margin: 32px;
