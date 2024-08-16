@@ -36,7 +36,6 @@ const A800 = {
     guessConfig: (fileName) => {
         const tagRules = {
             "[BASIC]": {
-                atari800_cassboot: "disabled",
                 atari800_internalbasic: "enabled"
             },
             "(130XE)": {
@@ -68,6 +67,9 @@ const A800 = {
                 atari800_ntscpal: 'NTSC'
             },
             "[STEREO]": {
+            },
+            ".CAS": {
+                atari800_cassboot: "enabled"
             }
         };
         const defaultOptions = {
