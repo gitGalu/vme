@@ -62,7 +62,8 @@ export default defineConfig({
             manifest: {
                 name: 'VM/E',
                 short_name: 'VM/E',
-                display: 'standalone',
+                start_url: "https://gitgalu.github.io/vme/?source=pwa",
+                display: 'fullscreen',
                 theme_color: '#000000',
                 background_color: '#000000',
                 icons: [

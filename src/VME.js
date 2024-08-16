@@ -66,7 +66,7 @@ export class VME {
             show("html");
             return;
         }
-   
+
         this.#cli = new CLI();
         this.#kb = new KeyboardManager(this.#cli);
         this.#db = new StorageManager();
@@ -100,7 +100,7 @@ export class VME {
         let bm = new ButtonManager(this.#cli);
         bm.addButtons();
 
-        EnvironmentManager.detectDevice(); 
+        EnvironmentManager.detectDevice();
 
         s('#versionLabel').innerHTML = `v${__APP_VERSION__}`;
         this.toggleScreen(VME.CURRENT_SCREEN.MENU);
@@ -126,7 +126,10 @@ export class VME {
     }
 
     #guard() {
-        if (isMobile && !((window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches)) {
+        const params = new URLSearchParams(window.location.search);
+        const isPwa = params.get('source') === 'pwa';
+
+        if (isMobile && !((window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || isPwa)) {
             return true;
         }
     }
