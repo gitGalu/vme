@@ -1,86 +1,103 @@
 @font-face {
   font-family: Emulogic;
   src: url('../assets/fonts/emulogic.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: AtariSmall;
   src: url('../assets/fonts/AtariSmall.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: Topaz1200;
   src: url('../assets/fonts/Topaz_a1200_v2.0.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: AtariST;
   src: url('../assets/fonts/AtariST8x16SystemFont.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: Atascii;
   src: url('../assets/fonts/atascii.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: ZXSpectrum;
   src: url('../assets/fonts/zx-spectrum.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: AmstradCPC;
   src: url('../assets/fonts/cpc464.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: NES;
   src: url('../assets/fonts/PressStart2P-Regular.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: GB;
   src: url('../assets/fonts/gb.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: PetMe2X;
   src: url('../assets/fonts/PetMe2X.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: PetMe64;
   src: url('../assets/fonts/PetMe64.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: PetMe1282Y;
   src: url('../assets/fonts/PetMe1282Y.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: Shockman;
   src: url('../assets/fonts/pc-engine-super-cd-rom2-system-unused.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: MD;
   src: url('../assets/fonts/genesis.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: Lynx;
   src: url('../assets/fonts/classic-5x7-sans.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: PublicPixel;
   src: url('../assets/fonts/PublicPixel-E447g.ttf') format("truetype");
+  font-display: block;
 }
 
 @font-face {
   font-family: SNK;
   src: url('../assets/fonts/sky-soldiers.ttf') format("truetype");
+  font-display: block;
 }
 
 #warningStandalone {
