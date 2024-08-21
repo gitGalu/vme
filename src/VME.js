@@ -135,21 +135,25 @@ export class VME {
     }
 
     emulationStarted() {
-        this.#ui.initFastUI();
+        let controllers = this.#pl.getSelectedPlatform().touch_controllers;
+        let defaultController = this.#pl.getSelectedPlatform().default_touch_controller;
+
         this.#ui.initQuickJoy();
         this.#ui.initQuickshot();
-        this.#ui.initDesktopUI();
         this.#ui.initHideaway();
+
+        this.#ui.initFastUI();
+
+        if (defaultController) {
+            UiManager.toggleJoystick(defaultController, false);
+        } else {
+            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY, false);
+        }
+
+        this.#ui.initDesktopUI();
 
         this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         EnvironmentManager.updateDeviceType();
-
-        let controller = this.#pl.getSelectedPlatform().default_touch_controller;
-        if (controller) {
-            UiManager.toggleJoystick(controller);
-        } else {
-            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
-        }
 
         this.#ui.initControllerMenu();
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());

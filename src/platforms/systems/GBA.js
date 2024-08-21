@@ -45,6 +45,9 @@ const GBA = {
         }
     ],
     force_scale: true,
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
+    ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 4,
     additional_buttons: {

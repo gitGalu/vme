@@ -22,6 +22,9 @@ const MD = {
             input_libretro_device_p1: "0"
         };
     },
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
+    ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 3,
     additional_buttons: {

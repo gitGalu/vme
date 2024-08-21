@@ -379,9 +379,6 @@ export class PlatformManager {
     }
 
     async loadCollectionFile(blob) {
-
-
-
         const zip = new JSZip();
         let roms = [];
 

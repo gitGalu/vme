@@ -15,6 +15,9 @@ const PCE = {
         '--transform': 'uppercase',
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
+    ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 2,
     additional_buttons: {

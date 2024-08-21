@@ -1,4 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
+import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
 const Spectrum = {
     ...PlatformBase,
@@ -39,6 +40,11 @@ const Spectrum = {
 
         return config;
     },
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.HIDEAWAY
+    ],
     touch_controller_mapping: {
         input_player1_up: 'F13',
         input_player1_left: 'F14',

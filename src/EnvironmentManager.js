@@ -76,7 +76,6 @@ export class EnvironmentManager {
         if (EnvironmentManager.isDesktop()) {
             hide("#toggle-keyboard");
         } else {
-            console.log('show tk');
             show("#toggle-keyboard");
         }
     }

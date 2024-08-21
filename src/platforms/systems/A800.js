@@ -1,4 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
+import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
 const A800 = {
     ...PlatformBase,
@@ -113,6 +114,11 @@ const A800 = {
             required: true,
             accepted: ["a3e8d617c95d08031fe1b20d541434b2"]
         },
+    ],
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
     touch_controller_mapping: {
         input_player1_up: 'F13',

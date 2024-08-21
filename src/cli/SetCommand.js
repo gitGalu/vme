@@ -1,4 +1,3 @@
-// import { forEach } from 'jszip';
 import { CommandBase } from './CommandBase.js';
 import { StorageManager } from '../storage/StorageManager.js';
 

@@ -31,6 +31,10 @@ const Lynx = {
             '#reference /home/web_user/retroarch/bundle/shaders/shaders_glsl/handheld/sameboy-lcd.glslp',
         )
     },
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.HIDEAWAY
+    ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 2,
     additional_buttons: {

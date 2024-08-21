@@ -1,4 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
+import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
 const C128 = {
     ...PlatformBase,
@@ -15,6 +16,11 @@ const C128 = {
         '--cursorwidth': '0.5em',
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    touch_controllers: [
+        JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.HIDEAWAY
+    ],
     fire_buttons: 1,
     additional_buttons: {
     },

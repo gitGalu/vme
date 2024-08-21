@@ -152,7 +152,10 @@ export class UiManager {
     }
 
     initControllerMenu() {
-        let buttonCount = this.#platform_manager.getSelectedPlatform().fire_buttons;
+        const touch_controllers = this.#platform_manager.getSelectedPlatform().touch_controllers;
+        let currentControllerIndex = 0;
+
+        if (touch_controllers.length == 1) return;
 
         new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new class extends TouchButtonListener {
             constructor() {
@@ -164,17 +167,9 @@ export class UiManager {
                         UiManager.hideKeyboard();
                         UiManager.showJoystick();
                     } else {
-                        if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
-                            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
-                        } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
-                            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.HIDEAWAY);
-                        } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
-                            if (buttonCount == 3) {
-                                UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
-                            } else {
-                                UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
-                            }
-                        }
+                        currentControllerIndex = (currentControllerIndex + 1) % touch_controllers.length;
+                        const currentController = touch_controllers[currentControllerIndex];
+                        UiManager.toggleJoystick(currentController, true);
                     }
                 }
             }
@@ -220,10 +215,10 @@ export class UiManager {
                 bubbles: true,
                 cancelable: true
             });
-        
+
             document.dispatchEvent(event);
         }
-    
+
         function simulateKeyup(key, code, keyCode) {
             let event = new KeyboardEvent('keyup', {
                 key: key,
@@ -233,7 +228,7 @@ export class UiManager {
                 bubbles: true,
                 cancelable: true
             });
-        
+
             document.dispatchEvent(event);
         }
 
@@ -336,7 +331,7 @@ export class UiManager {
         s('#keyboardContainer').style.display = 'block';
     }
 
-    static toggleJoystick = (mode) => {
+    static toggleJoystick = (mode, showSplash) => {
         if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
             return;
         }
@@ -344,7 +339,7 @@ export class UiManager {
         switch (mode) {
             case JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY:
                 UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY;
-                UiManager.osdMessage('QuickJoy', 1000);
+                if (showSplash) UiManager.osdMessage('QuickJoy', 1000);
                 UiManager.#ha.hide();
                 UiManager.#qs.hide();
                 UiManager.#qj.mode(1);
@@ -352,14 +347,14 @@ export class UiManager {
                 break;
             case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
                 UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC;
-                UiManager.osdMessage('QuickShot', 1000);
+                if (showSplash) UiManager.osdMessage('QuickShot', 1000);
                 UiManager.#qj.hide();
                 UiManager.#ha.hide();
                 UiManager.#qs.show();
                 break;
             case JOYSTICK_TOUCH_MODE.HIDEAWAY:
                 UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.HIDEAWAY;
-                UiManager.osdMessage('Auto Hide', 1000);
+                if (showSplash) UiManager.osdMessage('Auto Hide', 1000);
                 UiManager.#qj.hide();
                 UiManager.#qs.hide();
                 UiManager.#ha.show();
