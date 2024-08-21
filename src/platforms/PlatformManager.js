@@ -59,7 +59,8 @@ export class PlatformManager {
         s("#cors_query_prefix").style.display = "none";
         s('#cors_query_prefix').innerHTML = "";
         s("#cors_query").innerHTML = "load \"" + caption + "\"";
-        s("#cors_results").innerHTML = "LOADING...";
+        s("#cors_results").innerHTML = "\n";
+        this.#cli.print_progress("Loading ...");
 
         const self = this;
 
@@ -122,7 +123,43 @@ export class PlatformManager {
         try {
             this.#prepareNostalgist(caption);
             const response = await fetch(filename);
-            const blob = await response.blob();
+
+            const contentLength = response.headers.get('Content-Length');
+            const totalSize = contentLength ? parseInt(contentLength, 10) : null;
+
+            let loaded = 0;
+            const reader = response.body.getReader();
+            const chunks = [];
+
+            let cli = this.#cli;
+            
+            async function readStream() {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+
+                    loaded += value.length;
+                    chunks.push(value);
+
+                    const loadedKB = Math.floor(loaded / 1024);
+
+                    if (totalSize) {
+                        const percentage = ((loaded / totalSize) * 100).toFixed(2);
+                        console.log(`Loading ... ${percentage}%`);
+                    } else {
+                        cli.print_progress(`Loading ... ${loadedKB} KB`);
+                    }
+                }
+
+                cli.print_progress(`Loading ... OK`);
+
+                return new Blob(chunks);
+            }
+
+            const blob = await readStream();
+
             this.#storeLastProgramInfo(filename, caption);
             this.startEmulation(blob, caption);
         } catch (error) {
