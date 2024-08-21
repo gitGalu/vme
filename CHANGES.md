@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.7] - 2024-08-21
+
+- print loading progress when downloading files from the Internet
+- only enable specific touch control types on specific platforms
+
+## [0.7.6] - 2024-08-20
+
+- Atari 800: CAS format support
+- runs in fullscreen PWA mode on Android
+
 ## [0.7.4] - 2024-08-08
 
 - add Neo Geo MVS / AES support (uses fbalpha2012_neogeo core)
