@@ -175,7 +175,8 @@ export class StorageManager {
     async storeState(save_data, rom_data, screenshot, platform_id, program_name) {
         const hash = await this.#computeHash(rom_data);
 
-        const screenshotB64 = await this.blobToBase64(screenshot);
+        const screenshotFix = await this.#fixScreenshot(platform_id, screenshot);
+        const screenshotB64 = await this.blobToBase64(screenshotFix);
         const romB64 = rom_data;
         const saveB64 = await this.blobToBase64(save_data);
 
@@ -205,6 +206,52 @@ export class StorageManager {
         } catch (error) {
             console.error("Failed to save state:", error);
         }
+    }
+
+    #fixScreenshot(platform_id, blob) {
+        if (platform_id != "atari2600" && platform_id != "amiga") {
+            return blob;
+        }
+
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(blob);
+
+            img.onload = () => {
+                const width = img.width;
+                const height = img.height;
+                const ratio = width / height;
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                if (platform_id == "atari2600" && ratio < 0.8) {
+                    canvas.width = width * 2;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                } else if (platform_id == "amiga" && ratio > 2) {
+                    canvas.width = width / 2;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                } else {
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0);
+                }
+
+                canvas.toBlob((newBlob) => {
+                    URL.revokeObjectURL(url);
+                    resolve(newBlob);
+                }, 'image/png');
+            };
+
+            img.onerror = (error) => {
+                URL.revokeObjectURL(url);
+                reject(error);
+            };
+
+            img.src = url;
+        });
     }
 
     async blobToBase64(blob) {
@@ -288,7 +335,7 @@ export class StorageManager {
                     await this.#db.saveMeta.delete(id);
 
                     let saveSameRomCount = await this.#db.saveMeta.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
-                    
+
                     let collectionSameRomCount = await this.#db.collectionItemData.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
 
                     if ((collectionSameRomCount + saveSameRomCount) == 0) {
@@ -305,7 +352,7 @@ export class StorageManager {
         try {
             await this.#db.transaction('rw', this.#db.collectionMeta, this.#db.collectionItemData, this.#db.saveMeta, this.#db.romData, async () => {
                 const allCollections = await this.#db.collectionMeta.toArray();
-                
+
                 for (let collection of allCollections) {
                     const collectionId = collection.id;
                     const collectionItems = await this.#db.collectionItemData.where('collection_id').equals(collectionId).toArray();
