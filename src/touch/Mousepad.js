@@ -7,6 +7,7 @@ export class Mousepad {
     #lx = -1;
     #ly = -1;
     #mouseSpeed = 1;
+    #activeTouchId = null;
 
     constructor() {
         this.#init();
@@ -29,20 +30,47 @@ export class Mousepad {
             if (started === false) {
                 this.#lx = -1;
                 this.#ly = -1;
+                this.#activeTouchId = null;
             } else {
                 var touch = e.changedTouches[0];
                 var dx = touch.clientX * this.#mouseSpeed;
                 var dy = touch.clientY * this.#mouseSpeed;
-                if (this.#lx != -1) {
+                if (this.#lx != -1 && this.#activeTouchId === touch.identifier) {
                     this.#simulateMouseMove(dx - this.#lx, dy - this.#ly);
                 }
                 this.#lx = dx;
                 this.#ly = dy;
             }
-        }
-        bottomContainer.addEventListener('touchmove', (e) => mousetouch(e));
-        bottomContainer.addEventListener('touchstart', (e) => mousetouch(e, true));
-        bottomContainer.addEventListener('touchend', (e) => { e.preventDefault(); mousetouch(e, false); });
+        };
+
+        bottomContainer.addEventListener('touchstart', (e) => {
+            var touch = e.changedTouches[0];
+            const targetId = e.target.id;
+
+            if (!targetId || (targetId !== 'lmb' && targetId !== 'rmb')) {
+                this.#activeTouchId = touch.identifier;
+                mousetouch(e, true);
+            } else {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        });
+
+        bottomContainer.addEventListener('touchmove', (e) => {
+            var touch = e.changedTouches[0];
+            if (this.#activeTouchId !== null && this.#activeTouchId === touch.identifier) {
+                mousetouch(e, true);
+            }
+        });
+
+        bottomContainer.addEventListener('touchend', (e) => {
+            var touch = e.changedTouches[0];
+            if (this.#activeTouchId !== null && this.#activeTouchId === touch.identifier) {
+                e.preventDefault();
+                mousetouch(e, false);
+            }
+        });
+
         bottomContainer.addEventListener('touchcancel', (e) => mousetouch(e, false));
 
         new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchButtonKbListener('F13', 'F13', '124', s('canvas')));
