@@ -187,7 +187,7 @@ export class UiManager {
         });
 
         const mouse_controllers = this.#platform_manager.getSelectedPlatform().mouse_controllers;
-        if (mouse_controllers.length == 0) return;
+        if (mouse_controllers == undefined || mouse_controllers.length == 0) return;
 
         let currentMouseControllerIndex = 0;
 
