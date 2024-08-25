@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2024-08-25
+
+- add initial Commodore Amiga support (uses puae core)
+- fix invalid savestate screenshot ratio
+
 ## [0.7.7] - 2024-08-21
 
 - print loading progress when downloading files from the Internet
