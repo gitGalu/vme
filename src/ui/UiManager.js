@@ -6,8 +6,9 @@ import { SingleTouchButtonKbListener } from '../touch/SingleTouchButtonKbListene
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { QuickJoy } from '../touch/QuickJoy.js';
 import { QuickShot } from '../touch/QuickShot.js';
+import { Mousepad } from '../touch/Mousepad.js';
 import { Hideaway } from '../touch/Hideaway.js';
-import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
+import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../Constants.js';
 
 export class UiManager {
     #platform_manager;
@@ -16,9 +17,12 @@ export class UiManager {
     static #qj;
     static #qs;
     static #ha;
+    static #mousepad;
 
     static currentJoyTouchMode;
+    static currentMouseTouchMode;
     static keyboardVisible;
+    static mousepadVisible;
 
     constructor(platform_manager, kb_manager) {
         this.#platform_manager = platform_manager;
@@ -151,11 +155,11 @@ export class UiManager {
         this.initControlsButton();
     }
 
-    initControllerMenu() {
+    initTouchControllerMenu() {
         const touch_controllers = this.#platform_manager.getSelectedPlatform().touch_controllers;
-        let currentControllerIndex = 0;
-
         if (touch_controllers.length == 1) return;
+
+        let currentControllerIndex = 0;
 
         new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new class extends TouchButtonListener {
             constructor() {
@@ -163,13 +167,47 @@ export class UiManager {
             }
             trigger(s) {
                 if (s) {
-                    if (UiManager.keyboardVisible) {
+                    if (UiManager.mousepadVisible) {
                         UiManager.hideKeyboard();
+                        UiManager.hideMousepad();
+                        UiManager.mousepadVisible = false;
+                        UiManager.showJoystick();
+                    } else if (UiManager.keyboardVisible) {
+                        UiManager.hideKeyboard();
+                        UiManager.hideMousepad();
+                        UiManager.mousepadVisible = false;
                         UiManager.showJoystick();
                     } else {
                         currentControllerIndex = (currentControllerIndex + 1) % touch_controllers.length;
                         const currentController = touch_controllers[currentControllerIndex];
                         UiManager.toggleJoystick(currentController, true);
+                    }
+                }
+            }
+        });
+
+        const mouse_controllers = this.#platform_manager.getSelectedPlatform().mouse_controllers;
+        if (mouse_controllers.length == 0) return;
+
+        let currentMouseControllerIndex = 0;
+
+        new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">MOUSE</span>', undefined, 'fastmouse', new class extends TouchButtonListener {
+            constructor() {
+                super();
+            }
+            trigger(s) {
+                if (s) {
+                    UiManager.mousepadVisible = true;
+
+                    if (UiManager.mousepadVisible) {
+                        currentMouseControllerIndex = (currentMouseControllerIndex + 1) % mouse_controllers.length;
+                        const currentMousepad = mouse_controllers[currentMouseControllerIndex];
+                        UiManager.toggleMousePad(currentMousepad, true);
+                    } else {
+                        UiManager.hideKeyboard();
+                        UiManager.hideJoystick();
+                        const currentMousepad = mouse_controllers[currentMouseControllerIndex];
+                        UiManager.toggleMousePad(currentMousepad, true);
                     }
                 }
             }
@@ -276,6 +314,10 @@ export class UiManager {
         UiManager.#qs = new QuickShot(this.#platform_manager);
     }
 
+    initMousepad() {
+        UiManager.#mousepad = new Mousepad(this.#platform_manager);
+    }
+
     initHideaway() {
         UiManager.#ha = new Hideaway();
     }
@@ -331,6 +373,32 @@ export class UiManager {
         s('#keyboardContainer').style.display = 'block';
     }
 
+    static hideMousepad() {
+        s('#mousepads').style.display = 'none';
+    }
+
+    static showMousepad() {
+        s('#mousepads').style.display = 'grid';
+    }
+
+    static toggleMousePad = (mode, showSplash) => {
+        if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
+            return;
+        }
+
+        switch (mode) {
+            case MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS:
+                UiManager.mousepadVisible = true;
+                UiManager.currentMouseTouchMode = MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS;
+                // if (showSplash) UiManager.osdMessage('Trackpad w/ buttons', 1000); 
+                UiManager.#qj.hide();
+                UiManager.#qs.hide();
+                UiManager.#ha.hide();
+                UiManager.#mousepad.show();
+                break;
+        }
+    }
+
     static toggleJoystick = (mode, showSplash) => {
         if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
             return;
@@ -342,13 +410,14 @@ export class UiManager {
                 if (showSplash) UiManager.osdMessage('QuickJoy', 1000);
                 UiManager.#ha.hide();
                 UiManager.#qs.hide();
-                UiManager.#qj.mode(1);
+                UiManager.#mousepad.hide();
                 UiManager.#qj.show();
                 break;
             case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
                 UiManager.currentJoyTouchMode = JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC;
                 if (showSplash) UiManager.osdMessage('QuickShot', 1000);
                 UiManager.#qj.hide();
+                UiManager.#mousepad.hide();
                 UiManager.#ha.hide();
                 UiManager.#qs.show();
                 break;
@@ -357,6 +426,7 @@ export class UiManager {
                 if (showSplash) UiManager.osdMessage('Auto Hide', 1000);
                 UiManager.#qj.hide();
                 UiManager.#qs.hide();
+                UiManager.#mousepad.hide();
                 UiManager.#ha.show();
                 break;
         }
@@ -458,6 +528,7 @@ class KbListener extends TouchButtonListener {
         if (s) {
             UiManager.keyboardVisible = true;
             UiManager.hideJoystick();
+            UiManager.hideMousepad();
             UiManager.showKeyboard();
 
             this.#kb_manager.showTouchKeyboard();

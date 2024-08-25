@@ -537,8 +537,11 @@ a {
   #quickjoys {
     top: 50%;
     height: 50% !important;
-    grid-template-columns: repeat(50, 1fr);
-    grid-template-rows: repeat(50, 1fr);
+  }
+
+  #mousepads {
+    top: 50%;
+    height: 50% !important;
   }
 
   #fastui {
@@ -598,6 +601,10 @@ a {
     grid-area: 14 / 1 / span 4 / span 9;
   }
 
+  #fastmouse {
+    grid-area: 20 / 1 / span 4 / span 9;
+  }
+
   #qjlr {
     grid-area: -14 / 1 / span 13 / span 22;
   }
@@ -641,10 +648,23 @@ a {
   #qsxy4 {
     grid-area: -3 / 15 / span 1 / span 9;
   }
+
+  #lmb {
+    grid-area: -10 / 2 / span 8 / span 8;
+  }
+
+  #rmb {
+    grid-area: -10 / 11 / span 8 / span 8;
+  }
 }
 
 @media (orientation: landscape) {
   #quickjoys {
+    top: 0%;
+    height: 100%;
+  }
+
+  #mousepads {
     top: 0%;
     height: 100%;
   }
@@ -705,6 +725,10 @@ a {
     grid-area: 15 / 1 / span 4 / span 4;
   }
 
+  #fastmouse {
+    grid-area: 21 / 1 / span 4 / span 4;
+  }
+
   #fastrewind {
     grid-area: 24 / -9 / span 4 / span 4;
   }
@@ -736,6 +760,30 @@ a {
   #qsxy4 {
     grid-area: -5 / 15 / span 2 / span 9;
   }
+
+  #lmb {
+    grid-area: -10 / 2 / span 7 / span 7;
+  }
+
+  #rmb {
+    grid-area: -10 / 10 / span 7 / span 7;
+  }
+}
+
+#quickjoys {
+  grid-template-columns: repeat(50, 1fr);
+  grid-template-rows: repeat(50, 1fr);
+}
+
+#mousepads {
+  grid-template-columns: repeat(50, 1fr);
+  grid-template-rows: repeat(50, 1fr);
+  pointer-events: all;
+  font-family: Helvetica, Arial, sans-serif !important;
+}
+
+#lmb, #rmb {
+  pointer-events: all;
 }
 
 #quickjoys, #quickshots, #fastbuttons, #fastui {
@@ -1560,7 +1608,7 @@ a {
   }
 }
 
-#fastui, #quickshots, #quickjoys {
+#fastui, #quickshots, #quickjoys, #mousepads {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-top: env(safe-area-inset-top);
@@ -1572,7 +1620,7 @@ a {
   top: 0;
   left: 0;
   width: 100%;
-  height: 48px;
+  height: 64px;
   background-color: rgba(0, 0, 0, 0.5);
   opacity: 0;
   transition: opacity 0.5s;
@@ -1635,9 +1683,9 @@ a {
 }
 
 #desktopUiBack img {
-  height: 25%;
+  height: 30%;
   width: auto;
-  filter: none;
+  filter: brightness(0) invert(0.8);
   transition: filter 0.5s ease;
 }
 

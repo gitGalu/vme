@@ -457,7 +457,11 @@ export class KeyboardManager {
 
     hideTouchKeyboard() {
         UiManager.keyboardVisible = false;
-        UiManager.showJoystick();
+        if (UiManager.mousepadVisible) {
+            UiManager.showMousepad();
+        } else {
+            UiManager.showJoystick();
+        }
         const elements = document.querySelectorAll('.kbCtrl');
         elements.forEach(element => {
             element.style.paddingTop = '0px';

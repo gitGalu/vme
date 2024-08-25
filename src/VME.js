@@ -135,11 +135,11 @@ export class VME {
     }
 
     emulationStarted() {
-        let controllers = this.#pl.getSelectedPlatform().touch_controllers;
         let defaultController = this.#pl.getSelectedPlatform().default_touch_controller;
 
         this.#ui.initQuickJoy();
         this.#ui.initQuickshot();
+        this.#ui.initMousepad();
         this.#ui.initHideaway();
 
         this.#ui.initFastUI();
@@ -155,7 +155,7 @@ export class VME {
         this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         EnvironmentManager.updateDeviceType();
 
-        this.#ui.initControllerMenu();
+        this.#ui.initTouchControllerMenu();
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
     }
 

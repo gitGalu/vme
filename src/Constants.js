@@ -12,3 +12,7 @@ export const JOYSTICK_TOUCH_MODE = {
     QUICKSHOT_DYNAMIC: 200,
     HIDEAWAY: 1000
 };
+
+export const MOUSE_TOUCH_MODE = {
+    TRACKPAD_BUTTONS: 100
+};

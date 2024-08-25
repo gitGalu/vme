@@ -18,6 +18,7 @@ import MD from './systems/MD.js';
 import Lynx from './systems/Lynx.js';
 import GBA from './systems/GBA.js';
 import SNK from './systems/SNK.js';
+import Amiga from './systems/Amiga.js';
 import JSZip from 'jszip';
 import { s } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -25,7 +26,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SMS, PCE, MD, C64, C128, C264, A2600, A5200, A800, Lynx, CPC, VIC20, ZX80, Spectrum, SNK
+    NES, GB, GBC, GBA, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, CPC, VIC20, ZX80, Spectrum, SNK
 }
 
 export class PlatformManager {
@@ -86,14 +87,16 @@ export class PlatformManager {
             retroarchConfig: {
                 rewind_enable: true,
                 rewind_buffer_size: 20,
-                rewind_granularity: 5,
-                fastforward_ratio: 10,
+                rewind_granularity: (this.#selected_platform.rewind_granularity === undefined) ? 5 : this.#selected_platform.rewind_granularity,
+                fastforward_ratio: (this.#selected_platform.fastforward_ratio === undefined) ? 10 : this.#selected_platform.fastforward_ratio,
                 input_pause_toggle: false,
                 video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
-                video_smooth: true,
+                video_smooth: (this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth,
+
                 savestate_thumbnail_enable: true,
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
+
                 ...retroarchConfigOverrides
             },
             retroarchCoreConfig: (typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(caption) : {},
@@ -132,7 +135,7 @@ export class PlatformManager {
             const chunks = [];
 
             let cli = this.#cli;
-            
+
             async function readStream() {
                 while (true) {
                     const { done, value } = await reader.read();
@@ -199,6 +202,7 @@ export class PlatformManager {
 
         this.#current_rom = blob;
 
+        let storageManager = this.#storage_manager;
         let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
 
@@ -215,6 +219,10 @@ export class PlatformManager {
                     if (StorageManager.getValue("SHADER") == "0") return;
                     if (typeof platform.shader === 'function') {
                         await platform.shader(nostalgist);
+                    }
+
+                    if (typeof platform.startup_beforelaunch === 'function') {
+                        await platform.startup_beforelaunch(nostalgist, storageManager);
                     }
                 },
                 state: self.#state,
