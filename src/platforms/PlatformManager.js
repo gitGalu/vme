@@ -97,6 +97,9 @@ export class PlatformManager {
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
 
+                video_adaptive_vsync: true,
+                video_vsync: true,
+
                 ...retroarchConfigOverrides
             },
             retroarchCoreConfig: (typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(caption) : {},
