@@ -396,11 +396,20 @@ export class PlatformManager {
             var tryItems = [];
             json.items.forEach(disk => {
                 var item = {};
-                item.txt = (String)[disk[0]];
-                item.url = json.root + json.bases[disk[1]] + disk[2];
+                item.txt = String(disk[0]);
+    
+                const baseIndex = disk[1];
+                const tag = json.tags ? json.tags[baseIndex] : null;
+    
+                item.url = json.root + json.bases[baseIndex] + disk[2];
+    
+                if (tag) {
+                    item.tag = tag;
+                }
+    
                 tryItems.push(item);
             });
-
+    
             this.#model = json;
         } catch (error) {
             this.#cli.message('Error loading file.');

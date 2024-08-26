@@ -52,24 +52,33 @@ export class CommandBase {
     #show_results(results, force_selection) {
         const container = s("#cors_results");
         container.innerHTML = "";
-
+    
         results.forEach((item) => {
             const p = document.createElement('p');
             p.setAttribute('data-value', item.data);
             p.classList.add('corsrow');
+    
             const span = document.createElement('span');
             if (StorageManager.getValue("LINES") != "single") {
             } else {
                 span.classList.add('singleline');
             }
-            span.innerHTML = item.label;
+    
+            if (item.tag) {
+                const tagSpan = document.createElement('span');
+                tagSpan.classList.add('tag');
+                tagSpan.innerHTML = "[" + item.tag + "] ";
+                span.appendChild(tagSpan);
+            }
+    
+            span.append(item.label);
             p.append(span);
             p.addEventListener('click', id => {
                 this.process_selection(item);
             });
             container.append(p);
         });
-
+    
         if (results.length > 0 && force_selection) {
             this.cli.set_selection_mode(true);
             this.cli.update();

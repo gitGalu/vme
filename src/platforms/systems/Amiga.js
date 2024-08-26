@@ -15,6 +15,7 @@ const Amiga = {
         '--color1': '#000000',
         '--color2': '#666666',
         '--color3': '#ffffff',
+        '--color4': '#6780ae',
         '--font': 'Topaz1200',
         '--cursorwidth': '0.5em'
     },

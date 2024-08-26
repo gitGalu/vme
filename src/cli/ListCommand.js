@@ -20,14 +20,14 @@ export class ListCommand extends CommandBase {
 
     process_input(parameters) {
         if (this.#platform_manager.get_software_dir() == undefined) {
-            this.cli.soft_msg('To use LIST command please import SOFTWARE DIRECTORY first.')
+            this.cli.soft_msg('To use LIST command please import SOFTWARE DIRECTORY first.');
             return;
         }
 
         let model = this.#platform_manager.get_software_dir();
         let results = [];
         var tokens = parameters.filter(Boolean);
-        if (tokens == 0) {
+        if (tokens.length == 0) {
             return;
         } else if (tokens.length > 0) {
             results = model.items.filter((val) => {
@@ -35,14 +35,29 @@ export class ListCommand extends CommandBase {
             });
         }
 
-        results.sort((a, b) => (a[0] > b[0]) ? 1 : -1);
+        results.sort((a, b) => {
+            const tagA = model.tags ? model.tags[a[1]] : null;
+            const tagB = model.tags ? model.tags[b[1]] : null;
+
+            if ((tagA && tagB) || (!tagA && !tagB)) {
+                return a[0].localeCompare(b[0]);
+            }
+
+            return tagA ? -1 : 1;
+        });
 
         let output = results.map(item => {
+            const baseIndex = item[1];
+            const tag = model.tags ? model.tags[baseIndex] : null;
+
+            let label = item[0];
+
             return {
-                id: model.root + model.bases[item[1]] + item[2],
-                label: item[0],
-                data: model.root + model.bases[item[1]] + item[2]
-            }
+                id: model.root + model.bases[baseIndex] + item[2],
+                label: label,
+                tag: tag,
+                data: model.root + model.bases[baseIndex] + item[2]
+            };
         });
 
         this.show_results(output);

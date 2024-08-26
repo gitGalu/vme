@@ -1335,7 +1335,10 @@ a {
   color: var(--color0);
   text-decoration: none;
   background-color: var(--color1);
+}
 
+.corsrow .tag {
+  color: var(--color4);
 }
 
 .corsrow>span.singleline {
