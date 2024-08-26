@@ -157,15 +157,6 @@ export class UiManager {
                 }
             });
 
-        addButtonEventListeners(s('#desktopUiFfd'),
-            (pressed) => {
-                if (pressed) {
-                    self.#platform_manager.getNostalgist().sendCommand('FAST_FORWARD');
-                } else {
-                    self.#platform_manager.getNostalgist().sendCommand('FAST_FORWARD');
-                }
-            });
-
         addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
                 location.reload();
