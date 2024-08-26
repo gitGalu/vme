@@ -77,20 +77,6 @@ export class Mousepad {
         new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchButtonKbListener('F14', 'F14', '125', s('canvas')));
 
         document.body.appendChild(bottomContainer);
-
-        bottomContainer.addEventListener('click', () => {
-            bottomContainer.requestPointerLock();
-        });
-
-        document.addEventListener('pointerlockchange', this.#lockChangeAlert.bind(this), false);
-    }
-
-    #lockChangeAlert() {
-        if (document.pointerLockElement === s('#mousepads')) {
-            console.log('The pointer is now locked.');
-        } else {
-            console.log('The pointer is unlocked.');
-        }
     }
 
     #simulateMouseMove(deltaX, deltaY) {

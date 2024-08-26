@@ -153,6 +153,12 @@ export class UiManager {
             });
 
         this.initControlsButton();
+
+        if (this.#platform_manager.getSelectedPlatform().mouse_controllers) {
+            s('#canvas').addEventListener('click', () => {
+                s('#canvas').requestPointerLock();
+            });
+        }
     }
 
     initTouchControllerMenu() {
