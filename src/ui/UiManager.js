@@ -110,9 +110,23 @@ export class UiManager {
         let intervalId = null;
         let self = this;
 
+        addButtonEventListeners(s('#desktopUiFs'),
+            (pressed) => {
+                if (pressed) {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch((err) => {
+                            console.log(err);
+                        });
+                    } else {
+                        document.exitFullscreen().catch((err) => {
+                            console.log(err);
+                        });
+                    }
+                }
+            });
+
         addButtonEventListeners(s('#desktopUiSave'),
             (pressed) => {
-
                 if (pressed) {
                     let state = this.#platform_manager.saveState();
                     state.then((data) => {
@@ -127,7 +141,6 @@ export class UiManager {
 
         addButtonEventListeners(s('#desktopUiRewind'),
             (pressed) => {
-
                 if (pressed) {
                     self.#platform_manager.getNostalgist().sendCommand('REWIND');
                     intervalId = setInterval(() => {
