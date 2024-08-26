@@ -34,19 +34,21 @@ const Amiga = {
             return {
                 puae_model: "A500",
                 puae_kickstart: "kick34005.A500",
-                puae_video_vresolution: "auto",
-                puae_video_resolution: "auto",
+                puae_video_vresolution: "single",
+                puae_video_resolution: "hires",
                 puae_cpu_compatibility: "exact"
             };
         }
 
         return {
-            puae_video_vresolution: "auto",
-            puae_video_resolution: "auto",
-            puae_cpu_compatibility: "exact"
+            puae_cpu_compatibility: "exact",
+            puae_video_vresolution: "single",
+            puae_video_resolution: "hires",
+            puae_crop: "auto"
         };
     },
-    force_scale: true,
+    shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    // force_scale: true,
     video_smooth: false,
     dependencies: [
         {
