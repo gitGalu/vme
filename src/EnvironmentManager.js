@@ -107,6 +107,8 @@ export class EnvironmentManager {
     }
 
     static resizeCanvas = (nostalgist) => {
+        const isFullscreen = document.fullscreenElement != null;
+        if (isFullscreen) return;
         if (nostalgist == undefined) return;
         let w =  window.innerWidth;
         let h = window.innerHeight;

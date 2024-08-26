@@ -114,13 +114,19 @@ export class UiManager {
             (pressed) => {
                 if (pressed) {
                     if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch((err) => {
+                        document.documentElement.requestFullscreen().then(() => {
+                            EnvironmentManager.resizeCanvas(this.#platform_manager.getNostalgist());
+                        }).catch((err) => {
                             console.log(err);
                         });
+
                     } else {
-                        document.exitFullscreen().catch((err) => {
+                        document.exitFullscreen().then(() => {
+                            EnvironmentManager.resizeCanvas(this.#platform_manager.getNostalgist());
+                        }).catch((err) => {
                             console.log(err);
                         });
+
                     }
                 }
             });
