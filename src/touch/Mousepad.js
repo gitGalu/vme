@@ -74,7 +74,7 @@ export class Mousepad {
         bottomContainer.addEventListener('touchcancel', (e) => mousetouch(e, false));
 
         new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchButtonKbListener('F13', 'F13', '124', s('canvas')));
-        new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchButtonKbListener('F13', 'F13', '125', s('canvas')));
+        new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchButtonKbListener('F14', 'F14', '125', s('canvas')));
 
         document.body.appendChild(bottomContainer);
 
