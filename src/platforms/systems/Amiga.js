@@ -37,7 +37,8 @@ const Amiga = {
                 puae_kickstart: "kick34005.A500",
                 puae_video_vresolution: "single",
                 puae_video_resolution: "hires",
-                puae_cpu_compatibility: "exact"
+                puae_cpu_compatibility: "exact",
+                puae_crop_mode: "auto"
             };
         }
 
@@ -45,7 +46,7 @@ const Amiga = {
             puae_cpu_compatibility: "exact",
             puae_video_vresolution: "single",
             puae_video_resolution: "hires",
-            puae_crop: "auto"
+            puae_crop_mode: "auto"
         };
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
