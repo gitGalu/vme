@@ -531,7 +531,7 @@ a {
 
 @media (orientation: portrait) {
   #settings {
-    font-size: 70%;
+    font-size: 80%;
   }
 
   #quickjoys {
@@ -1447,7 +1447,7 @@ a {
 }
 
 #menu-button-strip .clabel:not(:first-child) {
-  margin-left: 12pt;
+  margin-left: 0.5em;
 }
 
 #menu-button-strip .clabel:active {
