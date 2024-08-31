@@ -97,6 +97,8 @@ mgba https://github.com/FunKey-Project/mgba-libretro
 
 fbalpha2012_neogeo https://github.com/libretro/fbalpha2012_neogeo
 
+puae https://github.com/libretro/libretro-uae
+
 ### Assets used
 
 https://www.kreativekorp.com/software/fonts/c64/
