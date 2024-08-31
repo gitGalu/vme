@@ -338,6 +338,11 @@ export class PlatformManager {
                 }
 
                 this.#cli.print('&nbsp;');
+
+                if (StorageManager.getValue("DEBUG") == "1") {
+                    this.#cli.print("<span class='blinking2'>DEBUG MODE enabled.</span>");
+                    this.#cli.print('&nbsp;');
+                }
                 if (this.#selected_platform.message) {
                     this.#cli.print("<span class='blinking2'>" + this.#selected_platform.message + "</span>");
                     this.#cli.print('&nbsp;');
