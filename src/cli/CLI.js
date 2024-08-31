@@ -1,6 +1,6 @@
-import { s } from '../dom.js';
+import { s, show, hide } from '../dom.js';
 import { CommandBase } from './CommandBase.js';
-import { createGuiButton } from '../GuiButton.js';
+import { StorageManager } from '../storage/StorageManager.js';
 
 export class CLI {
     #kb_event_bound;
@@ -368,6 +368,35 @@ export class CLI {
         this.clear();
         this.#lines.push(line);
         this.redraw();
+    }
+
+    guru(msg, isRecoverable = false) {
+        if (StorageManager.getValue("DEBUG") != "1") {
+            return;
+        }
+
+        function clickListener() {
+            if (isRecoverable) {
+                hide("#guruWrapper0");
+                s("#guruWrapper0").removeEventListener('click', this);
+                document.removeEventListener('click', clickListener, true);
+            } else {
+                window.location.reload(false);
+            }
+        }
+    
+        s("#guruWrapper0").addEventListener('click', clickListener, true);
+    
+        if (!isRecoverable) {
+            s("#guruMessage2").innerHTML = msg;
+            show("#guruWrapper0", "block");
+            throw new Error("Guru Meditation: " + msg);
+        } else {
+            s("#guruMessage2").innerHTML = msg;
+            s("#guru").style.color = "#F4AD46";
+            s("#guru").style.borderColor = "#F4AD46";
+            show("#guruWrapper0", "block");
+        }
     }
 
     #isElementInContainerViewport(element, parent) {

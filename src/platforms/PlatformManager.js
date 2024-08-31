@@ -160,7 +160,6 @@ export class PlatformManager {
                 }
 
                 cli.print_progress(`Loading ... OK`);
-
                 return new Blob(chunks);
             }
 
@@ -169,6 +168,7 @@ export class PlatformManager {
             this.#storeLastProgramInfo(filename, caption);
             this.startEmulation(blob, caption);
         } catch (error) {
+            this.#cli.guru(error, false);
             throw new Error('Error loading file.');
         }
     }
@@ -219,8 +219,7 @@ export class PlatformManager {
                     fileContent: blob
                 },
                 async beforeLaunch(nostalgist) {
-                    if (StorageManager.getValue("SHADER") == "0") return;
-                    if (typeof platform.shader === 'function') {
+                    if (StorageManager.getValue("SHADER") != "0" && typeof platform.shader === 'function') {
                         await platform.shader(nostalgist);
                     }
 
@@ -249,6 +248,7 @@ export class PlatformManager {
             });
         }
         catch (error) {
+            this.#cli.guru(error, false);
             console.error('Error importing Nostalgist:', error);
             return;
         }
@@ -354,6 +354,7 @@ export class PlatformManager {
             })
             .catch(error => {
                 console.log(error.stack);
+                this.#cli.guru(error, false);
                 this.#cli.print('Error loading ' + this.#selected_platform.platform_name + ' core.');
             })
             .finally(() => {
@@ -397,23 +398,24 @@ export class PlatformManager {
             json.items.forEach(disk => {
                 var item = {};
                 item.txt = String(disk[0]);
-    
+
                 const baseIndex = disk[1];
                 const tag = json.tags ? json.tags[baseIndex] : null;
-    
+
                 item.url = json.root + json.bases[baseIndex] + disk[2];
-    
+
                 if (tag) {
                     item.tag = tag;
                 }
-    
+
                 tryItems.push(item);
             });
-    
+
             this.#model = json;
         } catch (error) {
+            console.log(error);
+            this.#cli.guru(error, false);
             this.#cli.message('Error loading file.');
-            console.log('error', error);
         }
     }
 
@@ -430,8 +432,9 @@ export class PlatformManager {
             this.#model = json;
             this.#storage_manager.storeFile(key, json);
         } catch (error) {
-            this.#cli.message('Error loading file.');
             console.log('error', error);
+            this.#cli.guru(error, false);
+            this.#cli.message('Error loading file.');
         }
     }
 
@@ -520,6 +523,7 @@ export class PlatformManager {
             }
         } catch (error) {
             console.error('An error occurred:', error);
+            this.#cli.guru(error, false);
             this.#cli.message("&nbsp;", "Error importing VME Collection archive.");
             return;
         }
@@ -561,6 +565,7 @@ export class PlatformManager {
             }
         } catch (error) {
             console.error('An error occurred:', error);
+            this.#cli.guru(error, true);
             this.#cli.message("&nbsp;", "Error loading VME Import archive.");
             ok = false;
             return;

@@ -14,6 +14,10 @@ export class SetCommand extends CommandBase {
         SYSKB: {
             validValues: ["0", "1"],
             description: "use system touchscreen keyboard"
+        },
+        DEBUG: {
+            validValues: ["0", "1"],
+            description: "enable debug information"
         }
     };
 
