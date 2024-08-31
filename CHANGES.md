@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2024-08-31
+
+- add option to enable debug mode
+
 ## [0.8.1] - 2024-08-28
 
 - Desktop: full screen mode support
