@@ -1,5 +1,6 @@
 import Dexie from 'dexie';
 import CryptoJS from 'crypto-js';
+import { Debug } from '../Debug.js';
 
 export class StorageManager {
     #db;
