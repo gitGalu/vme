@@ -61,6 +61,10 @@ export class StorageManager {
     }
 
     async storeFile(key, data) {
+        if (Debug.isEnabled()) {
+            Debug.updateMessage('load', 'Storing file');
+        }
+
         await this.#db.files.put({ key, data: data });
     }
 
@@ -70,6 +74,8 @@ export class StorageManager {
     }
 
     async deleteFile(key) {
+        Debug.updateMessage('load', 'Deleting file');
+
         await this.#db.files.where({ key }).delete();
     }
 

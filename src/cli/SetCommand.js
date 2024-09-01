@@ -1,5 +1,6 @@
 import { CommandBase } from './CommandBase.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { Debug } from '../Debug.js';
 
 export class SetCommand extends CommandBase {
     #SYSTEM_PARAMETERS = {
@@ -17,7 +18,10 @@ export class SetCommand extends CommandBase {
         },
         DEBUG: {
             validValues: ["0", "1"],
-            description: "enable debug information"
+            description: "enable debug information",
+            onChange: (newValue) => {
+                Debug.setVisible(newValue == 1);
+            }
         }
     };
 
@@ -58,15 +62,24 @@ export class SetCommand extends CommandBase {
                         StorageManager.clearValue(key, value);
                         this.cli.clear();
                         this.#print_command(key, item);
-                        this.cli.print("Default value restored.")
+                        this.cli.print("Default value restored.");
+
+                        if (paramDetails.onChange && typeof paramDetails.onChange === "function") {
+                            paramDetails.onChange(value);
+                        }
+
                     } else if (paramDetails.validValues.includes(value.toUpperCase())) {
                         StorageManager.storeValue(key, value);
                         this.cli.clear();
                         this.#print_command(key, item);
-                        this.cli.print("Configuration has been saved.")
+                        this.cli.print("Configuration has been saved.");
+
+                        if (paramDetails.onChange && typeof paramDetails.onChange === "function") {
+                            paramDetails.onChange(value);
+                        }
                     } else {
-                        this.cli.print("&nbsp;")
-                        this.cli.print("Invalid value.")
+                        this.cli.print("&nbsp;");
+                        this.cli.print("Invalid value.");
                     }
                 } else {
                     this.cli.print("&nbsp;")

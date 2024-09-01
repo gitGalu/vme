@@ -21,6 +21,7 @@ import { EnvironmentManager } from './EnvironmentManager.js';
 import { isMobile } from 'react-device-detect';
 import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 import { ButtonManager } from './ButtonManager.js';
+import { Debug } from './Debug.js';
 
 export class VME {
     #cli;
@@ -113,7 +114,10 @@ export class VME {
             } else {
                 this.#collection_browser.open();
             }
+        }
 
+        if (Debug.isEnabled()) {
+            Debug.setVisible(true);
         }
     }
 

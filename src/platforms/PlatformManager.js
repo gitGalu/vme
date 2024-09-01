@@ -24,6 +24,7 @@ import { s } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { Debug } from '../Debug.js';
 
 export const SelectedPlatforms = {
     NES, GB, GBC, GBA, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, CPC, VIC20, ZX80, Spectrum, SNK
@@ -113,8 +114,11 @@ export class PlatformManager {
     }
 
     async loadRomFileFromUrl(filename, caption) {
-        console.log(`
+        if (Debug.isEnabled()) {
+            Debug.setMessage(`Starting to load ROM file: ${caption}`);
+        }
 
+        console.log(`
         {
             "title": "${caption}",
             "credits": "",
@@ -123,12 +127,20 @@ export class PlatformManager {
             "filename": "${caption}",
             "url": "${filename}"
         }
-
         `);
 
         try {
             this.#prepareNostalgist(caption);
+
+            if (Debug.isEnabled()) {
+                Debug.updateMessage('load', `Preparing to download: ${filename}`);
+            }
+
             const response = await fetch(filename);
+
+            if (Debug.isEnabled()) {
+                Debug.updateMessage('load', 'File downloaded successfully');
+            }
 
             const contentLength = response.headers.get('Content-Length');
             const totalSize = contentLength ? parseInt(contentLength, 10) : null;
@@ -153,21 +165,31 @@ export class PlatformManager {
 
                     if (totalSize) {
                         const percentage = ((loaded / totalSize) * 100).toFixed(2);
-                        console.log(`Loading ... ${percentage}%`);
+                        cli.print_progress(`Downloading ... ${percentage} %`);
                     } else {
-                        cli.print_progress(`Loading ... ${loadedKB} KB`);
+                        cli.print_progress(`Downloading ... ${loadedKB} KB`);
                     }
                 }
 
                 cli.print_progress(`Loading ... OK`);
+
+                if (Debug.isEnabled()) {
+                    Debug.updateMessage('load', `Download complete.`);
+                }
+
                 return new Blob(chunks);
             }
 
             const blob = await readStream();
 
             this.#storeLastProgramInfo(filename, caption);
+
             this.startEmulation(blob, caption);
         } catch (error) {
+            if (Debug.isEnabled()) {
+                Debug.setMessage(`Error encountered: ${error.message}`);
+            }
+
             this.#cli.guru(error, false);
             throw new Error('Error loading file.');
         }
@@ -201,6 +223,10 @@ export class PlatformManager {
     }
 
     async startEmulation(blob, caption) {
+        if (Debug.isEnabled()) {
+            Debug.updateMessage('load', 'Preparing to start emulation.');
+        }
+
         let self = this;
 
         this.#current_rom = blob;
@@ -211,6 +237,8 @@ export class PlatformManager {
 
         this.#model = {};
 
+        let errored = false;
+
         try {
             this.#nostalgist = await Nostalgist.launch({
                 core: core,
@@ -219,11 +247,19 @@ export class PlatformManager {
                     fileContent: blob
                 },
                 async beforeLaunch(nostalgist) {
+
+
                     if (StorageManager.getValue("SHADER") != "0" && typeof platform.shader === 'function') {
+                        if (Debug.isEnabled()) {
+                            Debug.updateMessage('load', 'Loading shaders.');
+                        }
                         await platform.shader(nostalgist);
                     }
 
                     if (typeof platform.startup_beforelaunch === 'function') {
+                        if (Debug.isEnabled()) {
+                            Debug.updateMessage('load', 'Executing platform-specific startup sequence.');
+                        }
                         await platform.startup_beforelaunch(nostalgist, storageManager);
                     }
                 },
@@ -239,6 +275,9 @@ export class PlatformManager {
                     return `./libretro/${core}_libretro.wasm`
                 },
                 resolveRom(file) {
+                    if (Debug.isEnabled()) {
+                        Debug.updateMessage('load', `Resolving ROM file.`);
+                    }
                     return `${file}`
                 },
                 resolveShader(file) {
@@ -248,13 +287,23 @@ export class PlatformManager {
             });
         }
         catch (error) {
+            errored = true;
+
+            if (Debug.isEnabled()) {
+                Debug.updateMessage('error', `Error: ${error.message}`);
+            }
+
             this.#cli.guru(error, false);
             console.error('Error importing Nostalgist:', error);
             return;
         }
         finally {
-            this.#setBgColor('#000000', false);
-            this.#vme.emulationStarted();
+            if (!errored) {
+                Debug.clearMessages();
+                this.#setBgColor('#000000', false);
+                this.#vme.emulationStarted();
+            } else {
+            }
         }
     }
 
