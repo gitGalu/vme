@@ -118,16 +118,14 @@ export class PlatformManager {
             Debug.setMessage(`Starting to load ROM file: ${caption}`);
         }
 
-        console.log(`
-        {
-            "title": "${caption}",
+        console.log({
+            "title": `${caption}`,
             "credits": "",
-            "platform_id": "${this.#selected_platform.platform_id}",
+            "platform_id": `${this.#selected_platform.platform_id}`,
             "image": "",
-            "filename": "${caption}",
-            "url": "${filename}"
-        }
-        `);
+            "filename": `${caption}`,
+            "url": `${filename}`
+        });
 
         try {
             this.#prepareNostalgist(caption);
@@ -136,11 +134,24 @@ export class PlatformManager {
                 Debug.updateMessage('load', `Preparing to download: ${filename}`);
             }
 
-            const response = await fetch(filename);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('slowLoading')), 8000)
+            );
 
-            if (Debug.isEnabled()) {
-                Debug.updateMessage('load', 'File downloaded successfully');
-            }
+            const fetchPromise = fetch(filename);
+
+            let slowLoading = false;
+
+            const response = await Promise.race([
+                fetchPromise,
+                timeoutPromise.catch(error => {
+                    slowLoading = error.message === 'slowLoading';
+                    if (Debug.isEnabled()) {
+                        Debug.updateMessage('load', 'Slow download detected.');
+                    }
+                    return fetchPromise;
+                })
+            ]);
 
             const contentLength = response.headers.get('Content-Length');
             const totalSize = contentLength ? parseInt(contentLength, 10) : null;
@@ -171,10 +182,10 @@ export class PlatformManager {
                     }
                 }
 
-                cli.print_progress(`Loading ... OK`);
+                cli.print_progress('Loading ... OK');
 
                 if (Debug.isEnabled()) {
-                    Debug.updateMessage('load', `Download complete.`);
+                    Debug.updateMessage('load', 'Download complete.');
                 }
 
                 return new Blob(chunks);
@@ -184,13 +195,14 @@ export class PlatformManager {
 
             this.#storeLastProgramInfo(filename, caption);
 
-            this.startEmulation(blob, caption);
+            this.startEmulation(blob, caption, slowLoading);
         } catch (error) {
             if (Debug.isEnabled()) {
-                Debug.setMessage(`Error encountered: ${error.message}`);
+                Debug.setMessage(`Error encountered: ${error}`);
             }
 
-            this.#cli.guru(error, false);
+            const stack = error.stack || error;
+            this.#cli.guru(stack, false);
             throw new Error('Error loading file.');
         }
     }
