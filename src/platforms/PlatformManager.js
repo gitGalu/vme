@@ -117,7 +117,7 @@ export class PlatformManager {
         if (Debug.isEnabled()) {
             Debug.setMessage(`Starting to load ROM file: ${caption}`);
         }
-
+    
         console.log({
             "title": `${caption}`,
             "credits": "",
@@ -126,54 +126,48 @@ export class PlatformManager {
             "filename": `${caption}`,
             "url": `${filename}`
         });
-
+    
         try {
             this.#prepareNostalgist(caption);
-
+    
             if (Debug.isEnabled()) {
                 Debug.updateMessage('load', `Preparing to download: ${filename}`);
             }
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('slowLoading')), 8000)
-            );
-
-            const fetchPromise = fetch(filename);
-
+    
             let slowLoading = false;
-
-            const response = await Promise.race([
-                fetchPromise,
-                timeoutPromise.catch(error => {
-                    slowLoading = error.message === 'slowLoading';
-                    if (Debug.isEnabled()) {
-                        Debug.updateMessage('load', 'Slow download detected.');
-                    }
-                    return fetchPromise;
-                })
-            ]);
-
+    
+            const timeoutId = setTimeout(() => {
+                slowLoading = true;
+                if (Debug.isEnabled()) {
+                    Debug.updateMessage('load', 'Slow download detected.');
+                }
+            }, 8000);
+    
+            const response = await fetch(filename);
+    
+            clearTimeout(timeoutId); 
+            
             const contentLength = response.headers.get('Content-Length');
             const totalSize = contentLength ? parseInt(contentLength, 10) : null;
-
+    
             let loaded = 0;
             const reader = response.body.getReader();
             const chunks = [];
-
+    
             let cli = this.#cli;
-
+    
             async function readStream() {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
                         break;
                     }
-
+    
                     loaded += value.length;
                     chunks.push(value);
-
+    
                     const loadedKB = Math.floor(loaded / 1024);
-
+    
                     if (totalSize) {
                         const percentage = ((loaded / totalSize) * 100).toFixed(2);
                         cli.print_progress(`Downloading ... ${percentage} %`);
@@ -181,26 +175,26 @@ export class PlatformManager {
                         cli.print_progress(`Downloading ... ${loadedKB} KB`);
                     }
                 }
-
+    
                 cli.print_progress('Loading ... OK');
-
+    
                 if (Debug.isEnabled()) {
                     Debug.updateMessage('load', 'Download complete.');
                 }
-
+    
                 return new Blob(chunks);
             }
-
+    
             const blob = await readStream();
-
+    
             this.#storeLastProgramInfo(filename, caption);
-
+    
             this.startEmulation(blob, caption, slowLoading);
         } catch (error) {
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
             }
-
+    
             const stack = error.stack || error;
             this.#cli.guru(stack, false);
             throw new Error('Error loading file.');
