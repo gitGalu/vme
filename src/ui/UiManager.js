@@ -8,7 +8,7 @@ import { QuickJoy } from '../touch/QuickJoy.js';
 import { QuickShot } from '../touch/QuickShot.js';
 import { Mousepad } from '../touch/Mousepad.js';
 import { Hideaway } from '../touch/Hideaway.js';
-import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../Constants.js';
+import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE, FAST_BTN_RADIUS } from '../Constants.js';
 
 export class UiManager {
     #platform_manager;
@@ -34,16 +34,16 @@ export class UiManager {
         fastuiContainer.id = 'fastui';
         fastuiContainer.style.display = 'none';
 
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(this.#platform_manager.getNostalgist()));
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new CommandButtonListener('FAST_FORWARD', this.#platform_manager.getNostalgist(), 'Fast Forward'));
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener());
+        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(this.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
+        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new CommandButtonListener('FAST_FORWARD', this.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
+        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener(), FAST_BTN_RADIUS);
 
         if (!this.#platform_manager.getSelectedPlatform().savestates_disabled) {
-            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(this.#platform_manager));
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(this.#platform_manager), FAST_BTN_RADIUS);
         }
 
         if (this.#platform_manager.getSelectedPlatform().keyboard) {
-            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">KB</span>', undefined, 'fastkb', new KbListener(this.#kb_manager));
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">KB</span>', undefined, 'fastkb', new KbListener(this.#kb_manager), FAST_BTN_RADIUS);
         }
 
         this.#placeItems(fastuiContainer);
@@ -200,7 +200,7 @@ export class UiManager {
                     }
                 }
             }
-        });
+        }, FAST_BTN_RADIUS);
 
         const mouse_controllers = this.#platform_manager.getSelectedPlatform().mouse_controllers;
         if (mouse_controllers == undefined || mouse_controllers.length == 0) return;
@@ -227,7 +227,8 @@ export class UiManager {
                     }
                 }
             }
-        });
+        }, 
+        FAST_BTN_RADIUS);
     }
 
     initControlsButton() {
@@ -356,7 +357,7 @@ export class UiManager {
             } else {
                 listener = new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), keyCode);
             }
-            new SingleTouchButton(container, '<span style="font-size: 50%;">' + label + '</span>', undefined, 'fast' + counter, listener);
+            new SingleTouchButton(container, '<span style="font-size: 50%;">' + label + '</span>', undefined, 'fast' + counter, listener, FAST_BTN_RADIUS);
 
             cell += 6;
             counter += 1;
