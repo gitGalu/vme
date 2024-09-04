@@ -67,6 +67,7 @@ export class PlatformManager {
         const self = this;
 
         let retroarchConfigOverrides = {};
+
         if (EnvironmentManager.hasTouch() && this.#selected_platform.touch_controller_mapping != undefined) {
             retroarchConfigOverrides = {
                 ...this.#selected_platform.touch_controller_mapping
@@ -80,6 +81,20 @@ export class PlatformManager {
                 input_player1_b: 'nul',
                 input_player1_a: 'nul',
                 input_player1_c: 'nul'
+            }
+        } else if (this.#selected_platform == SelectedPlatforms.Amiga) {
+            retroarchConfigOverrides = {
+                input_player1_x: 'nul',
+                input_player1_y: 'nul',
+                input_player1_c: 'nul',
+                input_player1_b: 'z', //fire
+                input_player1_a: 'nul',
+                input_player1_l: 'nul',
+                input_player1_r: 'nul',
+                input_player1_select: 'nul',
+                input_player1_start: 'nul',
+                input_player1_l2: 'nul',
+                input_player1_r2: 'nul'
             }
         }
 
@@ -97,6 +112,9 @@ export class PlatformManager {
                 savestate_thumbnail_enable: true,
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
+
+                // input_game_focus_toggle: 'nul',
+                // input_auto_game_focus: '1',
 
                 video_adaptive_vsync: true,
                 video_vsync: true,
@@ -117,7 +135,7 @@ export class PlatformManager {
         if (Debug.isEnabled()) {
             Debug.setMessage(`Starting to load ROM file: ${caption}`);
         }
-    
+
         console.log({
             "title": `${caption}`,
             "credits": "",
@@ -126,48 +144,48 @@ export class PlatformManager {
             "filename": `${caption}`,
             "url": `${filename}`
         });
-    
+
         try {
             this.#prepareNostalgist(caption);
-    
+
             if (Debug.isEnabled()) {
                 Debug.updateMessage('load', `Preparing to download: ${filename}`);
             }
-    
+
             let slowLoading = false;
-    
+
             const timeoutId = setTimeout(() => {
                 slowLoading = true;
                 if (Debug.isEnabled()) {
                     Debug.updateMessage('load', 'Slow download detected.');
                 }
             }, 8000);
-    
+
             const response = await fetch(filename);
-    
-            clearTimeout(timeoutId); 
-            
+
+            clearTimeout(timeoutId);
+
             const contentLength = response.headers.get('Content-Length');
             const totalSize = contentLength ? parseInt(contentLength, 10) : null;
-    
+
             let loaded = 0;
             const reader = response.body.getReader();
             const chunks = [];
-    
+
             let cli = this.#cli;
-    
+
             async function readStream() {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
                         break;
                     }
-    
+
                     loaded += value.length;
                     chunks.push(value);
-    
+
                     const loadedKB = Math.floor(loaded / 1024);
-    
+
                     if (totalSize) {
                         const percentage = ((loaded / totalSize) * 100).toFixed(2);
                         cli.print_progress(`Downloading ... ${percentage} %`);
@@ -175,26 +193,26 @@ export class PlatformManager {
                         cli.print_progress(`Downloading ... ${loadedKB} KB`);
                     }
                 }
-    
+
                 cli.print_progress('Loading ... OK');
-    
+
                 if (Debug.isEnabled()) {
                     Debug.updateMessage('load', 'Download complete.');
                 }
-    
+
                 return new Blob(chunks);
             }
-    
+
             const blob = await readStream();
-    
+
             this.#storeLastProgramInfo(filename, caption);
-    
+
             this.startEmulation(blob, caption, slowLoading);
         } catch (error) {
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
             }
-    
+
             const stack = error.stack || error;
             this.#cli.guru(stack, false);
             throw new Error('Error loading file.');
@@ -253,8 +271,6 @@ export class PlatformManager {
                     fileContent: blob
                 },
                 async beforeLaunch(nostalgist) {
-
-
                     if (StorageManager.getValue("SHADER") != "0" && typeof platform.shader === 'function') {
                         if (Debug.isEnabled()) {
                             Debug.updateMessage('load', 'Loading shaders.');
@@ -270,8 +286,10 @@ export class PlatformManager {
                     }
                 },
                 state: self.#state,
-                onLaunch(nostalgist) {
+                async onLaunch(nostalgist) {
                     self.#program_name = caption;
+                    nostalgist.sendCommand('GAME_FOCUS_TOGGLE');
+                    nostalgist.sendCommand('SHADER_TOGGLE');
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
                 resolveCoreJs(file) {

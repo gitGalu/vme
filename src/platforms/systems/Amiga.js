@@ -81,8 +81,17 @@ const Amiga = {
         MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS
     ],
     touch_controller_mapping: {
+        input_player1_x: 'nul',
+        input_player1_y: 'nul',
+        input_player1_c: 'nul',
+        input_player1_a: 'nul',
+        input_player1_l: 'nul',
+        input_player1_r: 'nul',
+        input_player1_select: 'nul',
+        input_player1_start: 'nul',
         input_player1_l2: 'F13', //lmb
         input_player1_r2: 'F14', //rmb
+        input_player1_b: 'F15' //fire
     },
     fire_buttons: 1,
     keyboard: {
@@ -91,7 +100,6 @@ const Amiga = {
         }
     },
     additional_buttons: {
-
     },
     rewind_granularity: 25,
     fastforward_ratio: 10,
