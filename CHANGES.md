@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.4] - 2024-09-04
+
+- Amiga: fix keyboard input
+
 ## [0.8.2] - 2024-08-31
 
 - add option to enable debug mode
