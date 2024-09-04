@@ -1,6 +1,6 @@
 {
   "name": "VM/E",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "Virtual Machine / Emulator - web frontend for Libretro-based emulation",
   "scripts": {
     "dev": "vite --port 8080 --host",
