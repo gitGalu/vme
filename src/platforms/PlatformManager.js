@@ -19,6 +19,7 @@ import Lynx from './systems/Lynx.js';
 import GBA from './systems/GBA.js';
 import SNK from './systems/SNK.js';
 import Amiga from './systems/Amiga.js';
+import Coleco from './systems/Coleco.js';
 import JSZip from 'jszip';
 import { s } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -27,7 +28,7 @@ import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, CPC, VIC20, ZX80, Spectrum, SNK
+    NES, GB, GBC, GBA, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK
 }
 
 export class PlatformManager {

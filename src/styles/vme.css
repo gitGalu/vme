@@ -100,6 +100,12 @@
   font-display: block;
 }
 
+@font-face {
+  font-family: Coleco;
+  src: url('../assets/fonts/pixelcoleco.otf') format("opentype");
+  font-display: block;
+}
+
 #warningStandalone {
   display: none;
   padding: 2em;
