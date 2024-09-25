@@ -13,7 +13,7 @@ const A2600 = {
         '--color2': '#ffffff',
         '--color3': '#a984ec',
         '--font': 'PetMe2X',
-        '--cursorwidth': '0.5em',
+        '--cursorwidth': '1.5em',
         '--transform': 'uppercase'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],

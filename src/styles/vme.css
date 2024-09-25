@@ -1363,7 +1363,7 @@ a {
 
 #cursor {
   width: var(--cursorwidth);
-  height: 1em;
+  height: var(--cursorheight);
   background-color: var(--color1);
   visibility: hidden;
 }

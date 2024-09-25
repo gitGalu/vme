@@ -14,6 +14,7 @@ const Lynx = {
         '--font': 'Lynx',
         '--transform': 'uppercase',
         '--cursorwidth': '0.75em',
+        '--cursorheight': '1em'
     },
     shader: async function (nostalgist) {
         const FS = nostalgist.getEmscriptenFS();
