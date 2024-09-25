@@ -140,6 +140,7 @@ html {
 }
 
 body {
+  opacity: 0;
   top: 0;
   left: 0;
   margin: 0;
@@ -154,6 +155,11 @@ body {
   -ms-user-select: none;
   user-select: none;
   overflow: hidden;
+}
+
+body.fade-in-visible {
+  opacity: 1;
+  transition: opacity 0.25s ease-in;
 }
 
 body, html {

@@ -62,6 +62,10 @@ export class VME {
     }
 
     constructor() {
+        window.onload = function () {
+            document.body.classList.add("fade-in-visible");
+        }
+
         if (this.#guard()) {
             show("#warningStandalone", "block");
             show("html");
