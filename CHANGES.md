@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.5] - 2024-09-27
+
+- disabled autorun - user must now press any key to start the emulation
+- add ColecoVision support (uses gearcoleco core)
+- toast notifications support
+- toast notification when the state has been successfully saved
+
 ## [0.8.4] - 2024-09-04
 
 - Amiga: fix keyboard input
