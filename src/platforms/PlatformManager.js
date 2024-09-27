@@ -21,7 +21,7 @@ import SNK from './systems/SNK.js';
 import Amiga from './systems/Amiga.js';
 import Coleco from './systems/Coleco.js';
 import JSZip from 'jszip';
-import { s } from '../dom.js';
+import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
@@ -133,6 +133,10 @@ export class PlatformManager {
     }
 
     async loadRomFileFromUrl(filename, caption) {
+        let core = this.#selected_platform.core;
+        let coreWasm = `./libretro/${core}_libretro.wasm`;
+        let coreJS = `./libretro/${core}_libretro.js`;
+
         if (Debug.isEnabled()) {
             Debug.setMessage(`Starting to load ROM file: ${caption}`);
         }
@@ -146,69 +150,82 @@ export class PlatformManager {
             "url": `${filename}`
         });
 
+        let self = this;
+        let progressMessage;
+
         try {
             this.#prepareNostalgist(caption);
 
-            if (Debug.isEnabled()) {
-                Debug.updateMessage('load', `Preparing to download: ${filename}`);
-            }
+            self.#cli.print_progress('Loading ... Please wait.')
 
-            let slowLoading = false;
-
-            const timeoutId = setTimeout(() => {
-                slowLoading = true;
-                if (Debug.isEnabled()) {
-                    Debug.updateMessage('load', 'Slow download detected.');
-                }
-            }, 8000);
-
-            const response = await fetch(filename);
-
-            clearTimeout(timeoutId);
-
-            const contentLength = response.headers.get('Content-Length');
-            const totalSize = contentLength ? parseInt(contentLength, 10) : null;
-
-            let loaded = 0;
-            const reader = response.body.getReader();
-            const chunks = [];
-
-            let cli = this.#cli;
-
-            async function readStream() {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) {
-                        break;
-                    }
-
-                    loaded += value.length;
-                    chunks.push(value);
-
-                    const loadedKB = Math.floor(loaded / 1024);
-
-                    if (totalSize) {
-                        const percentage = ((loaded / totalSize) * 100).toFixed(2);
-                        cli.print_progress(`Downloading ... ${percentage} %`);
-                    } else {
-                        cli.print_progress(`Downloading ... ${loadedKB} KB`);
-                    }
-                }
-
-                cli.print_progress('Loading ... OK');
+            async function downloadFile(url, text) {
 
                 if (Debug.isEnabled()) {
-                    Debug.updateMessage('load', 'Download complete.');
+                    Debug.updateMessage('load', `Preparing to download: ${url}`);
                 }
 
-                return new Blob(chunks);
+                const response = await fetch(url);
+                const contentLength = response.headers.get('Content-Length');
+                const totalSize = contentLength ? parseInt(contentLength, 10) : null;
+
+                let loaded = 0;
+                const reader = response.body.getReader();
+                const chunks = [];
+
+                async function readStream() {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done || text == null) {
+                            break;
+                        }
+
+                        loaded += value.length;
+                        chunks.push(value);
+
+                        const loadedKB = Math.floor(loaded / 1024);
+
+                        if (totalSize) {
+                            const percentage = ((loaded / totalSize) * 100).toFixed(2);
+                            progressMessage = `${text} ${percentage}%`;
+                            self.#cli.print_progress(progressMessage);
+                        } else {
+                            progressMessage = `${text} ${loadedKB} KB`;
+                            self.#cli.print_progress(progressMessage);
+                        }
+                    }
+
+                    self.#cli.print_progress('Loading ... OK');
+                    return new Blob(chunks);
+                }
+
+                return await readStream();
             }
 
-            const blob = await readStream();
+            const romBlob = await downloadFile.call(this, filename, "Loading ...");
+            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...");
+            const wasmArrayBuffer = await wasmBlob.arrayBuffer();
 
-            this.#storeLastProgramInfo(filename, caption);
+            self.#storeLastProgramInfo(filename, caption);
 
-            this.startEmulation(blob, caption, slowLoading);
+            self.#cli.clear();
+            self.#cli.print("Loading complete.");
+            self.#cli.print("<span class='blinking2'>Press anything to start.</span>");
+
+            hide('#cors_interface');
+            hide('#header');
+            hide('#menu-wrap');
+            hide('#menu-spacer');
+            hide('#toggle-keyboard');
+
+            const launch = () => {
+                document.body.removeEventListener('click', launch);
+                document.body.removeEventListener('keydown', launch);
+                self.startEmulation(romBlob, caption, wasmArrayBuffer);
+            };
+
+            document.body.addEventListener('click', launch, { once: true });
+            document.body.addEventListener('keydown', launch, { once: true });
+
         } catch (error) {
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
@@ -247,7 +264,7 @@ export class PlatformManager {
             });
     }
 
-    async startEmulation(blob, caption) {
+    async startEmulation(blob, caption, wasmArrayBuffer) {
         if (Debug.isEnabled()) {
             Debug.updateMessage('load', 'Preparing to start emulation.');
         }
@@ -297,6 +314,9 @@ export class PlatformManager {
                     return `./libretro/${core}_libretro.js`
                 },
                 resolveCoreWasm(file) {
+                    if (wasmArrayBuffer) {
+                        return wasmArrayBuffer;
+                    }
                     return `./libretro/${core}_libretro.wasm`
                 },
                 resolveRom(file) {
