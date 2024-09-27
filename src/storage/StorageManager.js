@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import CryptoJS from 'crypto-js';
 import { Debug } from '../Debug.js';
+import { ToastManager } from '../ui/ToastManager.js';
 
 export class StorageManager {
     #db;
@@ -208,6 +209,8 @@ export class StorageManager {
                     save_data_id: saveDataId,
                     timestamp: Date.now(),
                 });
+
+                ToastManager.enqueueToast('State saved.');
             });
 
         } catch (error) {
