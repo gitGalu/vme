@@ -563,10 +563,11 @@ export class PlatformManager {
                 if (collectionImgFile) {
                     collectionImgBlob = await collectionImgFile.async('blob');
                 } else {
-                    throw new Error("The image file is invalid: " + item.image);
+                    throw new Error("The image file is invalid: " + vmeImport.image);
                 }
 
                 for (const item of vmeImport.list) {
+
                     i++;
                     this.#cli.print_progress(`Importing ... (${i}/${itemCounts})`);
 
@@ -592,6 +593,13 @@ export class PlatformManager {
                     if (item.url) {
                         const response = await fetch(item.url);
                         blob = await response.blob();
+                    } else if (item.file) {
+                        const romFile = zip.file(item.file);
+                        if (romFile) {
+                            blob = await romFile.async("blob");
+                        } else {
+                            throw new Error("The file is not found in the zip: " + item.file);
+                        }
                     } else {
                         throw new Error("The rom file is invalid: " + item.url);
                     }
@@ -611,7 +619,7 @@ export class PlatformManager {
                 const ok = await this.#storage_manager.storeCollection(collectionUniqueName, collectionTitle, collectionImgBlob, roms);
 
                 if (ok) {
-                    this.#cli.message("A new collection have been successfully imported.");
+                    this.#cli.message("A new collection was successfully imported.");
                 } else {
                     throw new Error();
                 }
