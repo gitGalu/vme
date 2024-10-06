@@ -7,6 +7,7 @@ const CPC = {
     core: 'crocods',
     platform_name: 'Amstrad CPC',
     short_name: 'CPC',
+    loader: 'unzip',
     theme: {
         '--color0': '#000060',
         '--color1': '#d6e121',
