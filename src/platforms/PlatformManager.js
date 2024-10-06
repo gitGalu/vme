@@ -20,6 +20,7 @@ import GBA from './systems/GBA.js';
 import SNK from './systems/SNK.js';
 import Amiga from './systems/Amiga.js';
 import Coleco from './systems/Coleco.js';
+import SNES from './systems/SNES.js';
 import JSZip from 'jszip';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -28,7 +29,7 @@ import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK
 }
 
 export class PlatformManager {
@@ -201,7 +202,22 @@ export class PlatformManager {
                 return await readStream();
             }
 
-            const romBlob = await downloadFile.call(this, filename, "Loading ...");
+            let romBlob = await downloadFile.call(this, filename, "Loading ...");
+
+            if (this.#selected_platform.loader == 'unzip') {
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(romBlob);
+
+                if (Object.keys(zipContent.files).length === 0) {
+                    throw new Error('No files found in the zip archive.');
+                }
+                
+                const firstFileName = Object.keys(zipContent.files)[0];
+                caption = firstFileName;
+                const firstFile = zipContent.files[firstFileName];
+                romBlob = await firstFile.async('blob');
+            }
+
             const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...");
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
 

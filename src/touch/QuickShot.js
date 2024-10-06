@@ -7,6 +7,8 @@ import { DualTouchButtonJoyListener } from "./DualTouchButtonJoyListener";
 import { TripleTouchButtonJoyListener } from "./TripleTouchButtonJoyListener";
 import { QuadrupleTouchButton } from './QuadrupleTouchButton.js';
 import { QuadrupleTouchButtonJoyListener } from './QuadrupleTouchButtonJoyListener.js';
+import { SextupleTouchButton } from './SextupleTouchButton.js';
+import { SextupleTouchButtonJoyListener } from './SextupleTouchButtonJoyListener.js';
 
 export class QuickShot {
     static #DEAD_ZONE_RADIUS = 30;
@@ -85,6 +87,8 @@ export class QuickShot {
             } else if (platform_id == "snk") {
                 new QuadrupleTouchButton(bottomContainer, 'C', 'D', 'A', 'B', undefined, 'qsab4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'x', 'y', 'a', 'b'), QuadrupleTouchButton.Layout.ABCD);
             }
+        } else if (buttonsCount == 6 || buttonsCount == 5) {
+            new SextupleTouchButton(bottomContainer, 'L', 'A', 'Y', 'R', 'X', 'B', undefined, 'qs6tr', new SextupleTouchButtonJoyListener(this.#nostalgist, 'l', 'a', 'y', 'r', 'x', 'b'), QuadrupleTouchButton.Layout.TWO_ROWS);
         }
 
         document.body.appendChild(bottomContainer);
