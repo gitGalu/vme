@@ -115,6 +115,13 @@ const A800 = {
             accepted: ["a3e8d617c95d08031fe1b20d541434b2"]
         },
     ],
+    keyboard_controller_info: {
+        "Cursor Keys": "Joy Directions",
+        "Z": "Joystick fire",
+        "Right Shift": "Select",
+        "F2": "Option",
+        "F4": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,

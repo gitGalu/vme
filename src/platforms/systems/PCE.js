@@ -15,6 +15,13 @@ const PCE = {
         '--transform': 'uppercase',
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button II",
+        "X": "Button I",
+        "Right Shift": "Select",
+        "Enter": "Run"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

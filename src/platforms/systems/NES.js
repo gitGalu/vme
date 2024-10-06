@@ -17,6 +17,13 @@ const NES = {
         '--transform': 'uppercase'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button B",
+        "X": "Button A",
+        "Right Shift": "Select",
+        "Enter": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

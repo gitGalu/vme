@@ -18,6 +18,11 @@ const CPC = {
     },
     savestates_disabled: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Joy Directions",
+        "Z": "Fire",
+        "X": "Select file"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,

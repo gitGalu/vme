@@ -32,6 +32,15 @@ const Lynx = {
             '#reference /home/web_user/retroarch/bundle/shaders/shaders_glsl/handheld/sameboy-lcd.glslp',
         )
     },
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button B",
+        "X": "Button A",
+        "Right Shift": "Flip LCD",
+        "Q": "Option 1",
+        "W": "Option 2",
+        "Enter": "Pause"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY

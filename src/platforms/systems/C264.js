@@ -16,6 +16,11 @@ const C264 = {
         '--cursorwidth': '1em',
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Joystick movement",
+        "Z": "Joystick fire",
+        "Escape": "Run/Stop"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,

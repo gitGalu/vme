@@ -16,13 +16,43 @@ const C128 = {
         '--cursorwidth': '0.5em',
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Joystick movement",
+        "Z": "Joystick fire",
+        "Escape": "Run/Stop"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
-    fire_buttons: 1,
+    keyboard: {
+        shiftKey: 1,
+        overrides: {
+        }
+    },
     additional_buttons: {
+        1: {
+            "label": "SPACE",
+            "key": {
+                "key": 'Space',
+                "code": 'Space'
+            }
+        },
+        2: {
+            "label": "RUN/STOP",
+            "key": {
+                "key": 'Escape',
+                "code": 'Escape'
+            }
+        },
+        3: {
+            "label": "F1",
+            "key": {
+                "key": 'F1',
+                "code": 'F1'
+            }
+        }
     },
     message: ["C128 support is under development and mostly broken or non-functional."]
 };

@@ -211,7 +211,7 @@ export class PlatformManager {
                 if (Object.keys(zipContent.files).length === 0) {
                     throw new Error('No files found in the zip archive.');
                 }
-                
+
                 const firstFileName = Object.keys(zipContent.files)[0];
                 caption = firstFileName;
                 const firstFile = zipContent.files[firstFileName];
@@ -233,6 +233,10 @@ export class PlatformManager {
             hide('#menu-spacer');
             hide('#toggle-keyboard');
 
+            if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
+                self.#printControls(self.#selected_platform.keyboard_controller_info);
+            }
+
             const launch = () => {
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
@@ -252,6 +256,28 @@ export class PlatformManager {
             throw new Error('Error loading file.');
         }
     }
+
+    #printControls(controlsMap) {
+        this.#cli.print("&nbsp;");
+        this.#cli.print("&nbsp;");
+        this.#cli.print("Keyboard controls:");
+
+        function padWithNbspRightAlign(text, maxLength) {
+            const paddingLength = maxLength - text.length;
+            const padding = '&nbsp;'.repeat(paddingLength > 0 ? paddingLength : 0);
+            return padding + text;
+        }
+    
+        const maxControlLength = Math.max(...Object.keys(controlsMap).map(key => key.length));
+    
+        for (const control in controlsMap) {
+            if (controlsMap.hasOwnProperty(control)) {
+                const description = controlsMap[control];
+                this.#cli.print(`&nbsp;&nbsp;${padWithNbspRightAlign(control, maxControlLength)} - ${description}`);
+            }
+        }
+    }
+    
 
     #storeLastProgramInfo(filename, caption) {
         const data = {

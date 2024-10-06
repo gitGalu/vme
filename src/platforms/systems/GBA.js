@@ -45,6 +45,15 @@ const GBA = {
         }
     ],
     force_scale: true,
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button B",
+        "X": "Button A",
+        "Q": "Button L",
+        "W": "Button R",
+        "Right Shift": "Select",
+        "Enter": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

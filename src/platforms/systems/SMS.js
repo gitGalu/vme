@@ -14,6 +14,12 @@ const SMS = {
         '--cursorwidth': '1em'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Control Pad",
+        "Z": "Button 1 / Start",
+        "X": "Button 2",
+        "Enter": "Pause",
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

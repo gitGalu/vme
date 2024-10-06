@@ -22,6 +22,17 @@ const MD = {
             input_libretro_device_p1: "0"
         };
     },
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button B",
+        "X": "Button C",
+        "A": "Button A",
+        "S": "Button Y",
+        "Q": "Button X",
+        "W": "Button Z",
+        "Right Shift": "Mode",
+        "Enter": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

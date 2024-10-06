@@ -27,6 +27,16 @@ const Coleco = {
         FS.writeFile('/home/web_user/retroarch/userdata/system/colecovision.rom', await new Uint8Array(bios));
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Joy directions",
+        "Z": "Fire Left",
+        "X": "Fire Right",
+        "A": "Numpad 1",
+        "S": "Numpad 2",
+        "Q": "Numpad 3",
+        "Right Shift": "Numpad #",
+        "Enter": "Numpad *"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

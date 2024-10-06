@@ -18,6 +18,17 @@ const SNES = {
         '--cursorwidth': '1em',
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button B",
+        "X": "Button A",
+        "A": "Button Y",
+        "S": "Button X",
+        "Q": "Button L",
+        "W": "Button R",
+        "Right Shift": "Select",
+        "Enter": "Start",
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

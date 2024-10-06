@@ -17,6 +17,12 @@ const A2600 = {
         '--transform': 'uppercase'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Movement",
+        "Z": "Fire",
+        "Right Shift": "Select",
+        "Enter": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,

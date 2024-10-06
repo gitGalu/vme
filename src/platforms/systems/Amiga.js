@@ -72,6 +72,11 @@ const Amiga = {
             accepted: ["646773759326fbac3b2311fd8c8793ee"]
         },
     ],
+    keyboard_controller_info: {
+        "Cursor Keys": "Joy Directions",
+        "Z": "Fire",
+        "Mouse": "Mouse"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,

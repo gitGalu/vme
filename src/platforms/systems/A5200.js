@@ -15,6 +15,13 @@ const A5200 = {
         '--cursorwidth': '1em'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Cursor Keys": "Movement",
+        "Z": "Fire 1",
+        "X": "Fire 2",
+        "Right Shift": "Pause",
+        "Enter": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

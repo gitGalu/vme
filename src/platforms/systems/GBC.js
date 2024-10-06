@@ -32,6 +32,13 @@ const GBC = {
         )
     },
     force_scale: true,
+    keyboard_controller_info: {
+        "Cursor Keys": "D-PAD",
+        "Z": "Button B",
+        "X": "Button A",
+        "Right Shift": "Select",
+        "Enter": "Start"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

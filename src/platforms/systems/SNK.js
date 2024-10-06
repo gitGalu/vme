@@ -21,6 +21,15 @@ const SNK = {
         return {
         };
     },
+    keyboard_controller_info: {
+        "Cursor Keys": "Joystick movement",
+        "Z": "Fire A",
+        "X": "Fire B",
+        "A": "Fire C",
+        "S": "Fire D",
+        "Right Shift": "Insert Coin",
+        "Enter": "Start",
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],
