@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.6] - 2024-10-04
+
+- add SNES support (uses snes9x core)
+- desktop: display keyboard controls on program launch
+- CPC: add zip file support
+
 ## [0.8.5] - 2024-09-27
 
 - disabled autorun - user must now press any key to start the emulation
