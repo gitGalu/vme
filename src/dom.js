@@ -54,3 +54,9 @@ export function addButtonEventListeners(button, handleAction) {
         }
     });
 }
+
+export function removeButtonEventListeners(button) {
+    button.removeEventListener('mousedown', handleAction);
+    button.removeEventListener('mouseup', handleAction);
+    button.removeEventListener('mouseleave', handleAction);
+}
