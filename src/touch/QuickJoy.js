@@ -32,18 +32,18 @@ export class QuickJoy {
         bottomContainer.style.pointerEvents = 'none';
 
         //lr
-        new DualTouchButton(bottomContainer, true, '\u21e6', '\u21e8', undefined, 'qjlr', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'left', 'right'));
+        new DualTouchButton(bottomContainer, true, '\u2190', '\u2192', undefined, 'qjlr', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'left', 'right'));
 
         let btns = this.#platform_manager.getSelectedPlatform().fire_buttons;
 
         if (btns == 1) {
             //ud
-            new DualTouchButton(bottomContainer, false, '\u21e7', '\u21e9', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
+            new DualTouchButton(bottomContainer, false, '\u2191', '\u2193', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
             //fire
             new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'qja', new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b'));
         } else if (btns == 2) {
             //ud
-            new DualTouchButton(bottomContainer, false, '\u21e7', '\u21e9', undefined, 'qjud2', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
+            new DualTouchButton(bottomContainer, false, '\u2191', '\u2193', undefined, 'qjud2', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
             //fire
             new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qjab', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b', 'a'));
         } else if (btns == 3) {
