@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.7] - 2024-10-19
+
+- Save Browser: add platform selection filter
+- add Intellivision support (uses freeintv core)
+
 ## [0.8.6] - 2024-10-04
 
 - add SNES support (uses snes9x core)
