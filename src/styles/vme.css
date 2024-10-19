@@ -77,6 +77,12 @@
 }
 
 @font-face {
+  font-family: Intellivision;
+  src: url('../assets/fonts/intellec.ttf') format("truetype");
+  font-display: block;
+}
+
+@font-face {
   font-family: MD;
   src: url('../assets/fonts/genesis.ttf') format("truetype");
   font-display: block;

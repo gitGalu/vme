@@ -21,6 +21,7 @@ import SNK from './systems/SNK.js';
 import Amiga from './systems/Amiga.js';
 import Coleco from './systems/Coleco.js';
 import SNES from './systems/SNES.js';
+import Intv from './systems/Intv.js';
 import JSZip from 'jszip';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -29,7 +30,7 @@ import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv
 }
 
 export class PlatformManager {
