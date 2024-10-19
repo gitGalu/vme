@@ -31,7 +31,7 @@
     </div>
 
     <div id="save-browser">
-        <div class="flicking-background"></div>
+        <div id="flicking-background"></div>
         <div id="saveBrowserEmpty">Loading...</div>
         <div id="flicking" class="flicking-viewport">
             <div class="flicking-camera">
@@ -40,16 +40,23 @@
             <span class="flicking-arrow-next"></span>
         </div>
         <div id="saveBrowserUi">
-            <div id="saveBrowserUiBack" class="clickable-area disabled"><img src="./assets/images/arrow.png"></img></div>
+            <div id="saveBrowserUiBack" class="clickable-area disabled">
+                <img src="./assets/images/arrow.png" alt="Back"></img>
+            </div>
+            <div id="platformFilterContainer">
+                <select id="platformFilter" class="minimal-combobox">
+                    <option value="all">All</option>
+                </select>
+            </div>
             <div class="right-area">
                 <div id="saveBrowserUiDelete" class="clickable-area disable">Delete</div>
                 <div id="saveBrowserUiLoad" class="clickable-area disable">Load</div>
             </div>
         </div>
     </div>
-
+    
     <div id="collection-browser">
-        <div class="collection-flicking-background"></div>
+        <div id="collection-flicking-background"></div>
         <div id="collectionBrowserEmpty">Loading...</div>
         <div id="collection-flicking" class="flicking-viewport">
             <div class="flicking-camera">
