@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.8] - 2024-10-20
+
+- add Atari 7800 support (uses ProSystem core)
+- disable autorun for local files
+
 ## [0.8.7] - 2024-10-19
 
 - Save Browser: add platform selection filter
