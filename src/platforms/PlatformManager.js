@@ -134,130 +134,6 @@ export class PlatformManager {
         });
     }
 
-    async loadRomFileFromUrl(filename, caption) {
-        let core = this.#selected_platform.core;
-        let coreWasm = `./libretro/${core}_libretro.wasm`;
-        let coreJS = `./libretro/${core}_libretro.js`;
-
-        if (Debug.isEnabled()) {
-            Debug.setMessage(`Starting to load ROM file: ${caption}`);
-        }
-
-        console.log({
-            "title": `${caption}`,
-            "credits": "",
-            "platform_id": `${this.#selected_platform.platform_id}`,
-            "image": "",
-            "filename": `${caption}`,
-            "url": `${filename}`
-        });
-
-        let self = this;
-        let progressMessage;
-
-        try {
-            this.#prepareNostalgist(caption);
-
-            self.#cli.print_progress('Loading ... Please wait.')
-
-            async function downloadFile(url, text) {
-
-                if (Debug.isEnabled()) {
-                    Debug.updateMessage('load', `Preparing to download: ${url}`);
-                }
-
-                const response = await fetch(url);
-                const contentLength = response.headers.get('Content-Length');
-                const totalSize = contentLength ? parseInt(contentLength, 10) : null;
-
-                let loaded = 0;
-                const reader = response.body.getReader();
-                const chunks = [];
-
-                async function readStream() {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done || text == null) {
-                            break;
-                        }
-
-                        loaded += value.length;
-                        chunks.push(value);
-
-                        const loadedKB = Math.floor(loaded / 1024);
-
-                        if (totalSize) {
-                            const percentage = ((loaded / totalSize) * 100).toFixed(2);
-                            progressMessage = `${text} ${percentage}%`;
-                            self.#cli.print_progress(progressMessage);
-                        } else {
-                            progressMessage = `${text} ${loadedKB} KB`;
-                            self.#cli.print_progress(progressMessage);
-                        }
-                    }
-
-                    self.#cli.print_progress('Loading ... OK');
-                    return new Blob(chunks);
-                }
-
-                return await readStream();
-            }
-
-            let romBlob = await downloadFile.call(this, filename, "Loading ...");
-
-            if (this.#selected_platform.loader == 'unzip') {
-                const zip = new JSZip();
-                const zipContent = await zip.loadAsync(romBlob);
-
-                if (Object.keys(zipContent.files).length === 0) {
-                    throw new Error('No files found in the zip archive.');
-                }
-
-                const firstFileName = Object.keys(zipContent.files)[0];
-                caption = firstFileName;
-                const firstFile = zipContent.files[firstFileName];
-                romBlob = await firstFile.async('blob');
-            }
-
-            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...");
-            const wasmArrayBuffer = await wasmBlob.arrayBuffer();
-
-            self.#storeLastProgramInfo(filename, caption);
-
-            self.#cli.clear();
-            self.#cli.print("Loading complete.");
-            self.#cli.print("<span class='blinking2'>Press anything to start.</span>");
-
-            hide('#cors_interface');
-            hide('#header');
-            hide('#menu-wrap');
-            hide('#menu-spacer');
-            hide('#toggle-keyboard');
-
-            if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
-                self.#printControls(self.#selected_platform.keyboard_controller_info);
-            }
-
-            const launch = () => {
-                document.body.removeEventListener('click', launch);
-                document.body.removeEventListener('keydown', launch);
-                self.startEmulation(romBlob, caption, wasmArrayBuffer);
-            };
-
-            document.body.addEventListener('click', launch, { once: true });
-            document.body.addEventListener('keydown', launch, { once: true });
-
-        } catch (error) {
-            if (Debug.isEnabled()) {
-                Debug.setMessage(`Error encountered: ${error}`);
-            }
-
-            const stack = error.stack || error;
-            this.#cli.guru(stack, false);
-            throw new Error('Error loading file.');
-        }
-    }
-
     #printControls(controlsMap) {
         this.#cli.print("&nbsp;");
         this.#cli.print("&nbsp;");
@@ -278,7 +154,6 @@ export class PlatformManager {
             }
         }
     }
-    
 
     #storeLastProgramInfo(filename, caption) {
         const data = {
@@ -287,6 +162,143 @@ export class PlatformManager {
         };
         const jsonString = JSON.stringify(data);
         StorageManager.storeValue(this.#selected_platform.platform_id + ".LAST_FILE", jsonString);
+    }
+
+    async loadRom(romSource, caption, isLocal = true) {
+        let core = this.#selected_platform.core;
+        let coreWasm = `./libretro/${core}_libretro.wasm`;
+    
+        let self = this;
+        let progressMessage;
+    
+        try {
+            this.#prepareNostalgist(caption);
+    
+            self.#cli.print_progress('Loading ... Please wait.');
+    
+            const downloadFile = async (url, text) => {
+                if (Debug.isEnabled()) {
+                    Debug.updateMessage('load', `Preparing to download: ${url}`);
+                }
+    
+                const response = await fetch(url);
+                const contentLength = response.headers.get('Content-Length');
+                const totalSize = contentLength ? parseInt(contentLength, 10) : null;
+    
+                let loaded = 0;
+                const reader = response.body.getReader();
+                const chunks = [];
+    
+                async function readStream() {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done || text == null) {
+                            break;
+                        }
+    
+                        loaded += value.length;
+                        chunks.push(value);
+    
+                        const loadedKB = Math.floor(loaded / 1024);
+    
+                        if (totalSize) {
+                            const percentage = ((loaded / totalSize) * 100).toFixed(2);
+                            progressMessage = `${text} ${percentage}%`;
+                        } else {
+                            progressMessage = `${text} ${loadedKB} KB`;
+                        }
+    
+                        self.#cli.print_progress(progressMessage);
+                    }
+    
+                    self.#cli.print_progress('Loading ... OK');
+                    return new Blob(chunks);
+                }
+    
+                return await readStream();
+            };
+    
+            let romBlob;
+            if (isLocal) {
+                romBlob = romSource;
+            } else {
+                romBlob = await downloadFile.call(this, romSource, "Loading ...");
+            }
+    
+            if (this.#selected_platform.loader === 'unzip') {
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(romBlob);
+    
+                if (Object.keys(zipContent.files).length === 0) {
+                    throw new Error('No files found in the zip archive.');
+                }
+    
+                const firstFileName = Object.keys(zipContent.files)[0];
+                caption = firstFileName;
+                const firstFile = zipContent.files[firstFileName];
+                romBlob = await firstFile.async('blob');
+            }
+    
+            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...");
+            const wasmArrayBuffer = await wasmBlob.arrayBuffer();
+    
+            if (!isLocal) {
+                self.#storeLastProgramInfo(romSource, caption);
+            }
+    
+            self.#cli.clear();
+            self.#cli.print("Loading complete.");
+            self.#cli.print("<span class='blinking2'>Press anything to start.</span>");
+    
+            hide('#cors_interface');
+            hide('#header');
+            hide('#menu-wrap');
+            hide('#menu-spacer');
+            hide('#toggle-keyboard');
+    
+            if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
+                self.#printControls(self.#selected_platform.keyboard_controller_info);
+            }
+    
+            const launch = () => {
+                document.body.removeEventListener('click', launch);
+                document.body.removeEventListener('keydown', launch);
+                self.startEmulation(romBlob, caption, wasmArrayBuffer);
+            };
+    
+            document.body.addEventListener('click', launch, { once: true });
+            document.body.addEventListener('keydown', launch, { once: true });
+    
+        } catch (error) {
+            if (Debug.isEnabled()) {
+                Debug.setMessage(`Error encountered: ${error}`);
+            }
+    
+            const stack = error.stack || error;
+            this.#cli.guru(stack, false);
+            throw new Error('Error loading file.');
+        }
+    }
+
+    async loadLocalRom(romBlob, caption) {
+        return this.loadRom(romBlob, caption, true);
+    }
+
+    async loadRomFileFromUrl(filename, caption) {
+        if (Debug.isEnabled()) {
+            Debug.setMessage(`Starting to load ROM file: ${caption}`);
+        }
+    
+        console.log({
+            "title": `${caption}`,
+            "credits": "",
+            "platform_id": `${this.#selected_platform.platform_id}`,
+            "image": "",
+            "filename": `${caption}`,
+            "url": `${filename}`
+        });
+
+        return this.loadRom(filename, caption, false);
     }
 
     async loadRomFile(blob, caption) {

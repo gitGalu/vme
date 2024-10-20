@@ -143,7 +143,7 @@ export class OpenCommand extends CommandBase {
                     self.cli.message("&nbsp;", "Successfully imported " + dep.type);
                 } else { // other file (rom)
                     const blob = new Blob([e.target.result], { type: file.type });
-                    self.#platform_manager.loadRomFile(blob, filename);
+                    self.#platform_manager.loadLocalRom(blob, filename);
                 }
             };
 
