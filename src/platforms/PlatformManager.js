@@ -8,6 +8,7 @@ import C128 from './systems/C128.js';
 import C264 from './systems/C264.js';
 import A2600 from './systems/A2600.js';
 import A5200 from './systems/A5200.js';
+import A7800 from './systems/A7800.js';
 import A800 from './systems/A800.js';
 import CPC from './systems/CPC.js';
 import VIC20 from './systems/VIC20.js';
@@ -30,7 +31,7 @@ import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv
 }
 
 export class PlatformManager {
