@@ -42,10 +42,19 @@ const A800 = {
             "(130XE)": {
                 atari800_system: "130XE (128K)"
             },
+            "[130XE]": {
+                atari800_system: "130XE (128K)"
+            },
             "[128K]": {
                 atari800_system: "130XE (128K)"
             },
+            "(128)": {
+                atari800_system: "130XE (128K)"
+            },
             "[192K]": {
+                atari800_system: "Modern XL/XE(320K CS)"
+            },
+            "[REQ 256K]": {
                 atari800_system: "Modern XL/XE(320K CS)"
             },
             "[256K]": {
