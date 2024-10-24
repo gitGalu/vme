@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.9] - 2024-10-24
+
+- fix touch controls od Android
+- add support for loading software through CORS proxies
+
 ## [0.8.8] - 2024-10-20
 
 - add Atari 7800 support (uses ProSystem core)
