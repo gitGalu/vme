@@ -28,6 +28,7 @@ import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { NetworkManager } from '../NetworkManager.js';
 import { Debug } from '../Debug.js';
 
 export const SelectedPlatforms = {
@@ -38,6 +39,7 @@ export class PlatformManager {
     #selected_platform;
     #model;
     #storage_manager;
+    #network_manager;
     #active_theme;
     #nostalgist;
     #vme;
@@ -51,10 +53,11 @@ export class PlatformManager {
     static VME_CFG_CURRENT_PLATFORM = 'VME_CFG.CURRENT_PLATFORM';
     static SOFTWARE_DIR_KEY = '.software';
 
-    constructor(app, cli, storage_manager) {
+    constructor(app, cli, storage_manager, network_manager) {
         this.#vme = app;
         this.#cli = cli;
         this.#storage_manager = storage_manager;
+        this.#network_manager = network_manager;
         let platform_id = localStorage.getItem(PlatformManager.VME_CFG_CURRENT_PLATFORM);
         this.#selected_platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id) || SelectedPlatforms.NES;
         this.updatePlatform();
@@ -177,12 +180,13 @@ export class PlatformManager {
     
             self.#cli.print_progress('Loading ... Please wait.');
     
-            const downloadFile = async (url, text) => {
+            const downloadFile = async (url, text, useProxy) => {
                 if (Debug.isEnabled()) {
                     Debug.updateMessage('load', `Preparing to download: ${url}`);
                 }
     
-                const response = await fetch(url);
+                const response = await this.#network_manager.fetch(url, useProxy);
+
                 const contentLength = response.headers.get('Content-Length');
                 const totalSize = contentLength ? parseInt(contentLength, 10) : null;
     
@@ -223,7 +227,7 @@ export class PlatformManager {
             if (isLocal) {
                 romBlob = romSource;
             } else {
-                romBlob = await downloadFile.call(this, romSource, "Loading ...");
+                romBlob = await downloadFile.call(this, romSource, "Loading ...", true);
             }
     
             if (this.#selected_platform.loader === 'unzip') {
@@ -240,7 +244,7 @@ export class PlatformManager {
                 romBlob = await firstFile.async('blob');
             }
     
-            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...");
+            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...", false);
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
     
             if (!isLocal) {
@@ -271,6 +275,7 @@ export class PlatformManager {
             document.body.addEventListener('keydown', launch, { once: true });
     
         } catch (error) {
+            console.log(error.stack);
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
             }
@@ -549,6 +554,10 @@ export class PlatformManager {
 
     loadCorsFile(json) {
         try {
+            if (json.proxy != undefined) {
+                this.#network_manager.set_proxy(json.proxy);
+            }
+
             var tryItems = [];
             json.items.forEach(disk => {
                 var item = {};
@@ -647,7 +656,7 @@ export class PlatformManager {
 
                     let blob = null;
                     if (item.url) {
-                        const response = await fetch(item.url);
+                        const response = await this.#network_manager.fetch(item.url, false);
                         blob = await response.blob();
                     } else if (item.file) {
                         const romFile = zip.file(item.file);

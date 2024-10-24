@@ -18,6 +18,7 @@ import { BrowseCommand } from './cli/BrowseCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
+import { NetworkManager } from './NetworkManager.js';
 import { isMobile } from 'react-device-detect';
 import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 import { ButtonManager } from './ButtonManager.js';
@@ -27,6 +28,7 @@ export class VME {
     #cli;
     #kb;
     #env;
+    #net;
     #pl;
     #db;
     #ui;
@@ -73,9 +75,10 @@ export class VME {
         }
 
         this.#cli = new CLI();
+        this.#net = new NetworkManager();
         this.#kb = new KeyboardManager(this.#cli);
         this.#db = new StorageManager();
-        this.#pl = new PlatformManager(this, this.#cli, this.#db);
+        this.#pl = new PlatformManager(this, this.#cli, this.#db, this.#net);
         this.#env = new EnvironmentManager(this.#pl);
         this.#ui = new UiManager(this.#pl, this.#kb);
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);
