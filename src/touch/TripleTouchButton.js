@@ -1,13 +1,22 @@
 import { QJ_LABEL_COLOR, QJ_IDLE_COLOR, QJ_ACTIVE_COLOR } from '../Constants.js';
 
 export class TripleTouchButton {
-    constructor(parent, isHorizontal, label1, label2, label3, gridArea, id, elListener, radius = '12px', allowSimultaneous = false) {
-        var container = document.createElement('div');
+    constructor(parent, isHorizontal, label1, label2, label3, gridArea, id, elListener, radius = '12px') {
+        this.touchIdentifiers = new Map();
+        this.el1 = null;
+        this.el2 = null;
+        this.el3 = null;
+        this.container = null;
+        this.state = 0;
+        this.isHorizontal = isHorizontal;
+        this.elListener = elListener;
+
+        const container = document.createElement('div');
         container.classList.add('fast-button');
-        if (gridArea != undefined) {
+        if (gridArea !== undefined) {
             container.style.gridArea = gridArea;
         }
-        if (id != undefined) {
+        if (id !== undefined) {
             container.id = id;
         }
         container.style.display = 'flex';
@@ -15,28 +24,29 @@ export class TripleTouchButton {
         container.style.alignItems = 'center';
         container.style.justifyContent = 'center';
         container.style.gap = '8px';
+        container.style.touchAction = 'none';
 
-        var el1 = document.createElement('div');
-        var el2 = document.createElement('div');
-        var el3 = document.createElement('div');
-        el1.style.borderRadius = radius;
-        el2.style.borderRadius = radius;
-        el3.style.borderRadius = radius;
-        el1.style.pointerEvents = 'auto';
-        el2.style.pointerEvents = 'auto';
-        el3.style.pointerEvents = 'auto';
-        el1.style.color = QJ_LABEL_COLOR;
-        el2.style.color = QJ_LABEL_COLOR;
-        el3.style.color = QJ_LABEL_COLOR;
-        el1.style.backgroundColor = QJ_IDLE_COLOR;
-        el2.style.backgroundColor = QJ_IDLE_COLOR;
-        el3.style.backgroundColor = QJ_IDLE_COLOR;
-        el1.style.width = '100%';
-        el2.style.width = '100%';
-        el3.style.width = '100%';
-        el1.style.height = '100%';
-        el2.style.height = '100%';
-        el3.style.height = '100%';
+        const el1 = document.createElement('div');
+        const el2 = document.createElement('div');
+        const el3 = document.createElement('div');
+
+        const buttonStyles = {
+            borderRadius: radius,
+            pointerEvents: 'auto',
+            color: QJ_LABEL_COLOR,
+            backgroundColor: QJ_IDLE_COLOR,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+        };
+
+        [el1, el2, el3].forEach(el => {
+            Object.entries(buttonStyles).forEach(([key, value]) => {
+                el.style[key] = value;
+            });
+        });
 
         if (isHorizontal) {
             el1.style.transform = 'translateY(50px)';
@@ -44,72 +54,116 @@ export class TripleTouchButton {
             el3.style.transform = 'translateY(0px)';
         }
 
-        [el1, el2, el3].forEach(el => {
-            el.style.display = 'flex';
-            el.style.justifyContent = 'center';
-            el.style.alignItems = 'center';
-            el.style.height = '100%';
-        });
-
-        parent.appendChild(container);
-        container.appendChild(el1);
-        container.appendChild(el2);
-        container.appendChild(el3);
-
-        this.container = container;
-        this.isHorizontal = isHorizontal;
-        this.elListener = elListener;
-        this.state = 0;
-        this.allowSimultaneous = allowSimultaneous;
-        this.simultaneousTimeout = null;
-
-        this.el1 = el1;
-        this.el2 = el2;
-        this.el3 = el3;
-
         el1.textContent = label1;
         el2.textContent = label2;
         el3.textContent = label3;
 
-        container.addEventListener('touchstart', e => this.touch(e, true));
-        container.addEventListener('touchmove', e => this.touch(e, true));
-        container.addEventListener('touchend', e => {
-            e.preventDefault();
-            this.touch(e, false);
-        });
+        this.el1 = el1;
+        this.el2 = el2;
+        this.el3 = el3;
+        this.container = container;
+
+        container.appendChild(el1);
+        container.appendChild(el2);
+        container.appendChild(el3);
+        parent.appendChild(container);
+
+        this.handleTouchStart = this.handleTouchStart.bind(this);
+        this.handleTouchMove = this.handleTouchMove.bind(this);
+        this.handleTouchEnd = this.handleTouchEnd.bind(this);
+        this.handleTouchCancel = this.handleTouchCancel.bind(this);
+
+        container.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        container.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+        container.addEventListener('touchcancel', this.handleTouchCancel, { passive: false });
     }
 
-    touch(e, pressed) {
-        var newState = 0;
-        var d, v;
+    handleTouchStart(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Array.from(e.changedTouches).forEach(touch => {
+            const position = this.getTouchPosition(touch);
+            this.touchIdentifiers.set(touch.identifier, position);
+        });
+        this.updateState();
+    }
 
-        if (pressed) {
-            if (this.isHorizontal) {
-                d = this.container.offsetWidth;
-                v = e.changedTouches[0].clientX - this.container.getBoundingClientRect().left;
-            } else {
-                d = this.container.offsetHeight;
-                v = e.changedTouches[0].clientY - this.container.getBoundingClientRect().top;
+    handleTouchMove(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Array.from(e.changedTouches).forEach(touch => {
+            if (this.touchIdentifiers.has(touch.identifier)) {
+                const position = this.getTouchPosition(touch);
+                this.touchIdentifiers.set(touch.identifier, position);
             }
+        });
+        this.updateState();
+    }
 
-            const segment = d / 3;
-            if (v < segment) {
-                newState = 1;
-            } else if (v < segment * 2) {
-                newState = 2;
+    handleTouchEnd(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Array.from(e.changedTouches).forEach(touch => {
+            this.touchIdentifiers.delete(touch.identifier);
+        });
+        this.updateState();
+    }
+
+    handleTouchCancel(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleTouchEnd(e);
+    }
+
+    getTouchPosition(touch) {
+        const rect = this.container.getBoundingClientRect();
+        if (this.isHorizontal) {
+            const width = rect.width;
+            const x = touch.clientX - rect.left;
+            const segment = width / 3;
+            if (x < segment) {
+                return 1;
+            } else if (x < segment * 2) {
+                return 2;
             } else {
-                newState = 3;
+                return 3;
             }
         } else {
-            newState = 0;
+            const height = rect.height;
+            const y = touch.clientY - rect.top;
+            const segment = height / 3;
+            if (y < segment) {
+                return 1;
+            } else if (y < segment * 2) {
+                return 2;
+            } else {
+                return 3;
+            }
         }
+    }
 
+    updateState() {
+        let newState = 0;
+        if (this.touchIdentifiers.size > 0) {
+            const positions = Array.from(this.touchIdentifiers.values());
+            newState = positions[positions.length - 1];
+        }
         if (newState !== this.state) {
             this.state = newState;
+            this.el1.style.backgroundColor = this.state === 1 ? QJ_ACTIVE_COLOR : QJ_IDLE_COLOR;
+            this.el2.style.backgroundColor = this.state === 2 ? QJ_ACTIVE_COLOR : QJ_IDLE_COLOR;
+            this.el3.style.backgroundColor = this.state === 3 ? QJ_ACTIVE_COLOR : QJ_IDLE_COLOR;
             this.elListener.trigger(this.state);
-            this.el1.style.background = this.state === 1 ? QJ_ACTIVE_COLOR : QJ_IDLE_COLOR;
-            this.el2.style.background = this.state === 2 ? QJ_ACTIVE_COLOR : QJ_IDLE_COLOR;
-            this.el3.style.background = this.state === 3 ? QJ_ACTIVE_COLOR : QJ_IDLE_COLOR;
+        }
+    }
+
+    destroy() {
+        if (this.container) {
+            this.container.removeEventListener('touchstart', this.handleTouchStart);
+            this.container.removeEventListener('touchmove', this.handleTouchMove);
+            this.container.removeEventListener('touchend', this.handleTouchEnd);
+            this.container.removeEventListener('touchcancel', this.handleTouchCancel);
         }
     }
 }
