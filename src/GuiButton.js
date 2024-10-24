@@ -1,85 +1,189 @@
-import { s } from "./dom";
-import { EnvironmentManager } from "./EnvironmentManager";
-
-export function createGuiButton(buttonId, buttonText, shortcutKey, callback, visualFeedback = true, customFeedbackClass, targetContainer = 'menu-button-strip') {
+// GuiButton.js
+export function createGuiButton(
+    buttonId, 
+    buttonText, 
+    shortcutKey, 
+    callback, 
+    visualFeedback = true, 
+    customFeedbackClass, 
+    targetContainer = 'menu-button-strip'
+) {
     const button = createButtonElement(buttonId, buttonText, shortcutKey);
     const feedbackClass = customFeedbackClass || "guiBtn-pressed";
-
     addButtonToContainer(button, targetContainer);
     setupButtonInteractions(button, callback, visualFeedback, feedbackClass);
 }
 
 function createButtonElement(id, text, shortcut) {
-    const button = document.createElement('span');
+    const button = document.createElement('button');
     button.id = id;
     button.innerHTML = `&nbsp;${text}&nbsp;`;
     button.setAttribute('data-shortcut', shortcut);
     button.dataset.originalText = `&nbsp;${text}&nbsp;`;
     button.classList.add("clabel");
+    button.type = 'button';
     return button;
 }
 
 function addButtonToContainer(button, containerId) {
     const container = document.getElementById(containerId);
-    container.appendChild(button);
+    if (container) {
+        container.appendChild(button);
+    }
+}
+
+function debounce(func, wait) {
+    let timeout;
+    let lastTime = 0;
+    return function executedFunction(...args) {
+        const now = Date.now();
+        const timeSinceLastCall = now - lastTime;
+        
+        clearTimeout(timeout);
+        
+        if (timeSinceLastCall >= wait) {
+            func.apply(this, args);
+            lastTime = now;
+        } else {
+            timeout = setTimeout(() => {
+                func.apply(this, args);
+                lastTime = Date.now();
+            }, wait);
+        }
+    };
+}
+
+function isPointInElement(x, y, element) {
+    const rect = element.getBoundingClientRect();
+    return (
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom
+    );
 }
 
 function setupButtonInteractions(button, callback, visualFeedback, feedbackClass) {
-    button.dataset.isSelected = "false";
-
-    function isEnabled() {
-        return !button.classList.contains('disabled');
-    }
-
-    button.addEventListener("pointerdown", event => handlePointerDown(event, button, isEnabled, visualFeedback, feedbackClass));
-    button.addEventListener("pointermove", event => handlePointerMove(event, button, isEnabled, visualFeedback, feedbackClass));
-    button.addEventListener("pointercancel", event => handlePointerCancel(event, button, isEnabled, visualFeedback, feedbackClass));
-    button.addEventListener("pointerup", event => handlePointerUp(event, button, isEnabled, callback, visualFeedback, feedbackClass));
-}
-
-function handlePointerDown(event, button, isEnabled, visualFeedback, feedbackClass) {
-    event.preventDefault();
-    if (isEnabled()) {
-        button.dataset.isSelected = "true";
-        if (visualFeedback) button.classList.add(feedbackClass);
-    }
-}
-
-function handlePointerMove(event, button, isEnabled, visualFeedback, feedbackClass) {
-    event.preventDefault();
-    if (isEnabled()) {
-        const element = document.elementFromPoint(event.clientX, event.clientY);
-        updateSelectionOnMove(element, event.target, button, visualFeedback, feedbackClass);
-    }
-}
-
-function handlePointerCancel(event, button, isEnabled, visualFeedback, feedbackClass) {
-    event.preventDefault();
-    if (isEnabled()) {
-        button.dataset.isSelected = "false";
-        if (visualFeedback) button.classList.remove(feedbackClass);
-    }
-}
-
-function handlePointerUp(event, button, isEnabled, callback, visualFeedback, feedbackClass) {
-    event.preventDefault();
-    if (isEnabled() && button.dataset.isSelected === "true") {
-        callback();
-        if (visualFeedback) button.classList.remove(feedbackClass);
-    }
-    button.dataset.isSelected = "false";
-}
-
-function updateSelectionOnMove(element, target, button, visualFeedback, feedbackClass) {
-    if (element !== target) {
-        if (button.dataset.isSelected === "true") {
-            button.dataset.isSelected = "false";
-            if (visualFeedback) button.classList.remove(feedbackClass);
+    let isPressed = false;
+    let touchStartedInside = false;
+    const minTimeBetweenClicks = 300;
+    
+    const debouncedCallback = debounce(() => {
+        if (!button.classList.contains('disabled')) {
+            callback();
         }
-    } else {
-        if (button.dataset.isSelected === "false") {
-            button.dataset.isSelected = "true";
-            if (visualFeedback) button.classList.add(feedbackClass);
+    }, minTimeBetweenClicks);
+
+    function addFeedback() {
+        if (visualFeedback && !button.classList.contains('disabled')) {
+            button.classList.add(feedbackClass);
         }
     }
+
+    function removeFeedback() {
+        if (visualFeedback) {
+            button.classList.remove(feedbackClass);
+        }
+    }
+
+    button.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (!isPressed && isPointInElement(touch.clientX, touch.clientY, button)) {
+            isPressed = true;
+            touchStartedInside = true;
+            addFeedback();
+        }
+    }, { passive: false });
+
+    button.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (isPressed && touchStartedInside) {
+            const touch = e.touches[0];
+            const isInside = isPointInElement(touch.clientX, touch.clientY, button);
+            
+            if (isInside && !button.classList.contains(feedbackClass)) {
+                addFeedback();
+            } else if (!isInside && button.classList.contains(feedbackClass)) {
+                removeFeedback();
+            }
+        }
+    }, { passive: false });
+
+    button.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (isPressed && touchStartedInside) {
+            const touch = e.changedTouches[0];
+            const isInside = isPointInElement(touch.clientX, touch.clientY, button);
+            
+            if (isInside) {
+                debouncedCallback();
+            }
+            
+            isPressed = false;
+            touchStartedInside = false;
+            removeFeedback();
+        }
+    }, { passive: false });
+
+    button.addEventListener('touchcancel', () => {
+        isPressed = false;
+        touchStartedInside = false;
+        removeFeedback();
+    });
+
+    button.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && !isPressed) {
+            isPressed = true;
+            touchStartedInside = true;
+            addFeedback();
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (isPressed && touchStartedInside) {
+            const isInside = isPointInElement(e.clientX, e.clientY, button);
+            
+            if (isInside && !button.classList.contains(feedbackClass)) {
+                addFeedback();
+            } else if (!isInside && button.classList.contains(feedbackClass)) {
+                removeFeedback();
+            }
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (isPressed && touchStartedInside) {
+            const isInside = isPointInElement(e.clientX, e.clientY, button);
+            
+            if (isInside) {
+                debouncedCallback();
+            }
+            
+            isPressed = false;
+            touchStartedInside = false;
+            removeFeedback();
+        }
+    });
+
+    button.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!isPressed) {
+                isPressed = true;
+                addFeedback();
+            }
+        }
+    });
+
+    button.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (isPressed) {
+                isPressed = false;
+                debouncedCallback();
+                removeFeedback();
+            }
+        }
+    });
 }

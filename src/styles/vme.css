@@ -823,6 +823,10 @@ a {
   font-family: Helvetica, Arial, sans-serif !important;
 }
 
+#quickjoys .fast-button {
+  touch-action: none;
+}
+
 #staticKeys {
   display: flex;
   background-color: #f5f5f5;
@@ -1463,19 +1467,48 @@ a {
   white-space: nowrap;
   overflow: hidden;
   width: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .clabel {
   display: inline-block;
   color: var(--color0);
   background-color: var(--color1);
-  margin: 0px;
-  padding: 0px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  margin: 0;
+  padding: 4px 0;
   text-decoration: none;
   position: relative;
   cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.clabel:focus-visible {
+  outline: 2px solid var(--color3);
+  outline-offset: 2px;
+}
+
+.guiBtn-pressed {
+  background-color: var(--color3) !important;
+  color: var(--color2) !important;
+}
+
+.clabel.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .clabel:hover:not(.disabled) {
+      background-color: var(--color3);
+      color: var(--color2);
+  }
 }
 
 #menu-button-strip .clabel:not(:first-child) {
