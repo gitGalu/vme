@@ -182,10 +182,6 @@ export class CLI {
                 } else if (this.#currentIndex >= 0) {
                     this.#simulateClick(items[this.#currentIndex]);
                     this.selected_command.selection_changed();
-                    // this.selected_command.process_selection(items[currentIndex].dataset.value);
-                    // currentIndex = -1;
-                    // showCursor();
-                    // ???
                     return;
                 }
         }
