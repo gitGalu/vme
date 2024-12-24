@@ -9,6 +9,7 @@ import { QuadrupleTouchButton } from './QuadrupleTouchButton.js';
 import { QuadrupleTouchButtonJoyListener } from './QuadrupleTouchButtonJoyListener.js';
 import { SextupleTouchButton } from './SextupleTouchButton.js';
 import { SextupleTouchButtonJoyListener } from './SextupleTouchButtonJoyListener.js';
+import { FileUtils } from '../utils/FileUtils.js';
 
 export class QuickShot {
     static #DEAD_ZONE_RADIUS = 30;
@@ -27,16 +28,6 @@ export class QuickShot {
         this.#nostalgist = platform_manager.getNostalgist();
         this.#init();
         this.#activeDirections = new Set();
-    }
-
-    #getFilenameWithoutExtension(filename) {
-        if (filename == undefined || filename == null) return ''; //todo
-
-        const lastDotIndex = filename.lastIndexOf('.');
-        if (lastDotIndex === -1) {
-            return filename;
-        }
-        return filename.substring(0, lastDotIndex);
     }
 
     #init() {
@@ -61,8 +52,8 @@ export class QuickShot {
         let buttonsCount = this.#platform_manager.getSelectedPlatform().fire_buttons;
         let platform_id = this.#platform_manager.getSelectedPlatform().platform_id;
         let button_overrides = this.#platform_manager.getSelectedPlatform().button_overrides;
-        let program_id = this.#getFilenameWithoutExtension(this.#platform_manager.getProgramName());
-
+        let program_id = FileUtils.getFilenameWithoutExtension(this.#platform_manager.getProgramName());
+                
         if (button_overrides && button_overrides[program_id]) {
             buttonsCount = button_overrides[program_id];
         }
