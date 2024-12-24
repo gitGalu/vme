@@ -26,7 +26,7 @@
     "driver.js": "^1.3.1",
     "install": "^0.13.0",
     "jszip": "^3.10.1",
-    "nostalgist": "^0.10.0",
+    "nostalgist": "^0.11.0",
     "npm": "^10.8.1",
     "react-device-detect": "^2.2.3"
   }
