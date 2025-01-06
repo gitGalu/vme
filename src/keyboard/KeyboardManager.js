@@ -295,7 +295,7 @@ export class KeyboardManager {
                 document.querySelectorAll('.layerB').forEach(function (el) {
                     el.style.visibility = 'visible';
                 });
-            } else if (this.#layer == KeyboardManager.Layer.B) {
+            } else if (this.#layer == KeyboardManager.Layer.B || this.#layer == KeyboardManager.Layer.C) {
                 this.#layer = KeyboardManager.Layer.A;
                 document.querySelector('#keyShift').innerHTML = 'CAPS';
                 document.querySelectorAll('.layerB').forEach(function (el) {
