@@ -22,20 +22,25 @@ export class LastCommand extends CommandBase {
         if (jsonString == undefined) {
         } else {
             const data = JSON.parse(jsonString);
+
+            if (data.caption == undefined) {
+                data.caption = data.romName;
+            }
+
             this.cli.print("Press ENTER to load:");
             this.cli.print("&nbsp;");
             this.cli.print("<p style='margin-left: 1ch;'>" + data.caption);
             if (!is_enter_pressed) {
                 return;
             }
-            this.#load(data.filename, data.caption);
+            this.#load(data.filename, data.romName, data.caption);
         }
     }
 
-    async #load(filename, caption) {
+    async #load(filename, romName, caption) {
         this.cli.set_loading(true);
         try {
-            await this.#platform_manager.loadRomFileFromUrl(filename, caption);
+            await this.#platform_manager.loadRomFileFromUrl(filename, romName, caption);
         } catch (error) {
             this.cli.message_clear("Error loading file.");
         }

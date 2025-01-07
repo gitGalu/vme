@@ -30,6 +30,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { NetworkManager } from '../NetworkManager.js';
 import { Debug } from '../Debug.js';
+import { FileUtils } from '../utils/FileUtils.js';
 
 export const SelectedPlatforms = {
     NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv
@@ -46,6 +47,7 @@ export class PlatformManager {
     #cli;
     #resolved_deps;
     #program_name;
+    #caption;
 
     #state;
     #current_rom;
@@ -64,7 +66,7 @@ export class PlatformManager {
         this.#cli.set_default_handler(() => { this.updatePlatform() });
     }
 
-    async #prepareNostalgist(caption) {
+    async #prepareNostalgist(romName, caption) {
         s("#cors_query_prefix").style.display = "none";
         s('#cors_query_prefix').innerHTML = "";
         s("#cors_query").innerHTML = "load \"" + caption + "\"";
@@ -103,10 +105,12 @@ export class PlatformManager {
                 input_player1_l2: 'nul',
                 input_player1_r2: 'nul'
             }
+        } else if (this.#selected_platform.keyboard_controller_mapping != undefined) {
+            retroarchConfigOverrides = this.#selected_platform.keyboard_controller_mapping;
         }
 
         Nostalgist.configure({
-            bios: (typeof this.#selected_platform.guessBIOS === 'function') ? this.#selected_platform.guessBIOS(caption) : this.#selected_platform.bios,
+            bios: (typeof this.#selected_platform.guessBIOS === 'function') ? this.#selected_platform.guessBIOS(romName) : this.#selected_platform.bios,
             retroarchConfig: {
                 rewind_enable: true,
                 rewind_buffer_size: 20,
@@ -125,10 +129,9 @@ export class PlatformManager {
 
                 video_adaptive_vsync: true,
                 video_vsync: true,
-
                 ...retroarchConfigOverrides
             },
-            retroarchCoreConfig: (typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(caption) : {},
+            retroarchCoreConfig: (typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(romName) : {},
             resolveBios(file) {
                 let key = self.#selected_platform.platform_id + "." + file;
                 let fileContent = self.#resolved_deps[key];
@@ -148,9 +151,9 @@ export class PlatformManager {
             const padding = '&nbsp;'.repeat(paddingLength > 0 ? paddingLength : 0);
             return padding + text;
         }
-    
+
         const maxControlLength = Math.max(...Object.keys(controlsMap).map(key => key.length));
-    
+
         for (const control in controlsMap) {
             if (controlsMap.hasOwnProperty(control)) {
                 const description = controlsMap[control];
@@ -159,127 +162,133 @@ export class PlatformManager {
         }
     }
 
-    #storeLastProgramInfo(filename, caption) {
+    #storeLastProgramInfo(filename, caption, romName) {
         const data = {
             filename: filename,
-            caption: caption
+            caption: caption,
+            romName: romName
         };
         const jsonString = JSON.stringify(data);
         StorageManager.storeValue(this.#selected_platform.platform_id + ".LAST_FILE", jsonString);
     }
 
-    async loadRom(romSource, caption, isLocal = true) {
+    async loadRom(romSource, caption, isLocal = true, romName = caption) {
         let core = this.#selected_platform.core;
         let coreWasm = `./libretro/${core}_libretro.wasm`;
-    
+
         let self = this;
         let progressMessage;
-    
+
         try {
-            this.#prepareNostalgist(caption);
-    
+            this.#prepareNostalgist(romName, caption);
+
             self.#cli.print_progress('Loading ... Please wait.');
-    
+
             const downloadFile = async (url, text, useProxy) => {
                 if (Debug.isEnabled()) {
                     Debug.updateMessage('load', `Preparing to download: ${url}`);
                 }
-    
+
                 const response = await this.#network_manager.fetch(url, useProxy);
 
                 const contentLength = response.headers.get('Content-Length');
                 const totalSize = contentLength ? parseInt(contentLength, 10) : null;
-    
+
                 let loaded = 0;
                 const reader = response.body.getReader();
                 const chunks = [];
-    
+
                 async function readStream() {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done || text == null) {
                             break;
                         }
-    
+
                         loaded += value.length;
                         chunks.push(value);
-    
+
                         const loadedKB = Math.floor(loaded / 1024);
-    
+
                         if (totalSize) {
                             const percentage = ((loaded / totalSize) * 100).toFixed(2);
                             progressMessage = `${text} ${percentage}%`;
                         } else {
                             progressMessage = `${text} ${loadedKB} KB`;
                         }
-    
+
                         self.#cli.print_progress(progressMessage);
                     }
-    
+
                     self.#cli.print_progress('Loading ... OK');
                     return new Blob(chunks);
                 }
-    
+
                 return await readStream();
             };
-    
+
             let romBlob;
             if (isLocal) {
                 romBlob = romSource;
             } else {
                 romBlob = await downloadFile.call(this, romSource, "Loading ...", true);
             }
-    
+
             if (this.#selected_platform.loader === 'unzip') {
                 const zip = new JSZip();
                 const zipContent = await zip.loadAsync(romBlob);
-    
+
                 if (Object.keys(zipContent.files).length === 0) {
                     throw new Error('No files found in the zip archive.');
                 }
-    
+
                 const firstFileName = Object.keys(zipContent.files)[0];
                 caption = firstFileName;
                 const firstFile = zipContent.files[firstFileName];
                 romBlob = await firstFile.async('blob');
             }
-    
+
             const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...", false);
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
-    
+
             if (!isLocal) {
-                self.#storeLastProgramInfo(romSource, caption);
+                self.#storeLastProgramInfo(romSource, caption, romName);
             }
-    
+
             self.#cli.clear();
             self.#cli.print("Loading complete.");
             self.#cli.print("<span class='blinking2'>Press anything to start.</span>");
-    
+
             hide('#cors_interface');
             hide('#header');
             hide('#menu-wrap');
             hide('#menu-spacer');
             hide('#toggle-keyboard');
-    
+
             if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
-                self.#printControls(self.#selected_platform.keyboard_controller_info);
+                if (typeof self.#selected_platform.keyboard_controller_info === 'function') {
+                    const key = FileUtils.getFilenameWithoutExtension(romName);
+                    self.#printControls(self.#selected_platform.keyboard_controller_info(key));
+                } else {
+                    self.#printControls(self.#selected_platform.keyboard_controller_info);
+                }
             }
-    
+
             const launch = () => {
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
-                self.startEmulation(romBlob, caption, wasmArrayBuffer);
+                self.startEmulation(romBlob, caption, romName, wasmArrayBuffer);
             };
-    
+
             document.body.addEventListener('click', launch, { once: true });
             document.body.addEventListener('keydown', launch, { once: true });
-    
+
         } catch (error) {
             console.log(error.stack);
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
             }
-    
+
             const stack = error.stack || error;
             this.#cli.guru(stack, false);
             throw new Error('Error loading file.');
@@ -290,29 +299,29 @@ export class PlatformManager {
         return this.loadRom(romBlob, caption, true);
     }
 
-    async loadRomFileFromUrl(filename, caption) {
+    async loadRomFileFromUrl(filename, romName, caption) {
         if (Debug.isEnabled()) {
             Debug.setMessage(`Starting to load ROM file: ${caption}`);
         }
-    
+
         console.log({
             "title": `${caption}`,
             "credits": "",
             "platform_id": `${this.#selected_platform.platform_id}`,
             "image": "",
-            "filename": `${caption}`,
+            "filename": `${romName}`,
             "url": `${filename}`
         });
 
-        return this.loadRom(filename, caption, false);
+        return this.loadRom(filename, caption, false, romName);
     }
 
-    async loadRomFile(blob, caption) {
-        this.#prepareNostalgist(caption);
-        this.startEmulation(blob, caption);
+    async loadRomFile(blob, romName, caption) {
+        this.#prepareNostalgist(romName, caption);
+        this.startEmulation(blob, caption, romName);
     }
 
-    async loadRomFromCollection(platform_id, blob, caption, state) {
+    async loadRomFromCollection(platform_id, blob, program_name, caption, state) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
         let platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
         this.#storage_manager.checkFiles(platform)
@@ -321,11 +330,11 @@ export class PlatformManager {
                 let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
                 this.setSelectedPlatform(selected);
                 this.#state = state;
-                this.loadRomFile(blob, caption);
+                this.loadRomFile(blob, program_name, caption);
             });
     }
 
-    async startEmulation(blob, caption, wasmArrayBuffer) {
+    async startEmulation(blob, caption, romName, wasmArrayBuffer) {
         if (Debug.isEnabled()) {
             Debug.updateMessage('load', 'Preparing to start emulation.');
         }
@@ -341,12 +350,13 @@ export class PlatformManager {
         this.#model = {};
 
         let errored = false;
+        self.#program_name = romName;
 
         try {
             this.#nostalgist = await Nostalgist.launch({
                 core: core,
                 rom: {
-                    fileName: caption,
+                    fileName: romName,
                     fileContent: blob
                 },
                 async beforeLaunch(nostalgist) {
@@ -366,7 +376,7 @@ export class PlatformManager {
                 },
                 state: self.#state,
                 async onLaunch(nostalgist) {
-                    self.#program_name = caption;
+                    self.#caption = caption;
                     nostalgist.sendCommand('GAME_FOCUS_TOGGLE');
                     nostalgist.sendCommand('SHADER_TOGGLE');
                 },
@@ -558,22 +568,16 @@ export class PlatformManager {
                 this.#network_manager.set_proxy(json.proxy);
             }
 
-            var tryItems = [];
-            json.items.forEach(disk => {
-                var item = {};
-                item.txt = String(disk[0]);
-
-                const baseIndex = disk[1];
-                const tag = json.tags ? json.tags[baseIndex] : null;
-
-                item.url = json.root + json.bases[baseIndex] + disk[2];
-
-                if (tag) {
-                    item.tag = tag;
-                }
-
-                tryItems.push(item);
-            });
+            if (this.#selected_platform.name_overrides) {
+                json.items.forEach(item => {
+                    if (typeof item[0] === 'string') {
+                        const filenameWithoutExt = FileUtils.getFilenameWithoutExtension(item[0]);
+                        if (this.#selected_platform.name_overrides[filenameWithoutExt]) {
+                            item[4] = this.#selected_platform.name_overrides[filenameWithoutExt];
+                        }
+                    }
+                });
+            }
 
             this.#model = json;
         } catch (error) {
@@ -816,7 +820,7 @@ export class PlatformManager {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async loadState(platform_id, state, blob, caption) {
+    async loadState(platform_id, state, blob, program_name, caption) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
 
         if (platform_id != this.#selected_platform.platform_id) {
@@ -825,7 +829,7 @@ export class PlatformManager {
             this.updatePlatform();
         }
         this.#state = state;
-        await this.loadRomFile(blob, caption);
+        await this.loadRomFile(blob, program_name, caption);
     }
 
     async saveState() {
@@ -836,8 +840,9 @@ export class PlatformManager {
 
         const platform_id = this.#selected_platform.platform_id;
         const program_name = this.#program_name;
+        const caption = this.#caption;
         const rom_data = this.#current_rom;
 
-        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name);
+        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption);
     }
 }

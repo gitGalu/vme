@@ -31,6 +31,9 @@ export class ListCommand extends CommandBase {
             return;
         } else if (tokens.length > 0) {
             results = model.items.filter((val) => {
+                if (val[4]) {
+                    return val[4].toLowerCase().startsWith(tokens[0].toLowerCase());
+                }
                 return val[0].toLowerCase().startsWith(tokens[0].toLowerCase());
             });
         }
@@ -50,10 +53,16 @@ export class ListCommand extends CommandBase {
             const baseIndex = item[1];
             const tag = model.tags ? model.tags[baseIndex] : null;
 
+            let romName = item[0];
             let label = item[0];
+
+            if (item[4]) {
+                label = item[4];
+            } 
 
             return {
                 id: model.root + model.bases[baseIndex] + item[2],
+                romName: romName,
                 label: label,
                 tag: tag,
                 data: model.root + model.bases[baseIndex] + item[2]
@@ -74,7 +83,7 @@ export class ListCommand extends CommandBase {
     async process_selection(item) {
         this.cli.set_loading(true);
         try {
-            await this.#platform_manager.loadRomFileFromUrl(item.data, item.label);
+            await this.#platform_manager.loadRomFileFromUrl(item.data, item.romName, item.label);
         } catch (error) {
             this.cli.message("LOADING...", "&nbsp;", "Error loading file.");
         }

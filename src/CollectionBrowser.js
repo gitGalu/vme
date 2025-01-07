@@ -210,7 +210,7 @@ export class CollectionBrowser {
                     const state = await this.#db.getSaveData(saveIntId);
                     const item = filteredItems[0];
                     const rom = await this.#db.getRomData(item.rom_data_id);
-                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, state.save_data);
+                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, state.save_data);
                     this.close();
                 } else {
                     throw new Exception("Cannot load selected program.");
@@ -231,11 +231,10 @@ export class CollectionBrowser {
                 StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
 
                 const filteredItems = this.#items.filter(item => item.id === intId);
-
                 if (filteredItems.length > 0) {
                     const item = filteredItems[0];
                     const rom = await this.#db.getRomData(item.rom_data_id);
-                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name);
+                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title);
                     this.close();
                 } else {
                     throw new Exception("Cannot load selected program.");

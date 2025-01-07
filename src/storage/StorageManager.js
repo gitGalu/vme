@@ -31,6 +31,15 @@ export class StorageManager {
                 item.data_type = 'base64';
             });
         });
+
+        this.#db.version(4).stores({
+            files: "key, data",
+            saveMeta: '++id, platform_id, program_name, save_data_id, rom_data_id, timestamp, caption',
+            saveData: '++id, save_data',
+            romData: '++id, rom_data, hash, data_type',
+            collectionMeta: '++id, collection_unique_name, collection_title, collection_image',
+            collectionItemData: '++id, collection_id, platform_id, title, credits, description, image, rom_name, rom_data_id, rom_url, launched'
+        });
     }
 
     async #computeHash(blob) {
@@ -180,7 +189,7 @@ export class StorageManager {
         });
     }
 
-    async storeState(save_data, rom_data, screenshot, platform_id, program_name) {
+    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption) {
         const hash = await this.#computeHash(rom_data);
 
         const screenshotFix = await this.#fixScreenshot(platform_id, screenshot);
@@ -208,6 +217,7 @@ export class StorageManager {
                     rom_data_id: romDataId,
                     save_data_id: saveDataId,
                     timestamp: Date.now(),
+                    caption: (program_name !== caption) ? caption : undefined
                 });
 
                 ToastManager.enqueueToast('State saved.');
@@ -332,7 +342,8 @@ export class StorageManager {
             program_name: saveMeta.program_name,
             save_data: saveBlob,
             rom_data: romBlob,
-            timestamp: saveMeta.timestamp
+            timestamp: saveMeta.timestamp,
+            caption: saveMeta.caption
         };
     }
 

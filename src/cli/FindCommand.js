@@ -34,6 +34,9 @@ export class FindCommand extends CommandBase {
             var re = new RegExp(expr, "i");
     
             results = this.#platform_manager.get_software_dir().items.filter((val) => {
+                if (val[4]) {
+                    return re.test(val[4]);
+                }
                 return re.test(val[0]);
             });
         }
@@ -56,10 +59,16 @@ export class FindCommand extends CommandBase {
             const softwareDir = this.#platform_manager.get_software_dir();
             const tag = softwareDir.tags ? softwareDir.tags[baseIndex] : null;
     
+            let romName = item[0];
             let label = item[0];
+
+            if (item[4]) {
+                label = item[4];
+            } 
 
             return {
                 id: softwareDir.root + softwareDir.bases[baseIndex] + item[2],
+                romName: romName,
                 label: label,
                 tag: tag,
                 data: softwareDir.root + softwareDir.bases[baseIndex] + item[2]
@@ -80,7 +89,7 @@ export class FindCommand extends CommandBase {
     async process_selection(item) {
         this.cli.set_loading(true);
         try {
-            await this.#platform_manager.loadRomFileFromUrl(item.data, item.label);
+            await this.#platform_manager.loadRomFileFromUrl(item.data, item.romName, item.label);
         } catch (error) {
             this.cli.message("LOADING...", "&nbsp;", "Error loading file.");
         }

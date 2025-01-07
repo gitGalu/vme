@@ -73,11 +73,15 @@ export class SaveBrowser {
 
         const randomDegree = Math.random() * 20 - 10;
 
+        if (item.caption == undefined) {
+            item.caption = this.#cleanFilename(item.program_name);
+        }
+
         return `
         <div class="flicking-panel" data-id="${item.id}" data-platform-id="${platform.platform_id}">
             <img src="${url}" alt="${item.program_name}" style="transform: rotate(${randomDegree}deg)">
-            <div class="flicking-title flicking-title-name">${this.#cleanFilename(item.program_name)} (${platform.short_name})</div>
-        </div>
+            <div class="flicking-title flicking-title-name">${item.caption} (${platform.short_name})</div>
+         </div>
         `;
     }
 
@@ -102,7 +106,7 @@ export class SaveBrowser {
         }
     }
 
-    #appendPanels(items) {        
+    #appendPanels(items) {
         items.forEach(item => {
             const newPanel = this.#createPanelHTML(item);
             this.#flicking.append(newPanel);
@@ -289,7 +293,10 @@ export class SaveBrowser {
                 this.close();
                 this.#db.getSaveData(intId)
                     .then((data) => {
-                        this.#platform_manager.loadState(data.platform_id, data.save_data, data.rom_data, data.program_name);
+                        if (data.caption == undefined) {
+                            data.caption = data.program_name;
+                        }
+                        this.#platform_manager.loadState(data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption);
                     });
             }
         }
