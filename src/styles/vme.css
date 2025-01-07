@@ -678,11 +678,28 @@ a {
   }
 
   #lmb {
-    grid-area: -10 / 2 / span 8 / span 8;
+    grid-area: -13 / 2 / span 11 / span 9;
   }
 
   #rmb {
-    grid-area: -10 / 11 / span 8 / span 8;
+    grid-area: -13 / 12 / span 11 / span 9;
+  }
+
+
+  #mb1 {
+    grid-area: -13 / 2 / span 11 / span 11;
+  }
+
+  #mb31 {
+    grid-area: -13 / 2 / span 11 / span 7;
+  }
+
+  #mb32 {
+    grid-area: -13 / 10 / span 11 / span 7;
+  }
+
+  #mb33 {
+    grid-area: -13 / 18 / span 11 / span 7;
   }
 }
 
@@ -794,11 +811,27 @@ a {
   }
 
   #lmb {
-    grid-area: -10 / 2 / span 7 / span 7;
+    grid-area: -14 / 2 / span 11 / span 7;
   }
 
   #rmb {
-    grid-area: -10 / 10 / span 7 / span 7;
+    grid-area: -14 / 10 / span 11 / span 7;
+  }
+  
+  #mb1 {
+    grid-area: -14 / 2 / span 11 / span 7;
+  }
+
+  #mb31 {
+    grid-area: -14 / 10 / span 11 / span 7;
+  }
+
+  #mb32 {
+    grid-area: -14 / 10 / span 11 / span 7;
+  }
+
+  #mb3 {
+    grid-area: -14 / 10 / span 11 / span 7;
   }
 }
 

@@ -200,6 +200,7 @@ export class VME {
                     hide('#quickshot');
                     hide('#quickjoys');
                     hide('#quickjoy');
+                    hide('#mousepads');
                 } else {
                     show('#fastui', 'grid');
                 }

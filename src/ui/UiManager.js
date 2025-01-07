@@ -9,6 +9,7 @@ import { QuickShot } from '../touch/QuickShot.js';
 import { Mousepad } from '../touch/Mousepad.js';
 import { Hideaway } from '../touch/Hideaway.js';
 import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE, FAST_BTN_RADIUS } from '../Constants.js';
+import { FileUtils } from '../utils/FileUtils.js';
 
 export class UiManager {
     #platform_manager;
@@ -164,71 +165,98 @@ export class UiManager {
 
         this.initControlsButton();
 
-        if (this.#platform_manager.getSelectedPlatform().mouse_controllers) {
+
+        let tst = this.#platform_manager.getSelectedPlatform();
+        if (this.#platform_manager.getSelectedPlatform().mouse_controllers || "lightgun" == this.#getOverridenControllerType()) {
             s('#canvas').addEventListener('click', () => {
                 s('#canvas').requestPointerLock();
             });
         }
     }
 
+    #getOverridenControllerType() {
+        const controller_overrides = this.#platform_manager.getSelectedPlatform().controller_overrides;
+        const controller_types = this.#platform_manager.getSelectedPlatform().controller_types;
+
+        if (controller_overrides) {
+            const program_name = this.#platform_manager.getProgramName();
+            const key = FileUtils.getFilenameWithoutExtension(program_name);
+            const controller_type = controller_overrides[key];
+            const overriden_type = controller_types[controller_type];
+
+            return overriden_type;
+        }
+        return undefined;
+    }
+
     initTouchControllerMenu() {
-        const touch_controllers = this.#platform_manager.getSelectedPlatform().touch_controllers;
-        if (touch_controllers.length == 1) return;
-
-        let currentControllerIndex = 0;
-
-        new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new class extends TouchButtonListener {
-            constructor() {
-                super();
+        const overridenController = this.#getOverridenControllerType();
+        if (overridenController) {
+            if ("lightgun" == overridenController) {
+                UiManager.hideKeyboard();
+                UiManager.hideJoystick();
+                UiManager.mousepadVisible = true;
+                UiManager.showMousepad();
             }
-            trigger(s) {
-                if (s) {
-                    if (UiManager.mousepadVisible) {
-                        UiManager.hideKeyboard();
-                        UiManager.hideMousepad();
-                        UiManager.mousepadVisible = false;
-                        UiManager.showJoystick();
-                    } else if (UiManager.keyboardVisible) {
-                        UiManager.hideKeyboard();
-                        UiManager.hideMousepad();
-                        UiManager.mousepadVisible = false;
-                        UiManager.showJoystick();
-                    } else {
-                        currentControllerIndex = (currentControllerIndex + 1) % touch_controllers.length;
-                        const currentController = touch_controllers[currentControllerIndex];
-                        UiManager.toggleJoystick(currentController, true);
+        } else {
+            const touch_controllers = this.#platform_manager.getSelectedPlatform().touch_controllers;
+            if (touch_controllers.length == 1) return;
+
+            let currentControllerIndex = 0;
+
+            new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new class extends TouchButtonListener {
+                constructor() {
+                    super();
+                }
+                trigger(s) {
+                    if (s) {
+                        if (UiManager.mousepadVisible) {
+                            UiManager.hideKeyboard();
+                            UiManager.hideMousepad();
+                            UiManager.mousepadVisible = false;
+                            UiManager.showJoystick();
+                        } else if (UiManager.keyboardVisible) {
+                            UiManager.hideKeyboard();
+                            UiManager.hideMousepad();
+                            UiManager.mousepadVisible = false;
+                            UiManager.showJoystick();
+                        } else {
+                            currentControllerIndex = (currentControllerIndex + 1) % touch_controllers.length;
+                            const currentController = touch_controllers[currentControllerIndex];
+                            UiManager.toggleJoystick(currentController, true);
+                        }
                     }
                 }
-            }
-        }, FAST_BTN_RADIUS);
+            }, FAST_BTN_RADIUS);
 
-        const mouse_controllers = this.#platform_manager.getSelectedPlatform().mouse_controllers;
-        if (mouse_controllers == undefined || mouse_controllers.length == 0) return;
+            const mouse_controllers = this.#platform_manager.getSelectedPlatform().mouse_controllers;
+            if (mouse_controllers == undefined || mouse_controllers.length == 0) return;
 
-        let currentMouseControllerIndex = 0;
+            let currentMouseControllerIndex = 0;
 
-        new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">MOUSE</span>', undefined, 'fastmouse', new class extends TouchButtonListener {
-            constructor() {
-                super();
-            }
-            trigger(s) {
-                if (s) {
-                    UiManager.mousepadVisible = true;
+            new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">MOUSE</span>', undefined, 'fastmouse', new class extends TouchButtonListener {
+                constructor() {
+                    super();
+                }
+                trigger(s) {
+                    if (s) {
+                        UiManager.mousepadVisible = true;
 
-                    if (UiManager.mousepadVisible) {
-                        currentMouseControllerIndex = (currentMouseControllerIndex + 1) % mouse_controllers.length;
-                        const currentMousepad = mouse_controllers[currentMouseControllerIndex];
-                        UiManager.toggleMousePad(currentMousepad, true);
-                    } else {
-                        UiManager.hideKeyboard();
-                        UiManager.hideJoystick();
-                        const currentMousepad = mouse_controllers[currentMouseControllerIndex];
-                        UiManager.toggleMousePad(currentMousepad, true);
+                        if (UiManager.mousepadVisible) {
+                            currentMouseControllerIndex = (currentMouseControllerIndex + 1) % mouse_controllers.length;
+                            const currentMousepad = mouse_controllers[currentMouseControllerIndex];
+                            UiManager.toggleMousePad(currentMousepad, true);
+                        } else {
+                            UiManager.hideKeyboard();
+                            UiManager.hideJoystick();
+                            const currentMousepad = mouse_controllers[currentMouseControllerIndex];
+                            UiManager.toggleMousePad(currentMousepad, true);
+                        }
                     }
                 }
-            }
-        }, 
-        FAST_BTN_RADIUS);
+            },
+                FAST_BTN_RADIUS);
+        }
     }
 
     initControlsButton() {
@@ -373,6 +401,8 @@ export class UiManager {
     }
 
     static showJoystick() {
+        if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) return;
+
         if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
             s('#quickshots').style.display = 'grid';
         } else if (UiManager.currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
@@ -395,6 +425,8 @@ export class UiManager {
     }
 
     static showMousepad() {
+        if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) return;
+
         s('#mousepads').style.display = 'grid';
     }
 
