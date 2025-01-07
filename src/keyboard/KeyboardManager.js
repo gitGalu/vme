@@ -214,15 +214,9 @@ export class KeyboardManager {
                 s('#keyboard').classList.add('keyboardStrip');
                 s('#kbCtrlArrow').innerHTML = '&#x25B3;';
 
-                document.querySelectorAll('.layerA').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
-                document.querySelectorAll('.layerB').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
-                document.querySelectorAll('.layerC').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
+                this.#visibility('.layerA', true);
+                this.#visibility('.layerB', true);
+                this.#visibility('.layerC', true);
 
                 document.querySelectorAll('.nostrip').forEach(function (el) {
                     el.style.display = 'none';
@@ -234,15 +228,9 @@ export class KeyboardManager {
                 s('#kbCtrlArrow').innerHTML = '&#x25BD;';
 
                 this.#layer = KeyboardManager.Layer.A;
-                document.querySelectorAll('.layerB').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerC').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerA').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
+                this.#visibility('.layerB', false);
+                this.#visibility('.layerC', false);
+                this.#visibility('.layerA', true);
 
                 document.querySelectorAll('.nostrip').forEach(function (el) {
                     el.style.display = 'block';
@@ -265,20 +253,12 @@ export class KeyboardManager {
                 //todo caps
             } else if (this.#layer == KeyboardManager.Layer.B) {
                 this.#layer = KeyboardManager.Layer.C;
-                document.querySelectorAll('.layerB').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerC').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
+                this.#visibility('.layerB', false);
+                this.#visibility('.layerC', true);
             } else if (this.#layer == KeyboardManager.Layer.C) {
                 this.#layer = KeyboardManager.Layer.B;
-                document.querySelectorAll('.layerC').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerB').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
+                this.#visibility('.layerC', false);
+                this.#visibility('.layerB', true);
             }
         });
 
@@ -286,27 +266,15 @@ export class KeyboardManager {
             if (this.#layer == KeyboardManager.Layer.A) {
                 document.querySelector('#keyShift').innerHTML = 'MORE';
                 this.#layer = KeyboardManager.Layer.B;
-                document.querySelectorAll('.layerA').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerC').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerB').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
+                this.#visibility('.layerA', false);
+                this.#visibility('.layerC', false);
+                this.#visibility('.layerB', true);
             } else if (this.#layer == KeyboardManager.Layer.B || this.#layer == KeyboardManager.Layer.C) {
                 this.#layer = KeyboardManager.Layer.A;
                 document.querySelector('#keyShift').innerHTML = 'CAPS';
-                document.querySelectorAll('.layerB').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerC').forEach(function (el) {
-                    el.style.visibility = 'hidden';
-                });
-                document.querySelectorAll('.layerA').forEach(function (el) {
-                    el.style.visibility = 'visible';
-                });
+                this.#visibility('.layerB', false);
+                this.#visibility('.layerC', false);
+                this.#visibility('.layerA', true);
             }
         });
 
@@ -378,6 +346,12 @@ export class KeyboardManager {
             var customDiv = document.getElementById('cors_query');
             customDiv.textContent = this.value;
             self.#cli.parse_hidden_input();
+        });
+    }
+
+    #visibility(layer, visible) {
+        document.querySelectorAll(layer).forEach(function (el) {
+            el.style.visibility = visible ? 'visible' : 'hidden';
         });
     }
 
