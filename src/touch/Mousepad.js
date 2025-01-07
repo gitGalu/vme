@@ -71,36 +71,49 @@ export class Mousepad {
         };
 
         bottomContainer.addEventListener('touchstart', (e) => {
-            var touch = e.changedTouches[0];
-            const targetId = e.target.id;
-
-            const allowedTargetIds = ['lmb', 'rmb', 'mb1', 'mb31', 'mb32', 'mb33'];
-
-            if (!targetId || !allowedTargetIds.includes(targetId)) {
-                this.#activeTouchId = touch.identifier;
-                mousetouch(e, true);
+            const touches = e.changedTouches;
+            if (this.#activeTouchId === null) {
+                const touch = touches[0];
+                const targetId = e.target.id;
+        
+                const allowedTargetIds = ['lmb', 'rmb', 'mb1', 'mb31', 'mb32', 'mb33'];
+        
+                if (!targetId || !allowedTargetIds.includes(targetId)) {
+                    this.#activeTouchId = touch.identifier;
+                    mousetouch(e, true);
+                } else {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
             } else {
                 e.stopPropagation();
                 e.preventDefault();
             }
         });
-
+        
         bottomContainer.addEventListener('touchmove', (e) => {
-            var touch = e.changedTouches[0];
-            if (this.#activeTouchId !== null && this.#activeTouchId === touch.identifier) {
+            const touches = Array.from(e.changedTouches).filter(touch => touch.identifier === this.#activeTouchId);
+            if (touches.length > 0) {
                 mousetouch(e, true);
             }
         });
-
+        
         bottomContainer.addEventListener('touchend', (e) => {
-            var touch = e.changedTouches[0];
-            if (this.#activeTouchId !== null && this.#activeTouchId === touch.identifier) {
+            const touches = Array.from(e.changedTouches).filter(touch => touch.identifier === this.#activeTouchId);
+            if (touches.length > 0) {
                 e.preventDefault();
                 mousetouch(e, false);
+                this.#activeTouchId = null;
             }
         });
-
-        bottomContainer.addEventListener('touchcancel', (e) => mousetouch(e, false));
+        
+        bottomContainer.addEventListener('touchcancel', (e) => {
+            const touches = Array.from(e.changedTouches).filter(touch => touch.identifier === this.#activeTouchId);
+            if (touches.length > 0) {
+                mousetouch(e, false);
+                this.#activeTouchId = null;
+            }
+        });
 
         if (platform_id == "amiga") {
             new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchButtonKbListener('F13', 'F13', '124', s('canvas')));
