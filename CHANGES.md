@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2025-01-07
+
+- add arcade games emulation (uses MAME 2003-Plus core)
+- add lightgun emulation (MAME)
+- add the ability to find games by real titles instead of romset filenames (MAME)
+- fix multitouch issues in touchscreen mouse emulation
+
 ## [0.8.9] - 2024-10-24
 
 - fix touch controls od Android
