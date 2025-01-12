@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2025-01-XX
+
+- Amiga: add cursor keys emulation on touchscreens
+- Amiga: add function keys layer on touch keyboard
+- Neo Geo: add the ability to find games by real titles instead of romset filenames
+- CLI: add CLEARALL command to wipe all VM/E settings and data
+
 ## [0.9.0] - 2025-01-07
 
 - add arcade games emulation (uses MAME 2003-Plus core)
