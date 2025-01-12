@@ -251,15 +251,6 @@ body, html {
   text-align: right;
 }
 
-
-#joystick_container {
-  height: 100%;
-  width: 100%;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-}
-
 #fastui {
   position: fixed;
   right: 0;
@@ -279,6 +270,12 @@ body, html {
 }
 
 #quickshot {
+  display: none;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+#cursors {
   display: none;
   touch-action: none;
   pointer-events: auto;
@@ -568,6 +565,11 @@ a {
     height: 50% !important;
   }
 
+  #cursorkeys {
+    top: 50%;
+    height: 50% !important;
+  }
+
   #fastui {
     top: 50%;
     height: 50% !important;
@@ -605,6 +607,14 @@ a {
     grid-area: 20 / -10 / span 4 / span 9
   }
 
+  #cursorb2 {
+    grid-area: -13 / -21 / span 11 / span 9;
+  }
+
+  #cursorb1 {
+    grid-area: -13 / -11 / span 11 / span 9;
+  }
+
   #fastsave {
     grid-area: 8 / 1 / span 4 / span 9;
   }
@@ -619,6 +629,10 @@ a {
 
   #fastkb {
     grid-area: 14 / 33 / span 4 / span 9;
+  }
+
+  #fastcursors {
+    grid-area: 8 / 33 / span 4 / span 9;
   }
 
   #fastjoy {
@@ -766,6 +780,10 @@ a {
     grid-area: 15 / 43 / span 4 / span 4;
   }
 
+  #fastcursors {
+    grid-area:9 / 43 / span 4 / span 4;
+  }
+
   #fastjoy {
     grid-area: 15 / 1 / span 4 / span 4;
   }
@@ -780,6 +798,14 @@ a {
 
   #fastffd {
     grid-area: 21 / -5 / span 4 / span 4;
+  }
+
+  #cursorb2 {
+    grid-area: -15 / -9 / span 12 / span 7;
+  }
+
+  #cursorb1 {
+    grid-area: -15 / -17 / span 12 / span 7;
   }
 
   #qsa {
@@ -847,11 +873,18 @@ a {
   font-family: Helvetica, Arial, sans-serif !important;
 }
 
-#lmb, #rmb {
+#cursorkeys {
+  grid-template-columns: repeat(50, 1fr);
+  grid-template-rows: repeat(50, 1fr);
+  pointer-events: all;
+  font-family: Helvetica, Arial, sans-serif !important;
+}
+
+#lmb, #rmb, #cursorb1, #cursorb1, #mb1, #mb31, #mb32, #mb33 {
   pointer-events: all;
 }
 
-#quickjoys, #quickshots, #fastbuttons, #fastui {
+#quickjoys, #quickshots, #cursorkeys, #fastbuttons, #fastui {
   pointer-events: none;
   font-family: Helvetica, Arial, sans-serif !important;
 }
@@ -932,6 +965,10 @@ a {
 }
 
 .layerC {
+  visibility: hidden;
+}
+
+.layerF {
   visibility: hidden;
 }
 
@@ -1273,6 +1310,197 @@ a {
   grid-area: 1 / 19 / span 1 / span 2;
 }
 
+.keyboardQwerty>#keyFL11 {
+  display: block;
+  grid-area: 1 / 2 / span 1 / span 4;
+}
+
+.keyboardQwerty>#keyFR11 {
+  display: block;
+  grid-area: 1 / 16 / span 1 / span 4;
+}
+
+.keyboardQwerty>#keyF11 {
+  display: block;
+  grid-area: 1 / 2 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF12 {
+  display: block;
+  grid-area: 1 / 4 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF13 {
+  display: block;
+  grid-area: 1 / 6 / span 1 / span 2;
+}
+
+ .keyboardQwerty>#keyF14 {
+  display: block;
+  grid-area: 1 / 8 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF15 {
+  display: block;
+  grid-area: 1 / 10 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF16 {
+  display: block;
+  grid-area: 1 / 12 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF17 {
+  display: block;
+  grid-area: 1 / 14 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF18 {
+  display: block;
+  grid-area: 1 / 16 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF19 {
+  display: block;
+  grid-area: 1 / 18 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF21 {
+  display: block;
+  grid-area: 2 / 2 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF22 {
+  display: block;
+  grid-area: 2 / 4 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF23 {
+  display: block;
+  grid-area: 2 / 6 / span 1 / span 2;
+}
+
+ .keyboardQwerty>#keyF24 {
+  display: block;
+  grid-area: 2 / 8 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF25 {
+  display: block;
+  grid-area: 2 / 10 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF26 {
+  display: block;
+  grid-area: 2 / 12 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF27 {
+  display: block;
+  grid-area: 2 / 14 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF28 {
+  display: block;
+  grid-area: 2 / 16 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF29 {
+  display: block;
+  grid-area: 2 / 18 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyFA29 {
+  display: block;
+  grid-area: 2 / 17 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF31 {
+  display: block;
+  grid-area: 3 / 2 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF32 {
+  display: block;
+  grid-area: 3 / 4 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF33 {
+  display: block;
+  grid-area: 3 / 6 / span 1 / span 2;
+}
+
+ .keyboardQwerty>#keyF34 {
+  display: block;
+  grid-area: 3 / 8 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF35 {
+  display: block;
+  grid-area: 3 / 10 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF36 {
+  display: block;
+  grid-area: 3 / 12 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF37 {
+  display: block;
+  grid-area: 3 / 14 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF38 {
+  display: block;
+  grid-area: 3 / 16 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF39 {
+  display: block;
+  grid-area: 3 / 18 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyFA39 {
+  display: block;
+  grid-area: 3 / 17 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF43 {
+  display: block;
+  grid-area: 4 / 6 / span 1 / span 2;
+}
+
+
+.keyboardQwerty>#keyF44 {
+  display: block;
+  grid-area: 4 / 8 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF45 {
+  display: block;
+  grid-area: 4 / 10 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF46 {
+  display: block;
+  grid-area: 4 / 12 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF47 {
+  display: block;
+  grid-area: 4 / 14 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF48 {
+  display: block;
+  grid-area: 4 / 16 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyF49 {
+  display: block;
+  grid-area: 4 / 18 / span 1 / span 2;
+}
+
 .keyboardQwerty>#keyMinus {
   display: block;
   grid-area: 2 / 1 / span 1 / span 2;
@@ -1558,7 +1786,7 @@ a {
   color: var(--color2);
 }
 
-.joystick-base {
+.joystick-base, .cursor-base {
   position: absolute;
   border-radius: 50%;
   background-color: #88888822;
@@ -1571,7 +1799,7 @@ a {
   height: 100px;
 }
 
-.joystick-thumb {
+.joystick-thumb, .cursor-thumb {
   position: absolute;
   border-radius: 50%;
   background-color: #000;
@@ -1709,7 +1937,7 @@ a {
   }
 }
 
-#fastui, #quickshots, #quickjoys, #mousepads {
+#fastui, #quickshots, #quickjoys, #mousepads, #cursorkeys {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-top: env(safe-area-inset-top);

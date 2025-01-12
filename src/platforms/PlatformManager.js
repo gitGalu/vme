@@ -29,9 +29,9 @@ import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
-import { NetworkManager } from '../NetworkManager.js';
 import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
+import GameFocusManager from '../keyboard/GameFocusManager.js';
 
 export const SelectedPlatforms = {
     NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME
@@ -361,6 +361,8 @@ export class PlatformManager {
                     fileContent: blob
                 },
                 async beforeLaunch(nostalgist) {
+                    GameFocusManager.initialize(nostalgist);
+
                     if (StorageManager.getValue("SHADER") != "0" && typeof platform.shader === 'function') {
                         if (Debug.isEnabled()) {
                             Debug.updateMessage('load', 'Loading shaders.');
@@ -378,8 +380,6 @@ export class PlatformManager {
                 state: self.#state,
                 async onLaunch(nostalgist) {
                     self.#caption = caption;
-                    nostalgist.sendCommand('GAME_FOCUS_TOGGLE');
-                    nostalgist.sendCommand('SHADER_TOGGLE');
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
                 resolveCoreJs(file) {
@@ -773,8 +773,6 @@ export class PlatformManager {
             return false;
         }
     }
-
-    //
 
     showThumbnail(text) {
         let platform_thumbnail_dir = this.getSelectedPlatform().thumbnail_dir;

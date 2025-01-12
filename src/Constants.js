@@ -9,6 +9,12 @@ export const BOOT_TO_COLLECTION_BROWSER = 'COMPILATIONS';
 
 export const FAST_BTN_RADIUS = '6px';
 
+export const TOUCH_INPUT = {
+    JOYSTICK: 100,
+    MOUSE: 300,
+    KEYBOARD: 500,
+    CURSORS: 600
+}
 
 export const JOYSTICK_TOUCH_MODE = {
     QUICKJOY_PRIMARY: 100,

@@ -12,6 +12,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { VME } from '../VME.js';
 import { UiManager } from '../ui/UiManager.js';
+import GameFocusManager from './GameFocusManager.js';
 
 export class KeyboardManager {
     #mode;
@@ -26,6 +27,8 @@ export class KeyboardManager {
     #handleEmulationInputBound;
     #handleEmulationSpecialBound;
 
+    #layers = [".layerA", ".layerB", ".layerC"];
+
     static State = {
         OFF: 0, ON: 1
     };
@@ -35,7 +38,7 @@ export class KeyboardManager {
     };
 
     static Layer = {
-        A: 0, B: 1, C: 2
+        A: 0, B: 1, C: 2, F: 10
     };
 
     constructor(cli) {
@@ -130,6 +133,69 @@ export class KeyboardManager {
         });
     }
 
+    setAdditionalLayer(layerConfig) {
+        this.#layers.push(".layerF");
+        const container = document.querySelector('#keyboard');
+
+        layerConfig.layerF.forEach(key => {
+            const span = document.createElement("span");
+            span.classList.add("key", "layerF");
+            span.dataset.value = key.value;
+            span.dataset.code = key.code;
+            span.id = key.id;
+            span.textContent = key.label;
+
+            container.appendChild(span);
+        });
+
+        this.#layer = KeyboardManager.Layer.A;
+        this.#refresh();
+    }
+
+    #refresh() {
+        if (this.#mode == KeyboardManager.Mode.QWERTY) {
+            switch (this.#layer) {
+                case KeyboardManager.Layer.A:
+                    this.#visibility('.layerB', false);
+                    this.#visibility('.layerC', false);
+                    this.#visibility('.layerF', false);
+                    this.#visibility('.layerA', true);
+                    break;
+                case KeyboardManager.Layer.B:
+                    this.#visibility('.layerA', false);
+                    this.#visibility('.layerC', false);
+                    this.#visibility('.layerF', false);
+                    this.#visibility('.layerB', true);
+                    break;
+                case KeyboardManager.Layer.C:
+                    this.#visibility('.layerA', false);
+                    this.#visibility('.layerB', false);
+                    this.#visibility('.layerF', false);
+                    this.#visibility('.layerC', true);
+                    break;
+                case KeyboardManager.Layer.F:
+                    this.#visibility('.layerA', false);
+                    this.#visibility('.layerB', false);
+                    this.#visibility('.layerC', false);
+                    this.#visibility('.layerF', true);
+                    break;
+            }
+
+            document.querySelectorAll('.nostrip').forEach(function (el) {
+                el.style.display = 'block';
+            });
+        } else if (this.#mode == KeyboardManager.Mode.STRIP) {
+            this.#visibility('.layerA', true);
+            this.#visibility('.layerB', true);
+            this.#visibility('.layerC', true);
+            this.#visibility('.layerF', true);
+
+            document.querySelectorAll('.nostrip').forEach(function (el) {
+                el.style.display = 'none';
+            });
+        }
+    }
+
     initButtons() {
         createGuiButton('toggle-keyboard', 'Show Keyboard', 'Kb', () => {
             this.initAudioContext();
@@ -213,29 +279,13 @@ export class KeyboardManager {
                 s('#keyboard').classList.remove('keyboardQwerty');
                 s('#keyboard').classList.add('keyboardStrip');
                 s('#kbCtrlArrow').innerHTML = '&#x25B3;';
-
-                this.#visibility('.layerA', true);
-                this.#visibility('.layerB', true);
-                this.#visibility('.layerC', true);
-
-                document.querySelectorAll('.nostrip').forEach(function (el) {
-                    el.style.display = 'none';
-                });
             } else if (this.#mode == KeyboardManager.Mode.STRIP) {
                 this.#mode = KeyboardManager.Mode.QWERTY;
                 s('#keyboard').classList.remove('keyboardStrip');
                 s('#keyboard').classList.add('keyboardQwerty');
                 s('#kbCtrlArrow').innerHTML = '&#x25BD;';
-
-                this.#layer = KeyboardManager.Layer.A;
-                this.#visibility('.layerB', false);
-                this.#visibility('.layerC', false);
-                this.#visibility('.layerA', true);
-
-                document.querySelectorAll('.nostrip').forEach(function (el) {
-                    el.style.display = 'block';
-                });
             }
+            this.#refresh();
         });
 
         document.querySelector('#kbCtrlClear').addEventListener('click', (e) => {
@@ -259,6 +309,10 @@ export class KeyboardManager {
                 this.#layer = KeyboardManager.Layer.B;
                 this.#visibility('.layerC', false);
                 this.#visibility('.layerB', true);
+            } else if (this.#layer == KeyboardManager.Layer.F) {
+                this.#layer = KeyboardManager.Layer.F;
+                this.#visibility('.layerC', false);
+                this.#visibility('.layerB', true);
             }
         });
 
@@ -266,18 +320,21 @@ export class KeyboardManager {
             if (this.#layer == KeyboardManager.Layer.A) {
                 document.querySelector('#keyShift').innerHTML = 'MORE';
                 this.#layer = KeyboardManager.Layer.B;
-                this.#visibility('.layerA', false);
-                this.#visibility('.layerC', false);
-                this.#visibility('.layerB', true);
             } else if (this.#layer == KeyboardManager.Layer.B || this.#layer == KeyboardManager.Layer.C) {
+                if (this.#layers.includes(".layerF")) {
+                    this.#layer = KeyboardManager.Layer.F;
+                    document.querySelector('#keyShift').innerHTML = 'CAPS';
+                } else {
+                    this.#layer = KeyboardManager.Layer.A;
+                    document.querySelector('#keyShift').innerHTML = 'CAPS';
+                }
+            } else if (this.#layer == KeyboardManager.Layer.F) {
                 this.#layer = KeyboardManager.Layer.A;
                 document.querySelector('#keyShift').innerHTML = 'CAPS';
-                this.#visibility('.layerB', false);
-                this.#visibility('.layerC', false);
-                this.#visibility('.layerA', true);
             }
-        });
 
+            this.#refresh();
+        });
 
         document.querySelectorAll('.key').forEach(function (el) {
             el.addEventListener('touchstart', function () {
@@ -322,6 +379,8 @@ export class KeyboardManager {
         const key = target.getAttribute('data-value');
         const code = target.getAttribute('data-code');
         const shift = target.getAttribute('data-shift');
+
+        if (key == null) return;
 
         if (shift) {
             if (type == "touchstart") {
@@ -431,11 +490,8 @@ export class KeyboardManager {
 
     hideTouchKeyboard() {
         UiManager.keyboardVisible = false;
-        if (UiManager.mousepadVisible) {
-            UiManager.showMousepad();
-        } else {
-            UiManager.showJoystick();
-        }
+        UiManager.keyboardClosed();
+
         const elements = document.querySelectorAll('.kbCtrl');
         elements.forEach(element => {
             element.style.paddingTop = '0px';

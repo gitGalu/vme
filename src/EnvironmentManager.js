@@ -66,13 +66,11 @@ export class EnvironmentManager {
     static forceTouch() {
         hide('#desktopUi');
         show('#fastui', 'grid');
-        UiManager.toggleJoystick(); //todo
     }
 
     static forceDesktop() {
         hide('#fastui');
         show('#desktopUi', 'flex');
-        UiManager.toggleJoystick(); //todo
         if (EnvironmentManager.isDesktop()) {
             hide("#toggle-keyboard");
         } else {

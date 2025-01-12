@@ -148,19 +148,26 @@ export class VME {
     }
 
     emulationStarted() {
-        let defaultController = this.#pl.getSelectedPlatform().default_touch_controller;
+        const defaultController = this.#pl.getSelectedPlatform().default_touch_controller;
+
+        const additionalKeyboard = this.#pl.getSelectedPlatform().additional_keyboard;
+
+        if (additionalKeyboard) {
+            this.#kb.setAdditionalLayer(additionalKeyboard);
+        }
 
         this.#ui.initQuickJoy();
         this.#ui.initQuickshot();
         this.#ui.initMousepad();
         this.#ui.initHideaway();
+        this.#ui.initCursorKeys();
 
         this.#ui.initFastUI();
 
         if (defaultController) {
-            UiManager.toggleJoystick(defaultController, false);
+            UiManager.setCurrentJoyTouchMode(JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
         } else {
-            UiManager.toggleJoystick(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY, false);
+            UiManager.setCurrentJoyTouchMode(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
         }
 
         this.#ui.initDesktopUI();
