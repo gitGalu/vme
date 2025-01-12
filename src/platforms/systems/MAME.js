@@ -10028,12 +10028,12 @@ const MAME = {
         { "gollygho": 8, "sgunner": 8, "sgunner2": 8, "sgunnr2j": 8, "ptblank": 8, "gunbulet": 8, "shootgal": 8, "pc_duckh": 8, "pc_hgaly": 8, "pc_wgnmn": 8, "duckhunt": 8, "hogalley": 8, "vsgshoe": 8, "vsfdf": 8, "desertgu": 8, "nstocker": 8, "nycaptor": 8, "cyclshtg": 8, "bronx": 8, "opwolf": 8, "opwolfb": 8, "othunder": 8, "othundu": 8, "opwolf3": 8, "opwolf3u": 8, "spacegun": 8, "gunbustr": 8, "undrfire": 8, "undrfiru": 8, "undrfirj": 8, "tshoot": 8, "cryptklr": 8, "loffire": 8, "alien3": 8, "jpark": 8, "dragngun": 8, "lockload": 8, "lethalen": 8, "le2": 8, "le2u": 8, "crossbow": 8, "cheyenne": 8, "combat": 8, "catch22": 8, "cracksht": 8, "claypign": 8, "chiller": 8, "hitnmiss": 8, "hitnmis2": 8, "whodunit": 8, "showdown": 8, "triplhnt": 8, "area51": 8, "area51mx": 8, "a51mxr3k": 8, "maxforce": 8, "maxf_102": 8, "mechatt": 8, "bbusters": 8, "mazerbla": 8, "greatgun": 8, "term2": 8, "term2la2": 8, "term2la1": 8, "revx": 8, "carnevil": 8, "targeth": 8, "bang": 8, "bangj": 8, "zombraid": 8, "deerhunt": 8, "deerhunta": 8, "deerhuntb": 8, "turkhunt": 8, "wschamp": 8, "wschampa": 8, "trophyh": 8, "gdfs": 8, "zeropnt": 8, "zeropnta": 8, "zeropnt2": 8, "policetr": 8, "policeto": 8, "plctr13b": 8, "sshooter": 8, "oneshot": 8, "tickee": 8, "lethalj": 8, "eggventr": 8, "eggvntdx": 8 },
     additional_buttons: {
         1: {
-            "label": "START",
-            "keyCode": "start"
-        },
-        2: {
             "label": "COIN",
             "keyCode": "select"
+        },
+        2: {
+            "label": "START",
+            "keyCode": "start"
         }
     }
 };
