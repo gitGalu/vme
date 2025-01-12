@@ -77,6 +77,7 @@ const Amiga = {
         "Z": "Fire",
         "Mouse": "Mouse"
     },
+    cursor_keys: true,
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
@@ -103,6 +104,26 @@ const Amiga = {
         shiftKey: 2,
         overrides: {
         }
+    },
+    additional_keyboard: {
+        "layerF": [
+            { "id": "keyFA29", "value": "ArrowUp", "code": "ArrowUp", "label": "↑" },
+            { "id": "keyFA39", "value": "ArrowDown", "code": "ArrowDown", "label": "↓" },
+            { "id": "keyF21", "value": "ArrowLeft", "code": "ArrowLeft", "label": "←" },
+            { "id": "keyF22", "value": "ArrowRight", "code": "ArrowRight", "label": "→" },
+            { "id": "keyF14", "value": "F1", "code": "F1", "label": "F1" },
+            { "id": "keyF15", "value": "F2", "code": "F2", "label": "F2" },
+            { "id": "keyF16", "value": "F3", "code": "F3", "label": "F3" },
+            { "id": "keyF24", "value": "F4", "code": "F4", "label": "F4" },
+            { "id": "keyF25", "value": "F5", "code": "F5", "label": "F5" },
+            { "id": "keyF26", "value": "F6", "code": "F6", "label": "F6" },
+            { "id": "keyF34", "value": "F7", "code": "F7", "label": "F7" },
+            { "id": "keyF35", "value": "F8", "code": "F8", "label": "F8" },
+            { "id": "keyF36", "value": "F9", "code": "F9", "label": "F9" },
+            { "id": "keyF45", "value": "F10", "code": "F10", "label": "F10" },
+            { "id": "keyFL11", "value": "shift", "code": "ShiftLeft", "label": "LShift" },
+            { "id": "keyFR11", "value": "shift", "code": "ShiftRight", "label": "RShift" }
+        ]
     },
     additional_buttons: {
     },
