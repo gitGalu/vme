@@ -2101,7 +2101,6 @@ a {
   max-height: 100%;
   position: relative;
   text-align: center;
-  padding-top: 32px;
   margin: auto;
 }
 
@@ -2605,4 +2604,128 @@ canvas {
 .toast-message.hide {
   opacity: 0;
   transform: translateY(-50px);
+}
+
+.flicking-panel {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+#save-browser.transitioning .flicking-panel {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.flicking-panel:not(.active):hover {
+  transform: scale(1.02);
+}
+
+.flicking-title-time {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  color: grey;
+  font-size: 50%;
+}
+
+.flicking-panel.active .flicking-title-time {
+  opacity: 1;
+  transform: translateY(0);
+  color: grey;
+  font-size: 50%;
+}
+
+#flicking-background {
+  transition: transform 0.8s ease, filter 0.5s ease, opacity 0.8s ease;
+}
+
+#platformFilter {
+  transition: opacity 0.3s ease;
+}
+
+#saveBrowserUiBack img {
+  transition: filter 0.3s ease, transform 0.2s ease;
+}
+
+#saveBrowserUiBack:hover img:not([disabled]) {
+  transform: scale(1.1);
+}
+
+#platformFilterContainer {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#platformFilterContainer.hidden {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+}
+
+.right-area {
+  transition: opacity 0.3s ease;
+}
+
+#saveBrowserUiDelete,
+#saveBrowserUiLoad,
+#saveBrowserUiOpen {
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  display: none;
+}
+
+#save-browser[data-view="game-list"] #saveBrowserUiOpen {
+  display: block;
+}
+
+#save-browser[data-view="game-saves"] #saveBrowserUiDelete,
+#save-browser[data-view="game-saves"] #saveBrowserUiLoad {
+  display: block;
+}
+
+.view-exit {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.view-enter {
+  opacity: 0;
+  transform: scale(1.05);
+  animation: viewEnter 0.3s ease-in forwards;
+}
+
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.clickable-area {
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.clickable-area.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
+}
+
+#platformFilterContainer {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0;
+}
+
+#platformFilterContainer.hidden {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+}
+
+#platformFilterContainer:not(.hidden) {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }

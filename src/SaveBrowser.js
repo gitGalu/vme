@@ -9,14 +9,15 @@ export class SaveBrowser {
     #platform_manager;
     #db;
     #cli;
-
     #flicking;
-
     #selected;
     #launched;
     #kb_event_bound;
     #filter_change_handler_bound;
     #eventListeners = [];
+    #currentPlatformFilter = "all";
+    #isGameView = false;
+    #uiReady = false;
 
     constructor(vme, platform_manager, storage_manager, cli) {
         this.#vme = vme;
@@ -29,23 +30,73 @@ export class SaveBrowser {
         this.#filter_change_handler_bound = this.#filterChangeHandler.bind(this);
 
         const backButton = s('#saveBrowserUiBack');
+        backButton.classList.remove('disabled');
+    
         const backHandler = (pressed) => {
             if (pressed) {
-                this.close();
-                this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+                if (this.#isGameView) {
+                    this.#showGameList();
+                } else {
+                    this.close();
+                    this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+                }
             }
         };
         addButtonEventListeners(backButton, backHandler);
         this.#eventListeners.push({ element: backButton, handler: backHandler });
+
+        const platformFilter = document.getElementById('platformFilterContainer');
+        platformFilter.classList.add('none');
+        
+        this.#uiReady = false;
+    }
+
+    #setUIReady(ready) {
+        this.#uiReady = ready;
+        const buttons = ['saveBrowserUiOpen', 'saveBrowserUiDelete', 'saveBrowserUiLoad'];
+        buttons.forEach(id => {
+            const button = document.getElementById(id);
+            if (button) {
+                if (!ready) {
+                    button.classList.add('disabled');
+                } else if (this.#selected) {
+                    button.classList.remove('disabled');
+                }
+            }
+        });
     }
 
     #bindPanelEvents(panels) {
-        this.#flicking.on("changed", e => { this.#updateBackground(); this.#updateActivePanel(); });
-        this.#flicking.on("move", e => { this.#updateParallax(); });
-        this.#flicking.on("moveEnd", e => { this.#updateActivePanel(); });
+        this.#flicking.on("changed", e => { 
+            this.#updateBackground();
+            this.#updateActivePanel();
+            this.#setUIReady(true);
+        });
+        
+        this.#flicking.on("move", e => {
+            this.#updateParallax();
+            this.#setUIReady(false);
+        });
+        
+        this.#flicking.on("moveEnd", e => {
+            this.#updateActivePanel();
+            this.#setUIReady(true);
+        });
 
         panels.forEach((panel, index) => {
-            const clickHandler = () => this.#flicking.moveTo(index);
+            const clickHandler = () => {
+                if (!this.#isGameView) {
+                    const programName = panel.getAttribute('data-program-name');
+                    const platformId = panel.getAttribute('data-platform-id');
+                    this.#showGameSaves(programName, platformId);
+                } else {
+                    this.#flicking.moveTo(index).then(() => {
+                        if (this.#selected && this.#uiReady) {
+                            this.#loadSelected();
+                        }
+                    });
+                }
+            };
             panel.addEventListener("click", clickHandler);
             this.#eventListeners.push({ element: panel, handler: clickHandler });
         });
@@ -70,23 +121,27 @@ export class SaveBrowser {
 
         let screenshotBlob = new Blob([item.screenshot], { type: 'image/png' });
         const url = URL.createObjectURL(screenshotBlob);
-
         const randomDegree = Math.random() * 20 - 10;
 
         if (item.caption == undefined) {
             item.caption = this.#cleanFilename(item.program_name);
         }
 
+        const timestamp = new Date(item.timestamp).toLocaleString();
+        const timeDisplay = this.#isGameView ? `<div class="flicking-title flicking-title-time">${timestamp}</div>` : '';
+
         return `
-        <div class="flicking-panel" data-id="${item.id}" data-platform-id="${platform.platform_id}">
-            <img src="${url}" alt="${item.program_name}" style="transform: rotate(${randomDegree}deg)">
-            <div class="flicking-title flicking-title-name">${item.caption} (${platform.short_name})</div>
-         </div>
+            <div class="flicking-panel" data-id="${item.id}" data-program-name="${item.program_name}" data-platform-id="${platform.platform_id}">
+                <img src="${url}" alt="${item.program_name}" style="transform: rotate(${randomDegree}deg)">
+                <div class="flicking-title flicking-title-name">${item.caption} (${platform.short_name})</div>
+                ${timeDisplay}
+            </div>
         `;
     }
 
     #addFilterItem(platform_id, platform_name) {
         const platformFilter = document.getElementById('platformFilter');
+        const platformFilterContainer = document.getElementById('platformFilterContainer');
 
         const options = Array.from(platformFilter.options);
         const optionExists = options.some(option => option.value === platform_id);
@@ -96,6 +151,10 @@ export class SaveBrowser {
             newOption.value = platform_id;
             newOption.text = platform_name;
             platformFilter.add(newOption);
+
+            if (platformFilter.options.length > 1) {
+                platformFilterContainer.style.display = '';
+            }
         }
     }
 
@@ -118,23 +177,6 @@ export class SaveBrowser {
 
         this.#flicking.resize();
         this.#updateUI();
-    }
-
-    #recreatePanels(selectedPlatformId) {
-        this.#clearPanels();
-
-        this.#db.getAllSaveMeta()
-            .then(items => {
-                const filteredItems = selectedPlatformId === "all"
-                    ? items
-                    : items.filter(item => item.platform_id === selectedPlatformId);
-
-                if (filteredItems.length === 0) {
-                    this.#updateUI();
-                } else {
-                    this.#appendPanels(filteredItems);
-                }
-            });
     }
 
     #updateUI() {
@@ -168,20 +210,28 @@ export class SaveBrowser {
         const activePanel = this.#flicking.currentPanel;
         if (activePanel != null) {
             document.getElementById('saveBrowserEmpty').style.display = "none";
-            document.getElementById('saveBrowserUiLoad').classList.add('disabled');
-            document.getElementById('saveBrowserUiDelete').classList.add('disabled');
+            
+            const loadButton = document.getElementById('saveBrowserUiLoad');
+            const deleteButton = document.getElementById('saveBrowserUiDelete');
+            
+            if (this.#isGameView) {
+                loadButton.classList.remove('disabled');
+                deleteButton.classList.remove('disabled');
+            } else {
+                loadButton.classList.add('disabled');
+                deleteButton.classList.add('disabled');
+            }
 
             const panels = document.querySelectorAll(".flicking-panel");
             panels.forEach(panel => panel.classList.remove("active"));
             activePanel.element.classList.add("active");
-            document.getElementById('saveBrowserUiLoad').classList.remove('disabled');
-            document.getElementById('saveBrowserUiDelete').classList.remove('disabled');
             this.#selected = true;
         } else {
             document.getElementById('saveBrowserEmpty').style.display = "block";
             document.getElementById('saveBrowserEmpty').innerHTML = "No save states found.";
             document.getElementById('saveBrowserUiLoad').classList.add('disabled');
             document.getElementById('saveBrowserUiDelete').classList.add('disabled');
+            this.#selected = false;
         }
     }
 
@@ -203,18 +253,7 @@ export class SaveBrowser {
             fb.classList.add('show');
         }, 10);
 
-        const platformFilter = document.getElementById('platformFilter');;
-
-        this.#db.getAllSaveMeta()
-            .then(items => {
-                if (items.length === 0) {
-                    this.#updateUI();
-                    platformFilter.setAttribute('disabled', 'true');
-                } else {
-                    this.#appendPanels(items);
-                    platformFilter.removeAttribute('disabled');
-                }
-            });
+        this.#showGameList();
 
         platformFilter.removeEventListener('change', this.#filter_change_handler_bound)
         platformFilter.addEventListener('change', this.#filter_change_handler_bound);
@@ -224,7 +263,7 @@ export class SaveBrowser {
 
         const deleteButton = s('#saveBrowserUiDelete');
         const deleteHandler = (pressed) => {
-            if (pressed && this.#selected) {
+            if (pressed && this.#selected && this.#uiReady) {
                 this.#deleteSelectedPanel();
             }
         };
@@ -233,14 +272,26 @@ export class SaveBrowser {
 
         const loadButton = s('#saveBrowserUiLoad');
         const loadHandler = (pressed) => {
-            if (pressed) {
+            if (pressed && this.#selected && this.#uiReady) {
                 this.#loadSelected();
             }
         };
         addButtonEventListeners(loadButton, loadHandler);
         this.#eventListeners.push({ element: loadButton, handler: loadHandler });
 
-        document.getElementById('platformFilter').value = "all";
+        const openButton = s('#saveBrowserUiOpen');
+        const openHandler = (pressed) => {
+            if (pressed && this.#selected && this.#uiReady) {
+                const activePanel = this.#flicking.currentPanel;
+                if (activePanel) {
+                    const programName = activePanel.element.getAttribute('data-program-name');
+                    const platformId = activePanel.element.getAttribute('data-platform-id');
+                    this.#showGameSaves(programName, platformId);
+                }
+            }
+        };
+        addButtonEventListeners(openButton, openHandler);
+        this.#eventListeners.push({ element: openButton, handler: openHandler });
 
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
     }
@@ -254,7 +305,8 @@ export class SaveBrowser {
 
     #filterChangeHandler(event) {
         const selectedPlatformId = event.target.value;
-        this.#recreatePanels(selectedPlatformId);
+        this.#currentPlatformFilter = selectedPlatformId;
+        this.#showGameList();
     }
 
     #deleteSelectedPanel() {
@@ -328,10 +380,23 @@ export class SaveBrowser {
         } else if (event.key === "ArrowLeft") {
             this.#flicking.prev().catch(() => { });
         } else if (event.key === "Enter") {
-            this.#loadSelected();
-        } else if (event.key === "Escape") {
-            this.close();
-            this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            const activePanel = this.#flicking.currentPanel;
+            if (activePanel) {
+                if (!this.#isGameView) {
+                    const programName = activePanel.element.getAttribute('data-program-name');
+                    const platformId = activePanel.element.getAttribute('data-platform-id');
+                    this.#showGameSaves(programName, platformId);
+                } else if (this.#selected && this.#uiReady) {
+                    this.#loadSelected();
+                }
+            }
+        } else if (event.key === "Escape" || event.key === "Backspace") {
+            if (this.#isGameView) {
+                this.#showGameList();
+            } else {
+                this.close();
+                this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            }
         }
     }
 
@@ -340,5 +405,117 @@ export class SaveBrowser {
         filename = filename.replace(/[\[\(][^\[\]\(\)]+[\]\)]/g, "").trim();
 
         return filename;
+    }
+
+    #groupSavesByGame(items) {
+        const gameMap = new Map();
+
+        items.forEach(item => {
+            const gameKey = `${item.program_name}_${item.platform_id}`;
+            if (!gameMap.has(gameKey)) {
+                gameMap.set(gameKey, {
+                    latestSave: item,
+                    allSaves: [item]
+                });
+            } else {
+                const game = gameMap.get(gameKey);
+                game.allSaves.push(item);
+                if (item.timestamp > game.latestSave.timestamp) {
+                    game.latestSave = item;
+                }
+            }
+        });
+
+        return gameMap;
+    }
+
+    #showGameList() {
+        this.#isGameView = false;
+        this.#setUIReady(false);
+        
+        const container = document.querySelector('#save-browser');
+        container.setAttribute('data-view', 'game-list');
+        
+        const platformFilterContainer = document.querySelector('#platformFilterContainer');
+        platformFilterContainer.style.display = '';
+        platformFilterContainer.classList.add('hidden');
+        
+        container.classList.add('transitioning');
+        const flickingElement = document.querySelector('#flicking');
+        flickingElement.classList.add('view-exit');
+        
+        setTimeout(() => {
+            this.#clearPanels();
+            
+            this.#db.getAllSaveMeta()
+                .then(items => {
+                    const gameMap = this.#groupSavesByGame(items);
+                    let latestSaves = Array.from(gameMap.values())
+                        .map(game => game.latestSave);
+                    
+                    if (this.#currentPlatformFilter !== "all") {
+                        latestSaves = latestSaves.filter(item => 
+                            item.platform_id === this.#currentPlatformFilter
+                        );
+                    }
+                    
+                    if (latestSaves.length > 0) {
+                        flickingElement.classList.remove('view-exit');
+                        flickingElement.classList.add('view-enter');
+                        this.#appendPanels(latestSaves);
+                        
+                        platformFilterContainer.style.display = '';
+                        document.getElementById('platformFilter').value = this.#currentPlatformFilter;
+                        setTimeout(() => {
+                            platformFilterContainer.classList.remove('hidden');
+                        }, 50);
+                    }
+                    
+                    setTimeout(() => {
+                        container.classList.remove('transitioning');
+                        flickingElement.classList.remove('view-enter');
+                        this.#setUIReady(true);
+                    }, 300);
+                });
+        }, 300);
+    }
+    
+    #showGameSaves(gameId, platformId) {
+        this.#isGameView = true;
+        this.#setUIReady(false);
+        
+        const container = document.querySelector('#save-browser');
+        container.setAttribute('data-view', 'game-saves');
+        document.querySelector('#platformFilterContainer').classList.add('hidden');
+        
+        container.classList.add('transitioning');
+        const flickingElement = document.querySelector('#flicking');
+        flickingElement.classList.add('view-exit');
+        
+        setTimeout(() => {
+            this.#clearPanels();
+            
+            this.#db.getAllSaveMeta()
+                .then(items => {
+                    const gameSaves = items
+                        .filter(item =>
+                            item.program_name === gameId && 
+                            item.platform_id === platformId
+                        )
+                        .sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    if (gameSaves.length > 0) {
+                        flickingElement.classList.remove('view-exit');
+                        flickingElement.classList.add('view-enter');
+                        this.#appendPanels(gameSaves);
+                    }
+                    
+                    setTimeout(() => {
+                        container.classList.remove('transitioning');
+                        flickingElement.classList.remove('view-enter');
+                        this.#setUIReady(true);
+                    }, 300);
+                });
+        }, 300);
     }
 }
