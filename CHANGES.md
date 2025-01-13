@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.2] - 2025-01-13
+
+- Save Browser: display games list before displaying individual savestates
+
 ## [0.9.1] - 2025-01-12
 
 - Amiga: add cursor keys emulation on touchscreens
