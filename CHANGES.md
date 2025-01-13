@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.9.1] - 2025-01-XX
+## [0.9.1] - 2025-01-12
 
 - Amiga: add cursor keys emulation on touchscreens
 - Amiga: add function keys layer on touch keyboard
