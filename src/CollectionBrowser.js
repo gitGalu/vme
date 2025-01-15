@@ -29,7 +29,9 @@ export class CollectionBrowser {
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
 
-        addButtonEventListeners(s('#collectionBrowserUiBack'),
+        const backButton = s('#collectionBrowserUiBack');
+        backButton.classList.remove('disabled');
+        addButtonEventListeners(backButton,
             (pressed) => {
                 if (pressed) {
                     StorageManager.clearValue(BOOT_TO);
