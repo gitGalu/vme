@@ -52,7 +52,7 @@ export class UiManager {
         }
 
         if (UiManager.#platform_manager.getSelectedPlatform().cursor_keys) {
-            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">CURSOR</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">ARROWS</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
         }
 
         this.#placeItems(fastuiContainer);
