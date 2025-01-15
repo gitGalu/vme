@@ -17,7 +17,8 @@ const Amiga = {
         '--color3': '#ffffff',
         '--color4': '#6780ae',
         '--font': 'Topaz1200',
-        '--cursorwidth': '0.5em'
+        '--cursorwidth': '0.5em',
+        '--portrait-fontsize': '100%'
     },
     startup_beforelaunch: async function (nostalgist, storageManager) {
         const FS = nostalgist.getEmscriptenFS();

@@ -13,7 +13,7 @@ const A7800 = {
         '--color3': '#000000',
         '--color2': '#4e8bbb',
         '--font': 'A7800',
-        '--fontsize': '1.3em',
+        '--fontsize': '0.9em',
         '--transform': 'uppercase',
         '--cursorwidth': '1em'
     },

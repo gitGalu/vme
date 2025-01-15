@@ -545,6 +545,7 @@ export class PlatformManager {
         document.documentElement.style.setProperty("--color2", "");
         document.documentElement.style.setProperty("--color3", "");
         document.documentElement.style.setProperty("--fontsize", "1em");
+        document.documentElement.style.setProperty("--portrait-fontsize", "80%");
 
         if (theme["--width"] == "double") {
             s("#settings").classList.add('doubleWidth');
