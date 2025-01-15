@@ -114,7 +114,7 @@
 
 @font-face {
   font-family: A7800;
-  src: url('../assets/fonts/7800Arcade.ttf') format("truetype");
+  src: url('../assets/fonts/EightBitAtari-Backtalk10.ttf') format("truetype");
   font-display: block;
 }
 
@@ -140,14 +140,6 @@
 
 #emulator {
   text-align: center;
-}
-
-.emuvideo {
-  min-width: 60%;
-}
-
-.emuvideo:focus {
-  outline: none;
 }
 
 html {
@@ -189,7 +181,6 @@ body, html {
   height: 100%;
 }
 
-
 #emulator {
   width: 100%;
   height: 100%
@@ -197,19 +188,6 @@ body, html {
 
 #emuscreen {
   z-index: 1000;
-}
-
-#overlay>* {
-  opacity: 1;
-  transition: opacity 0.5s;
-}
-
-#overlay.theater-mode>* {
-  opacity: 0;
-}
-
-#theater-mode {
-  opacity: 0;
 }
 
 #overlay {

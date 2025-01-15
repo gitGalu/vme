@@ -5,7 +5,7 @@ const A7800 = {
     ...PlatformBase,
     platform_id: 'a7800',
     core: 'prosystem',
-    platform_name: 'Atari 7200 ProSystem',
+    platform_name: 'Atari 7800 ProSystem',
     short_name: 'A7800',
     theme: {
         '--color0': '#000000',
