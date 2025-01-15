@@ -15,7 +15,8 @@ const Coleco = {
         '--font': 'Coleco',
         '--fontsize': '1.2em',
         '--transform': 'uppercase',
-        '--cursorwidth': '0.5em'
+        '--cursorwidth': '0.5em',
+        '--portrait-fontsize': '100%'
     },
     startup_beforelaunch: async function (nostalgist, storageManager) {
         const FS = nostalgist.getEmscriptenFS();
