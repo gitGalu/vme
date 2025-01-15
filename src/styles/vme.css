@@ -530,7 +530,7 @@ a {
 
 @media (orientation: portrait) {
   #settings {
-    font-size: 80%;
+    font-size: var(--portrait-fontsize);
   }
 
   #quickjoys {
