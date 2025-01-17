@@ -235,7 +235,7 @@ export class PlatformManager {
                 romBlob = await downloadFile.call(this, romSource, "Loading ...", true);
             }
 
-            if (this.#selected_platform.loader === 'unzip') {
+            if (self.#isZipFile(romName) && this.#selected_platform.loader === 'unzip') {
                 const zip = new JSZip();
                 const zipContent = await zip.loadAsync(romBlob);
 
@@ -244,6 +244,7 @@ export class PlatformManager {
                 }
 
                 const firstFileName = Object.keys(zipContent.files)[0];
+                romName = firstFileName;
                 caption = firstFileName;
                 const firstFile = zipContent.files[firstFileName];
                 romBlob = await firstFile.async('blob');
@@ -820,6 +821,10 @@ export class PlatformManager {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    #isZipFile(fileName) {
+        return typeof fileName === 'string' && fileName.toLowerCase().endsWith('.zip');
+    }
+ 
     async loadState(platform_id, state, blob, program_name, caption) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
 
