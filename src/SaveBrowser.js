@@ -464,6 +464,8 @@ export class SaveBrowser {
         const flickingElement = document.querySelector('#flicking');
         flickingElement.classList.add('view-exit');
         
+        document.getElementById('saveBrowserEmpty').style.display = "none";
+
         setTimeout(() => {
             this.#clearPanels();
             
@@ -496,6 +498,9 @@ export class SaveBrowser {
                         setTimeout(() => {
                             platformFilterContainer.classList.remove('hidden');
                         }, 50);
+                    } else {
+                        document.getElementById('saveBrowserEmpty').innerHTML = "No save states found.";
+                        document.getElementById('saveBrowserEmpty').style.display = "block";
                     }
                     
                     setTimeout(() => {
