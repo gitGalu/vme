@@ -2709,3 +2709,16 @@ canvas {
   transform: translateY(0);
   pointer-events: auto;
 }
+
+/* wiki */
+
+h1, h2, h3, h4 {
+  font: inherit;
+  margin: inherit;
+  line-height: inherit;
+  margin-top: 1em;
+}
+
+cite, i {
+  font-style: normal;
+}
