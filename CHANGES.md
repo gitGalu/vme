@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.4] - 2025-01-18
+
+- desktop: add in-emulation toggle for keyboard modes (joystick vs full keyboard)
+- CLI: add BACKUP and RESTORE commands to export and import savestates
+
 ## [0.9.3] - 2025-01-15
 
 - Save Browser: clicking on adjacent items scrolls the list instead of selecting them
