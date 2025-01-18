@@ -1,6 +1,6 @@
 import { CommandBase } from './CommandBase.js';
 
-export class RestoreCommand extends CommandBase {
+export class SaveBrowserCommand extends CommandBase {
     #save_browser;
 
     constructor(save_browser) {

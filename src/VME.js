@@ -13,7 +13,9 @@ import { OpenCommand } from './cli/OpenCommand.js';
 import { AboutCommand } from './cli/AboutCommand.js';
 import { LastCommand } from './cli/LastCommand.js';
 import { WikiCommand } from './cli/WikiCommand.js';
-import { RestoreCommand } from './cli/RestoreCommand.js';
+import { SaveBrowserCommand } from './cli/SaveBrowserCommand.js';
+import { BackupCommand } from './cli/BackupCommand.js';
+import { RestoreBackupCommand } from './cli/RestoreBackupCommand.js';
 import { BrowseCommand } from './cli/BrowseCommand.js';
 import { ClearallCommand } from './cli/ClearallCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
@@ -88,7 +90,7 @@ export class VME {
         this.#kb.clicks_on();
 
         this.#cli.register_command(new HelpCommand());
-        this.#cli.register_command(new RestoreCommand(this.#save_browser));
+        this.#cli.register_command(new SaveBrowserCommand(this.#save_browser));
         this.#cli.register_command(new BrowseCommand(this.#collection_browser));
         this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new ListCommand(this.#pl));
@@ -98,6 +100,8 @@ export class VME {
         this.#cli.register_command(new LastCommand(this.#pl));
         this.#cli.register_command(new WikiCommand());
         this.#cli.register_command(new ClearallCommand());
+        this.#cli.register_command(new BackupCommand(this.#db));
+        this.#cli.register_command(new RestoreBackupCommand(this.#db));
 
         this.#cli.register_default('find');
 
