@@ -177,8 +177,10 @@ export class CLI {
             }
             else
                 if (this.is_command_selectable && this.#currentIndex == -1) {
-                    if (items.length > 0) this.#currentIndex++;
-                    this.set_selection_mode(true);
+                    if (items.length > 0) { 
+                        this.#currentIndex++;
+                        this.set_selection_mode(true);
+                    }
                 } else if (this.#currentIndex >= 0) {
                     this.#simulateClick(items[this.#currentIndex]);
                     this.selected_command.selection_changed();
