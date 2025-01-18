@@ -1987,6 +1987,7 @@ a {
   justify-content: left;
   align-items: center;
   padding-left: 32px;
+  padding-right: 32px;
 }
 
 #desktopUiBack img {
@@ -2207,7 +2208,7 @@ a {
   justify-content: left;
   align-items: center;
   padding-left: 32px;
-  padding-right: 16px;
+  padding-right: 32px;
 }
 
 #saveBrowserUiBack img {
@@ -2238,7 +2239,7 @@ a {
   filter: brightness(0) invert(1);
 }
 
-#platformFilterContainer {
+#platformFilterContainer, #kbModeContainer {
   display: flex;
   align-items: left;
   flex: auto;
@@ -2353,6 +2354,7 @@ a {
   justify-content: left;
   align-items: center;
   padding-left: 32px;
+  padding-right: 32px;
 }
 
 #collectionBrowserUiBack img {

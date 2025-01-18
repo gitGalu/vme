@@ -29,9 +29,14 @@ export class UiManager {
     static #currentControllerIndex = 0;
     static #currentJoyTouchMode;
 
+    #eventListeners = [];
+    #kb_mode_change_handler_bound;
+
     constructor(platform_manager, kb_manager) {
         UiManager.#platform_manager = platform_manager;
         UiManager.#kb_manager = kb_manager;
+
+        this.#kb_mode_change_handler_bound = this.#kbModeChangeHandler.bind(this);
     }
 
     initFastUI() {
@@ -166,6 +171,15 @@ export class UiManager {
                 }
             });
 
+        const kbModeSelection = document.getElementById('kbModeContainer');
+        if (UiManager.#platform_manager.getSelectedPlatform().keyboard != undefined) {
+            kbModeSelection.style.display = 'flex';
+            kbModeSelection.classList.add('none');
+            kbModeSelection.removeEventListener('change', this.#kb_mode_change_handler_bound)
+            kbModeSelection.addEventListener('change', this.#kb_mode_change_handler_bound);
+            this.#eventListeners.push({ element: kbModeSelection, handler: this.#kb_mode_change_handler_bound });
+        } 
+
         addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
                 location.reload();
@@ -177,6 +191,15 @@ export class UiManager {
             s('#canvas').addEventListener('click', () => {
                 s('#canvas').requestPointerLock();
             });
+        }
+    }
+
+    #kbModeChangeHandler(event) {
+        const mode = event.target.value;
+        if ("retropad" == mode) {
+            GameFocusManager.getInstance().disable();
+        } else if ("focusmode" == mode) {
+            GameFocusManager.getInstance().enable();
         }
     }
 
@@ -439,7 +462,7 @@ export class UiManager {
                 UiManager.#currentControllerIndex = (UiManager.#currentControllerIndex + 1) % touch_controllers.length;
                 UiManager.#currentJoyTouchMode = touch_controllers[UiManager.#currentControllerIndex];
             }
-        } 
+        }
 
         switch (UiManager.#currentInputMethod) {
             case TOUCH_INPUT.KEYBOARD:

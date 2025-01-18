@@ -55,7 +55,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="collection-browser">
         <div id="collection-flicking-background"></div>
         <div id="collectionBrowserEmpty">Loading...</div>
@@ -75,15 +75,23 @@
         </div>
     </div>
 
-    <div id="container1">        
+    <div id="container1">
         <div id="emulator">
             <div id="emuscreen"></div>
         </div>
 
         <div id="desktopUi" style="display:none;">
             <div id="desktopUiBack" class="clickable-area"><img src="./assets/images/arrow.png"></img></div>
+
+            <div id="kbModeContainer" style="display:none;">
+                <select id="kbMode" class="minimal-combobox">
+                    <option value="retropad">Keyboard as joystick</option>
+                    <option value="focusmode">Full keyboard passthrough</option>
+                </select>
+            </div>
+
             <div class="right-area">
-                <div id="desktopUiControls" class="clickable-area">Controls</div>
+                <div id="desktopUiControls" class="clickable-area">Special keys</div>
                 <div id="desktopUiFs" class="clickable-area">Fullscreen</div>
                 <div id="controlsMenu" class="dropdown-menu" style="display:none;"></div>
                 <div id="desktopUiSave" class="clickable-area">Save</div>
