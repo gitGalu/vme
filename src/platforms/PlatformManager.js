@@ -31,7 +31,9 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
+import { ToastManager } from '../ui/ToastManager.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
+
 
 export const SelectedPlatforms = {
     NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME
@@ -824,7 +826,7 @@ export class PlatformManager {
     #isZipFile(fileName) {
         return typeof fileName === 'string' && fileName.toLowerCase().endsWith('.zip');
     }
- 
+
     async loadState(platform_id, state, blob, program_name, caption) {
         if (platform_id == "md") platform_id = "smd"; //temp fix
 
@@ -848,6 +850,8 @@ export class PlatformManager {
         const caption = this.#caption;
         const rom_data = this.#current_rom;
 
-        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption);
+        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption).then(() => {
+            ToastManager.enqueueToast('State saved.');
+        });
     }
 }
