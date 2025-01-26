@@ -32,6 +32,10 @@ const A7800 = {
     fire_buttons: 2,
     additional_buttons: {
         1: {
+            "label": "PAUSE",
+            "keyCode": 'start'
+        },
+        2: {
             "label": "SELECT",
             "keyCode": 'select'
         }
