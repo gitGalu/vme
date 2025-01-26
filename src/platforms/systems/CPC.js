@@ -1,6 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
 import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
-
 const CPC = {
     ...PlatformBase,
     platform_id: 'cpc',
@@ -16,22 +15,44 @@ const CPC = {
         '--font': 'AmstradCPC',
         '--cursorwidth': '1em'
     },
+    startup_beforelaunch: async function (nostalgist, storageManager) {
+        const FS = nostalgist.getEmscriptenFS();
+        FS.mkdirTree('/home/web_user/.crocods/cfg/')
+        const ini = await fetch('assets/config/crocods.ini');
+        FS.writeFile('/home/web_user/.crocods/crocods.ini', await ini.text());
+    },
+    guessConfig: (fileName) => {
+        return {
+        };
+    },
     savestates_disabled: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
-        "Cursor Keys": "Joy Directions",
-        "Z": "Fire",
-        "X": "Select file"
+        "Arrow Keys": "Joystick Directions",
+        "Z": "Joystick Fire",
+        "X": "Select file on launch"
     },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
-    fire_buttons: 1,
-    additional_buttons: {
+    touch_controller_mapping: {
+        input_player1_up: 'F13',
+        input_player1_left: 'F14', 
+        input_player1_down: 'F15',
+        input_player1_right: 'F11', 
+        input_player1_b: 'b',
+        input_player1_a: 'b'
     },
-    message: ["CPC support is under development and mostly broken or non-functional."]
+    fire_buttons: 1,
+    keyboard: {
+        shiftKey: 2,
+        overrides: {
+        }
+    },
+    additional_buttons: {
+    }
 };
 
 export default CPC;
