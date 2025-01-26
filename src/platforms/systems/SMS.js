@@ -15,7 +15,7 @@ const SMS = {
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
-        "Cursor Keys": "Control Pad",
+        "Arrow Keys": "Control Pad",
         "Z": "Button 1 / Start",
         "X": "Button 2",
         "Enter": "Pause",

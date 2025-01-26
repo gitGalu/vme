@@ -23,7 +23,7 @@ const MD = {
         };
     },
     keyboard_controller_info: {
-        "Cursor Keys": "D-PAD",
+        "Arrow Keys": "D-PAD",
         "Z": "Button B",
         "X": "Button C",
         "A": "Button A",

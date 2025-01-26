@@ -45,7 +45,7 @@ const MAME = {
                 "Escape": "Show cursor"
             });
         } else {
-            info["Cursor Keys"] = "Directions";
+            info["Arrow Keys"] = "Directions";
             const count = MAME.button_overrides[name] ?? 2;
 
             const buttonKeys = ["Ctrl", "A", "Space", "Left Shift", "Z", "X"];

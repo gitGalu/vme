@@ -125,8 +125,8 @@ const A800 = {
         },
     ],
     keyboard_controller_info: {
-        "Cursor Keys": "Joy Directions",
-        "Z": "Joystick fire",
+        "Arrow Keys": "Joystick Directions",
+        "Z": "Joystick Fire",
         "Right Shift": "Select",
         "F2": "Option",
         "F4": "Start"
@@ -168,7 +168,6 @@ const A800 = {
                 "code": 'F4',
             }
         }
-
     }
 };
 

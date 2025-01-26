@@ -29,6 +29,14 @@ const Intv = {
         FS.writeFile('/home/web_user/retroarch/userdata/system/grom.bin', await new Uint8Array(grom));
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Arrow Keys": "Directions",
+        "Z": "Right Action Button",
+        "X": "Left Action Button",
+        "A": "Top Action Button",
+        "Enter": "Pause",
+        "1...0": "Keypad"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

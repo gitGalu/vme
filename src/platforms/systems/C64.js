@@ -25,8 +25,8 @@ const C64 = {
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
-        "Cursor Keys": "Joystick movement",
-        "Z": "Joystick fire",
+        "Arrow Keys": "Joystick Directions",
+        "Z": "Joystick Fire",
         "Escape": "Run/Stop"
     },
     touch_controllers: [

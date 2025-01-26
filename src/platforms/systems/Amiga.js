@@ -74,8 +74,8 @@ const Amiga = {
         },
     ],
     keyboard_controller_info: {
-        "Cursor Keys": "Joy Directions",
-        "Z": "Fire",
+        "Arrow Keys": "Joystick Directions",
+        "Z": "Joystick Fire",
         "Mouse": "Mouse"
     },
     cursor_keys: true,

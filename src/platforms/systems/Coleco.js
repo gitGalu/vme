@@ -29,7 +29,7 @@ const Coleco = {
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
-        "Cursor Keys": "Joy directions",
+        "Arrow Keys": "Directions",
         "Z": "Fire Left",
         "X": "Fire Right",
         "A": "Numpad 1",

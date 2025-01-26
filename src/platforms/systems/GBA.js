@@ -46,7 +46,7 @@ const GBA = {
     ],
     force_scale: true,
     keyboard_controller_info: {
-        "Cursor Keys": "D-PAD",
+        "Arrow Keys": "D-PAD",
         "Z": "Button B",
         "X": "Button A",
         "Q": "Button L",

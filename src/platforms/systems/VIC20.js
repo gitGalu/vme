@@ -18,7 +18,7 @@ const VIC20 = {
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
-        "Cursor Keys": "Joystick movement",
+        "Arrow Keys": "Joystick movement",
         "Z": "Joystick fire",
         "Escape": "Run/Stop"
     },

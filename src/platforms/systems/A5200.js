@@ -16,7 +16,7 @@ const A5200 = {
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
-        "Cursor Keys": "Movement",
+        "Arrow Keys": "Directions",
         "Z": "Fire 1",
         "X": "Fire 2",
         "Right Shift": "Pause",

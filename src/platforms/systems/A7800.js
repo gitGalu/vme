@@ -18,6 +18,13 @@ const A7800 = {
         '--cursorwidth': '1em'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    keyboard_controller_info: {
+        "Arrow Keys": "Directions",
+        "Z": "Left Fire Button",
+        "X": "Right Fire Button",
+        "Right Shift": "Select",
+        "Enter": "Pause"
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],

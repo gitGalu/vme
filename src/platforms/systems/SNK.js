@@ -22,7 +22,7 @@ const SNK = {
         };
     },
     keyboard_controller_info: {
-        "Cursor Keys": "Joystick movement",
+        "Arrow Keys": "Joystick movement",
         "Z": "Fire A",
         "X": "Fire B",
         "A": "Fire C",
