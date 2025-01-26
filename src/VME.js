@@ -89,27 +89,26 @@ export class VME {
 
         this.#kb.clicks_on();
 
-        this.#cli.register_command(new HelpCommand());
+        this.#cli.register_command(new SystemCommand(this.#pl));
+        this.#cli.register_command(new FindCommand(this.#pl));
+        this.#cli.register_command(new ListCommand(this.#pl));
+        this.#cli.register_command(new OpenCommand(this.#pl));
+        this.#cli.register_command(new AboutCommand(this.#pl));
         this.#cli.register_command(new SaveBrowserCommand(this.#save_browser));
         this.#cli.register_command(new BrowseCommand(this.#collection_browser));
-        this.#cli.register_command(new OpenCommand(this.#pl));
-        this.#cli.register_command(new ListCommand(this.#pl));
-        this.#cli.register_command(new FindCommand(this.#pl));
-        this.#cli.register_command(new SystemCommand(this.#pl));
-        this.#cli.register_command(new SetCommand());
         this.#cli.register_command(new LastCommand(this.#pl));
+        this.#cli.register_command(new HelpCommand());
         this.#cli.register_command(new WikiCommand());
         this.#cli.register_command(new ClearallCommand());
         this.#cli.register_command(new BackupCommand(this.#db));
         this.#cli.register_command(new RestoreBackupCommand(this.#db));
+        this.#cli.register_command(new SetCommand());
 
         this.#cli.register_default('find');
 
         this.#addListeners();
 
         this.#kb.initButtons();
-
-        this.#cli.register_command(new AboutCommand(this.#pl));
 
         let bm = new ButtonManager(this.#cli);
         bm.addButtons();
