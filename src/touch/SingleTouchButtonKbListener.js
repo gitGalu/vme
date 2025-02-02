@@ -23,6 +23,14 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
         }
     }
 
+    updateKeyMapping({ key, code, keyCode }) {
+        this.#simulateKeyup();
+    
+        this.#key = key;
+        this.#code = code;
+        this.#keyCode = keyCode;
+    }
+
     #simulateKeydown() {
         let event = new KeyboardEvent('keydown', {
             key: this.#key,

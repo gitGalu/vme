@@ -1,11 +1,14 @@
 import { s, show, hide } from '../dom.js';
 import { SingleTouchButton } from "./SingleTouchButton";
 import { SingleTouchButtonKbListener } from './SingleTouchButtonKbListener.js';
+import { KeyMaps } from './KeyMaps.js';
 
 export class CursorKeys {
     static #DEAD_ZONE_RADIUS = 30;
 
-    #nostalgist;
+    #keyConfig;
+    #fireKbListener;
+    #target;
 
     #joystickBase;
     #joystickThumb;
@@ -13,8 +16,11 @@ export class CursorKeys {
     #activeTouchId = null;
     #activeDirections = new Set();
 
+    #platform_manager;
+
     constructor(platform_manager) {
-        this.#nostalgist = platform_manager.getNostalgist();
+        this.#platform_manager = platform_manager;
+        this.#target = s('canvas');
         this.#init();
         this.#activeDirections = new Set();
     }
@@ -38,8 +44,16 @@ export class CursorKeys {
         bottomContainer.style.gridTemplateRows = 'repeat(50, 1fr)';
         bottomContainer.style.pointerEvents = 'none';
 
-        new SingleTouchButton(bottomContainer, 'SPACE', undefined, 'cursorb1', new SingleTouchButtonKbListener(' ', 'Space', '32', s('canvas')));
-        new SingleTouchButton(bottomContainer, 'ENTER', undefined, 'cursorb2', new SingleTouchButtonKbListener('Enter', 'Enter', '13', s('canvas')));
+        if (this.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
+            const DEF = KeyMaps.ZX_CURSOR;
+            this.#keyConfig = DEF;
+            this.#fireKbListener = new SingleTouchButtonKbListener(DEF.fire.key, DEF.fire.code, DEF.fire.keyCode, s('canvas'));
+            new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'cursorbf', this.#fireKbListener);
+        } else {
+            new SingleTouchButton(bottomContainer, 'SPACE', undefined, 'cursorb1', new SingleTouchButtonKbListener(' ', 'Space', '32', s('canvas')));
+            new SingleTouchButton(bottomContainer, 'ENTER', undefined, 'cursorb2', new SingleTouchButtonKbListener('Enter', 'Enter', '13', s('canvas')));
+            this.#keyConfig = this.#platform_manager.getSelectedPlatform().arrow_keys;
+        }
 
         document.body.appendChild(bottomContainer);
 
@@ -59,10 +73,24 @@ export class CursorKeys {
         this.#joystickContainer.addEventListener('touchmove', this.#onTouchMove);
         this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd);
         this.#joystickContainer.addEventListener('touchcancel', this.#onTouchEnd);
+
+    }
+
+    updateKeyMap(value) {
+        const keyMap = {
+            'Interface 2 Left': KeyMaps.ZX_INTERFACE_2_LEFT,
+            'Interface 2 Right': KeyMaps.ZX_INTERFACE_2_RIGHT,
+            'Cursor': KeyMaps.ZX_CURSOR,
+            'QAOP+Space': KeyMaps.ZX_QOAP
+        }[value];
+
+        if (keyMap) {
+            this.#keyConfig = keyMap;
+            this.#fireKbListener.updateKeyMapping(keyMap.fire);
+        }
     }
 
     show() {
-        console.log('show cursors');
         show("#cursorkeys", "grid");
         show("#cursors", "block");
     }
@@ -176,7 +204,6 @@ export class CursorKeys {
 
     #updateDirections(newDirections) {
         const newDirectionsSet = new Set(newDirections);
-
         const keysToRelease = new Set([...this.#activeDirections].filter(x => !newDirectionsSet.has(x)));
         const keysToPress = new Set([...newDirectionsSet].filter(x => !this.#activeDirections.has(x)));
 
@@ -191,11 +218,27 @@ export class CursorKeys {
         });
     }
 
-    #keyDown(dir) {
-        this.#nostalgist.pressDown(dir);
+    #simulateKeyEvent(direction, eventType) {
+        const keyConfig = this.#keyConfig[direction];
+
+        if (!keyConfig) return;
+
+        const event = new KeyboardEvent(eventType, {
+            key: keyConfig.key,
+            code: keyConfig.code,
+            keyCode: keyConfig.keyCode,
+            charCode: keyConfig.keyCode,
+            bubbles: true,
+            cancelable: true
+        });
+        this.#target.dispatchEvent(event);
     }
 
-    #keyUp(dir) {
-        this.#nostalgist.pressUp(dir);
+    #keyDown(direction) {
+        this.#simulateKeyEvent(direction, 'keydown');
+    }
+
+    #keyUp(direction) {
+        this.#simulateKeyEvent(direction, 'keyup');
     }
 }

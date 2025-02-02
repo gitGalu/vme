@@ -81,7 +81,7 @@ export class VME {
         this.#net = new NetworkManager();
         this.#kb = new KeyboardManager(this.#cli);
         this.#db = new StorageManager();
-        this.#pl = new PlatformManager(this, this.#cli, this.#db, this.#net);
+        this.#pl = new PlatformManager(this, this.#cli, this.#db, this.#net, this.#kb);
         this.#env = new EnvironmentManager(this.#pl);
         this.#ui = new UiManager(this.#pl, this.#kb);
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);

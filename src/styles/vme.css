@@ -569,6 +569,10 @@ a {
     grid-area: 20 / -10 / span 4 / span 9;
   }
 
+  #fastspectrumjoy {
+    grid-area: 20 / 1 / span 4 / span 12;
+  }
+
   #fastui-msg {
     grid-area: 15 / 10 / span 4 / span 9;
   }
@@ -591,6 +595,10 @@ a {
 
   #cursorb1 {
     grid-area: -13 / -11 / span 11 / span 9;
+  }
+
+  #cursorbf {
+    grid-area: -21 / -19 / span 20 / span 18;
   }
 
   #fastsave {
@@ -722,6 +730,10 @@ a {
     grid-area: 21 / -5 / span 4 / span 4;
   }
 
+  #fastspectrumjoy {
+    grid-area: 21 / 1 / span 4 / span 7;
+  }
+
   #qjlr {
     grid-area: -13 / 1 / span 14 / span 16;
   }
@@ -784,6 +796,10 @@ a {
 
   #cursorb1 {
     grid-area: -15 / -17 / span 12 / span 7;
+  }
+
+  #cursorbf {
+    grid-area: -16 / -12 / span 15 / span 11;
   }
 
   #qsa {

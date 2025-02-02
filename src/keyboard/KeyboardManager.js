@@ -12,7 +12,6 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { VME } from '../VME.js';
 import { UiManager } from '../ui/UiManager.js';
-import GameFocusManager from './GameFocusManager.js';
 
 export class KeyboardManager {
     #mode;
@@ -22,6 +21,8 @@ export class KeyboardManager {
     #mute
     audioContext;
     audioBuffers = {};
+
+    #keyboardConfig;
 
     #handleCliInputBound;
     #handleEmulationInputBound;
@@ -41,9 +42,10 @@ export class KeyboardManager {
         A: 0, B: 1, C: 2, F: 10
     };
 
-    constructor(cli) {
+    constructor(cli, config = {}) {
         this.#cli = cli;
         this.keysDown = {};
+        this.#keyboardConfig = this.#processConfig(config);
         this.audioFiles = {
             'gui_type1': Kb1Sound,
             'gui_type2': Kb2Sound,
@@ -53,8 +55,99 @@ export class KeyboardManager {
             'gui_type6': Kb6Sound,
             'gui_type7': Kb7Sound,
             'gui_type8': Kb8Sound,
+            ...config.audioFiles
         };
-        this.audioMap = {
+        this.audioMap = this.#getAudioMap(config.audioMap);
+        this.initAudioContext();
+        this.#mode = KeyboardManager.Mode.QWERTY;
+        this.keydownHandlerBound = this.keydownHandler.bind(this);
+        this.keyupHandlerBound = this.keyupHandler.bind(this);
+
+        this.#handleCliInputBound = this.#handleCliInput.bind(this);
+        this.#handleEmulationInputBound = this.#handleEmulationInput.bind(this);
+        this.#handleEmulationSpecialBound = this.#handleEmulationSpecial.bind(this);
+
+        this.#initTouchKeyboard();
+        this.#initHiddenInputs();
+
+        const elements = document.querySelectorAll('.kbCtrl');
+        elements.forEach(element => {
+            element.style.paddingTop = '0px';
+        });
+    }
+
+    setAdditionalLayer(layerConfig) {
+        this.#layers.push(".layerF");
+        const container = document.querySelector('#keyboard');
+
+        layerConfig.layerF.forEach(key => {
+            const span = document.createElement("span");
+            span.classList.add("key", "layerF");
+            span.dataset.value = key.value;
+            span.dataset.code = key.code;
+            span.id = key.id;
+            span.textContent = key.label;
+
+            container.appendChild(span);
+        });
+
+        this.#layer = KeyboardManager.Layer.A;
+        this.#refresh();
+    }
+
+    #processConfig(config) {
+        return {
+            keyMappings: config.keyMappings || {},
+            keyLabels: config.keyLabels || {},
+            keyLayout: config.keyLayout || {},
+            hiddenKeys: config.hiddenKeys || [],
+            customStyles: config.customStyles || {},
+            audioMap: config.audioMap || {},
+            audioFiles: config.audioFiles || {}
+        };
+    }
+
+    #applyKeyboardConfig() {
+        const { keyMappings, keyLabels, keyLayout, hiddenKeys, customStyles } = this.#keyboardConfig;
+
+        document.querySelectorAll('.key').forEach(key => {
+            const keyId = key.id;
+            
+            if (keyMappings[keyId]) {
+                const mapping = keyMappings[keyId];
+                if (mapping.value) key.setAttribute('data-value', mapping.value);
+                if (mapping.code) key.setAttribute('data-code', mapping.code);
+                if (mapping.shift !== undefined) key.setAttribute('data-shift', mapping.shift);
+            }
+
+            if (keyLabels[keyId]) {
+                key.textContent = keyLabels[keyId];
+            }
+
+            if (hiddenKeys.includes(keyId)) {
+                key.style.display = 'none';
+            }
+
+            if (customStyles[keyId]) {
+                Object.assign(key.style, customStyles[keyId]);
+            }
+        });
+
+        if (keyLayout) {
+            const keyboard = document.querySelector('#keyboard');
+            if (keyboard) {
+                Object.entries(keyLayout).forEach(([keyId, layout]) => {
+                    const key = document.querySelector(`#${keyId}`);
+                    if (key && layout.gridArea) {
+                        key.style.gridArea = layout.gridArea;
+                    }
+                });
+            }
+        }
+    }
+
+    #getAudioMap(configAudioMap = {}) {
+        const defaultAudioMap = {
             'Digit1': 'gui_type4',
             'Digit2': 'gui_type5',
             'Digit3': 'gui_type6',
@@ -115,41 +208,21 @@ export class KeyboardManager {
 
             'Shift': 'gui_type3',
         };
-        this.initAudioContext();
-        this.#mode = KeyboardManager.Mode.QWERTY;
-        this.keydownHandlerBound = this.keydownHandler.bind(this);
-        this.keyupHandlerBound = this.keyupHandler.bind(this);
 
-        this.#handleCliInputBound = this.#handleCliInput.bind(this);
-        this.#handleEmulationInputBound = this.#handleEmulationInput.bind(this);
-        this.#handleEmulationSpecialBound = this.#handleEmulationSpecial.bind(this);
-
-        this.#initTouchKeyboard();
-        this.#initHiddenInputs();
-
-        const elements = document.querySelectorAll('.kbCtrl');
-        elements.forEach(element => {
-            element.style.paddingTop = '0px';
-        });
+        return {
+            ...defaultAudioMap,
+            ...configAudioMap
+        };
     }
 
-    setAdditionalLayer(layerConfig) {
-        this.#layers.push(".layerF");
-        const container = document.querySelector('#keyboard');
-
-        layerConfig.layerF.forEach(key => {
-            const span = document.createElement("span");
-            span.classList.add("key", "layerF");
-            span.dataset.value = key.value;
-            span.dataset.code = key.code;
-            span.id = key.id;
-            span.textContent = key.label;
-
-            container.appendChild(span);
-        });
-
-        this.#layer = KeyboardManager.Layer.A;
-        this.#refresh();
+    updateConfig(newConfig) {
+        this.#keyboardConfig = this.#processConfig(newConfig);
+        this.audioMap = this.#getAudioMap(newConfig.audioMap);
+        if (newConfig.audioFiles) {
+            this.audioFiles = { ...this.audioFiles, ...newConfig.audioFiles };
+            this.loadAllAudioFiles();
+        }
+        this.#applyKeyboardConfig();
     }
 
     #refresh() {

@@ -1,5 +1,6 @@
 import { s, addButtonEventListeners } from '../dom.js';
 import { SingleTouchButton } from '../touch/SingleTouchButton.js';
+import { MultiSelectTouchButton } from '../touch/MultiSelectTouchButton.js';
 import { TouchButtonListener } from '../touch/TouchButtonListener.js';
 import { SingleTouchButtonJoyListener } from '../touch/SingleTouchButtonJoyListener.js';
 import { SingleTouchButtonKbListener } from '../touch/SingleTouchButtonKbListener.js';
@@ -56,7 +57,7 @@ export class UiManager {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">KB</span>', undefined, 'fastkb', new InputSwitchListener(TOUCH_INPUT.KEYBOARD), FAST_BTN_RADIUS);
         }
 
-        if (UiManager.#platform_manager.getSelectedPlatform().cursor_keys) {
+        if (UiManager.#platform_manager.getSelectedPlatform().arrow_keys) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">ARROWS</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
         }
 
@@ -178,7 +179,7 @@ export class UiManager {
             kbModeSelection.removeEventListener('change', this.#kb_mode_change_handler_bound)
             kbModeSelection.addEventListener('change', this.#kb_mode_change_handler_bound);
             this.#eventListeners.push({ element: kbModeSelection, handler: this.#kb_mode_change_handler_bound });
-        } 
+        }
 
         addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
@@ -231,6 +232,27 @@ export class UiManager {
             if (touch_controllers.length == 1) return;
 
             new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new InputSwitchListener(TOUCH_INPUT.JOYSTICK), FAST_BTN_RADIUS);
+
+            if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
+                class SpectrumJoyOptionsListener extends TouchButtonListener {
+                    trigger(event) {
+                        if (event.selected) {
+                            UiManager.#qj.updateKeyMap(event.label);
+                            UiManager.#ck.updateKeyMap(event.label);
+                        }
+                    }
+                }
+
+                new MultiSelectTouchButton(
+                    document.getElementById('fastui'),
+                    ['Cursor', 'Interface 2 Left', 'Interface 2 Right', 'QAOP+Space'],
+                    undefined,
+                    'fastspectrumjoy',
+                    new SpectrumJoyOptionsListener(),
+                    0,
+                    FAST_BTN_RADIUS
+                );
+            }
 
             const mouse_controllers = UiManager.#platform_manager.getSelectedPlatform().mouse_controllers;
             if (mouse_controllers == undefined || mouse_controllers.length == 0) return;
@@ -400,6 +422,8 @@ export class UiManager {
         } else if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
             s('#quickjoys').style.display = 'grid';
         } else if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
+        } else if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
+            s('#cursorkeys').style.display = 'grid';
         }
     }
 
@@ -519,6 +543,10 @@ export class UiManager {
             case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
                 if (showSplash) UiManager.osdMessage('QuickShot', 1000);
                 UiManager.showTouchOnly(UiManager.#qs);
+                break;
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD:
+                if (showSplash) UiManager.osdMessage('QuickShot', 1000);
+                UiManager.showTouchOnly(UiManager.#ck);
                 break;
             case JOYSTICK_TOUCH_MODE.HIDEAWAY:
                 if (showSplash) UiManager.osdMessage('Auto Hide', 1000);

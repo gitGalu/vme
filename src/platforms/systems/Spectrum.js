@@ -42,8 +42,7 @@ const Spectrum = {
     },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
-        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
-        JOYSTICK_TOUCH_MODE.HIDEAWAY
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD
     ],
     touch_controller_mapping: {
         input_player1_up: 'F13',
@@ -59,8 +58,28 @@ const Spectrum = {
         }
     },
     additional_buttons: {
+        1: {
+            "label": "1",
+            "key": {
+                "key": '1',
+                "code": 'Digit1'
+            }
+        },
+        2: {
+            "label": "0",
+            "key": {
+                "key": '0',
+                "code": 'Digit0'
+            }
+        },
+        3: {
+            "label": "ENTER",
+            "key": {
+                "key": 'enter',
+                "code": 'Enter'
+            }
+        }
     },
-    message: ["ZX Spectrum support is under development and mostly broken or non-functional."]
 };
 
 export default Spectrum;

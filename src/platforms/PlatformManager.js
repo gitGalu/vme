@@ -44,6 +44,7 @@ export class PlatformManager {
     #model;
     #storage_manager;
     #network_manager;
+    #keyboard_manager;
     #active_theme;
     #nostalgist;
     #vme;
@@ -58,11 +59,12 @@ export class PlatformManager {
     static VME_CFG_CURRENT_PLATFORM = 'VME_CFG.CURRENT_PLATFORM';
     static SOFTWARE_DIR_KEY = '.software';
 
-    constructor(app, cli, storage_manager, network_manager) {
+    constructor(app, cli, storage_manager, network_manager, keyboard_manager) {
         this.#vme = app;
         this.#cli = cli;
         this.#storage_manager = storage_manager;
         this.#network_manager = network_manager;
+        this.#keyboard_manager = keyboard_manager;
         let platform_id = localStorage.getItem(PlatformManager.VME_CFG_CURRENT_PLATFORM);
         this.#selected_platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id) || SelectedPlatforms.NES;
         this.updatePlatform();
@@ -356,6 +358,10 @@ export class PlatformManager {
         let errored = false;
         self.#program_name = romName;
 
+        if (this.getSelectedPlatform().touch_keyboard_reconfig != undefined) {
+            this.#keyboard_manager.updateConfig(this.getSelectedPlatform().touch_keyboard_reconfig);
+        }
+
         try {
             this.#nostalgist = await Nostalgist.launch({
                 core: core,
@@ -483,7 +489,6 @@ export class PlatformManager {
             .then(([deps, missingDeps, softFile]) => {
                 this.#resolved_deps = deps;
                 let deps_satisfied = true;
-
                 this.#cli.print(this.#selected_platform.platform_name);
                 this.#cli.print("<p class='only-landscape'>" + ("=".repeat(this.#selected_platform.platform_name.length)) + "</p>");
 
