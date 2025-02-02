@@ -141,7 +141,10 @@ export class PlatformManager {
                 let key = self.#selected_platform.platform_id + "." + file;
                 let fileContent = self.#resolved_deps[key];
                 let blob2 = new Blob([fileContent], { type: 'application/octet-stream' });
-                return blob2;
+                return {
+                    fileName: file,
+                    fileContent: blob2
+                };
             },
         });
     }
