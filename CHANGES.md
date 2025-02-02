@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.6] - 2025-02-02
+
+- ZX Spectrum: add joystick emulation on touchscreens (Cursor Joystick, Interface 2 Port 1+2, Q+A+O+P+Space)
+- CLI: add CHKFIX command for VM/E app storage data integrity check and repair
+- Atari 800: add arrow keys emulation on touchscreens
+- CPC: add arrow keys emulation on touchscreens and fixes for keyboard mapping for touchscreens
+- fix Save Browser UI and performance issues
+
 ## [0.9.5] - 2025-01-26
 
 - CPC: add touchscreen joystick controls support, fix overscan issues
