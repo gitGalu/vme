@@ -48,7 +48,6 @@ export class AboutCommand extends CommandBase {
 
     #print() {
         this.cli.print('Virtual Machine / Emulator');
-        this.cli.print('Prerelease');
         this.cli.print('<div id="flip-image-outer"><div id="flip-image-container"></div></div>');
         this.cli.print('Developed by Michal Galinski');
         this.cli.print("&nbsp;");
