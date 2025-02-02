@@ -301,6 +301,14 @@ export class StorageManager {
         });
     }
 
+    async getSaveMetaScreenshot(id) {
+        const saveMeta = await this.#db.saveMeta.get(id);
+        if (saveMeta && saveMeta.screenshot) {
+            return this.base64ToBlob(saveMeta.screenshot);
+        }
+        return null;
+    }
+
     async getRomData(id) {
         const rom = await this.#db.romData.get(id);
 
@@ -392,5 +400,9 @@ export class StorageManager {
         } catch (error) {
             console.error('Failed to delete collections:', error);
         }
+    }
+
+    getDataBase() {
+        return this.#db;
     }
 }
