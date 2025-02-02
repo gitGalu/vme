@@ -31,7 +31,7 @@ const A800 = {
                 return biosTags[tag];
             }
         }
-    
+
         return defaultBios;
     },
     guessConfig: (fileName) => {
@@ -131,6 +131,12 @@ const A800 = {
         "F2": "Option",
         "F4": "Start"
     },
+    arrow_keys: {
+        up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+        down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+        left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+        right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 }
+    },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
@@ -138,9 +144,9 @@ const A800 = {
     ],
     touch_controller_mapping: {
         input_player1_up: 'F13',
-        input_player1_left: 'F14', 
+        input_player1_left: 'F14',
         input_player1_down: 'F15',
-        input_player1_right: 'F11', 
+        input_player1_right: 'F11',
         input_player1_b: 'kp_minus'
     },
     fire_buttons: 1,
