@@ -199,9 +199,6 @@ export class PlatformManager {
 
                 const response = await this.#network_manager.fetch(url, useProxy);
 
-                const contentLength = response.headers.get('Content-Length');
-                const totalSize = contentLength ? parseInt(contentLength, 10) : null;
-
                 let loaded = 0;
                 const reader = response.body.getReader();
                 const chunks = [];
@@ -218,12 +215,7 @@ export class PlatformManager {
 
                         const loadedKB = Math.floor(loaded / 1024);
 
-                        if (totalSize) {
-                            const percentage = ((loaded / totalSize) * 100).toFixed(2);
-                            progressMessage = `${text} ${percentage}%`;
-                        } else {
-                            progressMessage = `${text} ${loadedKB} KB`;
-                        }
+                        progressMessage = `${text} ${loadedKB} KB`;
 
                         self.#cli.print_progress(progressMessage);
                     }
