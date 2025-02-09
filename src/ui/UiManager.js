@@ -245,7 +245,7 @@ export class UiManager {
 
                 new MultiSelectTouchButton(
                     document.getElementById('fastui'),
-                    ['Cursor', 'Interface 2 Left', 'Interface 2 Right', 'QAOP+Space'],
+                    ['Cursor', 'Interface 2', 'QAOP', 'QWRE', '1890'],
                     undefined,
                     'fastspectrumjoy',
                     new SpectrumJoyOptionsListener(),

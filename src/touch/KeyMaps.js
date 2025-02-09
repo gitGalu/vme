@@ -30,4 +30,20 @@ export class KeyMaps {
         right: { key: 'p', code: 'KeyP', keyCode: 80 },
         fire: { key: ' ', code: 'Space', keyCode: 32 }
     }
+
+    static ZX_ULTIMATE = {
+        up: { key: 'r', code: 'KeyR', keyCode: 84 },
+        down: { key: 'e', code: 'KeyE', keyCode: 83 },
+        left: { key: 'q', code: 'KeyQ', keyCode: 81 },
+        right: { key: 'w', code: 'KeyW', keyCode: 82 },
+        fire: { key: 't', code: 'Space', keyCode: 84 }
+    }
+
+    static ZX_DEATHCHASE = {
+        up: { key: '9', code: 'Digit9', keyCode: 57 },
+        down: { key: '8', code: 'Digit8', keyCode: 56 },
+        left: { key: '1', code: 'Digit1', keyCode: 49 },
+        right: { key: '0', code: 'Digit0', keyCode: 48 },
+        fire: { key: 'B', code: 'KeyB', keyCode: 66 }
+    }
 }

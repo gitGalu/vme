@@ -76,10 +76,11 @@ export class QuickJoy {
 
     updateKeyMap(value) {
         const keyMap = {
-            'Interface 2 Left': KeyMaps.ZX_INTERFACE_2_LEFT,
-            'Interface 2 Right': KeyMaps.ZX_INTERFACE_2_RIGHT,
+            'Interface 2': KeyMaps.ZX_INTERFACE_2_LEFT,
             'Cursor': KeyMaps.ZX_CURSOR,
-            'QAOP+Space': KeyMaps.ZX_QOAP
+            'QAOP': KeyMaps.ZX_QOAP,
+            'QWRE': KeyMaps.ZX_ULTIMATE,
+            '1890': KeyMaps.ZX_DEATHCHASE
         }[value];
     
         if (keyMap) {
