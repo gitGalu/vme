@@ -927,21 +927,50 @@ a {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(200, 200, 200, 0.3);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: rgba(150, 150, 150, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid rgba(255, 255, 255, 0.3);
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
-.kbCtrl {
-  right: 0;
-  background: rgba(200, 200, 200, 0.3);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border-radius: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+@media (orientation: portrait) {
+  #keyboard.keyboardQwerty {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 42px);
+  }
+}
+
+@media (orientation: landscape) {
+  #keyboard.keyboardQwerty {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .keyboardQwerty>.key {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 1024px) and (min-height: 768px) {
+  #keyboard.keyboardQwerty {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .keyboardQwerty>.key {
+    padding-top: 28px !important;
+    padding-bottom: 28px !important;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 768px) {
+  #keyboard.keyboardQwerty {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .keyboardQwerty>.key {
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+  }
 }
 
 .pointer {
@@ -989,13 +1018,15 @@ a {
 }
 
 .kbCtrl {
-  padding-bottom: 6px;
-  padding-top: 6px;
   padding-left: 16px;
   padding-right: 16px;
-  height: 50px;
   pointer-events: auto;
   cursor: pointer;
+  right: 0;
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .kbCtrl:active {
@@ -1003,8 +1034,7 @@ a {
 }
 
 #keyboardControls {
-  margin-right: 6px;
-  top: 100px;
+  margin-right: 3px;
   right: 0px;
   text-align: right;
   color: white;
@@ -1248,9 +1278,7 @@ a {
 .keyboardQwerty>#keyEnter {
   display: block;
   grid-area: 4 / 16 / span 1 / span 5;
-  /* background-color: darkgrey; */
   border-left: 1px solid #444;
-
   font-size: 50%;
 }
 
@@ -1614,6 +1642,13 @@ a {
   width: 100%;
   overflow-x: hidden !important;
   overflow-y: auto !important;
+  font-size: 100% !important;
+}
+
+#cors_message {
+  padding-bottom: 18px;
+  display: none;
+  width: 100%;
   font-size: 100% !important;
 }
 
@@ -2484,8 +2519,8 @@ canvas {
   bottom: 0px;
   right: 0px;
   background: rgba(150, 150, 150, 0.3);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: #f5f5f5;
   font-family: Arial, Helvetica, sans-serif !important;
   text-transform: none !important;

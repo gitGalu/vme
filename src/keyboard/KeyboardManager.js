@@ -71,9 +71,6 @@ export class KeyboardManager {
         this.#initHiddenInputs();
 
         const elements = document.querySelectorAll('.kbCtrl');
-        elements.forEach(element => {
-            element.style.paddingTop = '0px';
-        });
     }
 
     setAdditionalLayer(layerConfig) {
@@ -553,22 +550,12 @@ export class KeyboardManager {
         const btn = document.querySelector('#toggle-keyboard');
         btn.style.visibility = "hidden";
 
-        const elements = document.querySelectorAll('.kbCtrl');
-        elements.forEach(element => {
-            element.style.paddingTop = '6px';
-        });
-
         s('#keyboardContainer').classList.add('visible');
     }
 
     hideTouchKeyboard() {
         UiManager.keyboardVisible = false;
         UiManager.keyboardClosed();
-
-        const elements = document.querySelectorAll('.kbCtrl');
-        elements.forEach(element => {
-            element.style.paddingTop = '0px';
-        });
 
         s('#keyboardContainer').classList.remove('visible');
 
