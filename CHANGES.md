@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.7] - 2025-02-10
+
+- refine touch keyboard size & appearance
+- ZX Spectrum: replace Interface 2 Port Right touchscreen mapping with Q+W+E+R+Space and 1+8+9+B / Deathchase
+
 ## [0.9.6] - 2025-02-02
 
 - ZX Spectrum: add joystick emulation on touchscreens (Cursor Joystick, Interface 2 Port 1+2, Q+A+O+P+Space)
