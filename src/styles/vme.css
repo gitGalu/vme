@@ -771,7 +771,7 @@ a {
   }
 
   #fastcursors {
-    grid-area:9 / 43 / span 4 / span 4;
+    grid-area: 9 / 43 / span 4 / span 4;
   }
 
   #fastjoy {
@@ -837,7 +837,7 @@ a {
   #rmb {
     grid-area: -14 / 10 / span 11 / span 7;
   }
-  
+
   #mb1 {
     grid-area: -14 / 2 / span 11 / span 7;
   }
@@ -893,8 +893,6 @@ a {
   border-left: 1px solid #ccc;
 }
 
-.keyboardStrip>div {}
-
 .keyboardStrip {
   background-color: rgb(50, 50, 50, 1);
   pointer-events: auto;
@@ -904,19 +902,16 @@ a {
 }
 
 #keyboardContainer {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 99999;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1.5em;
-  justify-content: space-between;
   pointer-events: none;
-  touch-action: none;
-  display: block;
   transform: translateY(100%);
   transition: transform 0.2s ease-out;
-  z-index: 99999;
 }
 
 #keyboardContainer.visible {
@@ -1018,15 +1013,13 @@ a {
 }
 
 .kbCtrl {
-  padding-left: 16px;
-  padding-right: 16px;
-  pointer-events: auto;
+  display: inline-block;
+  vertical-align: middle;
   cursor: pointer;
-  right: 0;
-  background: rgba(150, 150, 150, 0.3);
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  padding-right: 16px;
+  padding-left: 16px;
 }
 
 .kbCtrl:active {
@@ -1034,14 +1027,21 @@ a {
 }
 
 #keyboardControls {
-  margin-right: 3px;
-  right: 0px;
+  position: relative;
   text-align: right;
-  color: white;
   pointer-events: none;
-  touch-action: none;
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  background: transparent;
+  padding: 0.5rem;
+}
+
+.kbCtrlContainer {
+  display: inline-block;
+  background: rgba(150, 150, 150, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
 }
 
 .keyboardQwerty {
@@ -1052,6 +1052,9 @@ a {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
+  touch-action: none;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 @keyframes enterQwerty {
@@ -1357,7 +1360,7 @@ a {
   grid-area: 1 / 6 / span 1 / span 2;
 }
 
- .keyboardQwerty>#keyF14 {
+.keyboardQwerty>#keyF14 {
   display: block;
   grid-area: 1 / 8 / span 1 / span 2;
 }
@@ -1402,7 +1405,7 @@ a {
   grid-area: 2 / 6 / span 1 / span 2;
 }
 
- .keyboardQwerty>#keyF24 {
+.keyboardQwerty>#keyF24 {
   display: block;
   grid-area: 2 / 8 / span 1 / span 2;
 }
@@ -1452,7 +1455,7 @@ a {
   grid-area: 3 / 6 / span 1 / span 2;
 }
 
- .keyboardQwerty>#keyF34 {
+.keyboardQwerty>#keyF34 {
   display: block;
   grid-area: 3 / 8 / span 1 / span 2;
 }
@@ -1796,8 +1799,8 @@ a {
 
 @media (hover: hover) {
   .clabel:hover:not(.disabled) {
-      background-color: var(--color3);
-      color: var(--color2);
+  background-color: var(--color3);
+  color: var(--color2);
   }
 }
 
@@ -2146,7 +2149,7 @@ a {
   border: 1px solid #444444;
   border-radius: 8px;
   box-shadow: 0px 8px 100px 0px rgba(255, 255, 255, 0.1);
-  transform: translate3d(0,0,0); /* Force GPU acceleration */
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -2212,7 +2215,7 @@ a {
   height: 100%;
   background-size: cover;
   filter: brightness(20%);
-  transform: translate3d(0,0,0) scale(12);
+  transform: translate3d(0, 0, 0) scale(12);
   z-index: -1;
   image-rendering: pixelated;
   will-change: transform;
@@ -2757,6 +2760,7 @@ canvas {
     opacity: 0;
     transform: scale(1.05);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
