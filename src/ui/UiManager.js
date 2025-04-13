@@ -46,7 +46,7 @@ export class UiManager {
         fastuiContainer.style.display = 'none';
 
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new CommandButtonListener('FAST_FORWARD', UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
+        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new FastForwardListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener(), FAST_BTN_RADIUS);
 
         if (!UiManager.#platform_manager.getSelectedPlatform().savestates_disabled) {
@@ -632,6 +632,24 @@ class CommandButtonListener extends TouchButtonListener {
 
     trigger(s) {
         this.#nostalgist.sendCommand(this.#command);
+    }
+}
+
+class FastForwardListener extends TouchButtonListener {
+    static #command = 'FAST_FORWARD';
+    #nostalgist;
+    #isActive = false;
+
+    constructor(nostalgist) {
+        super();
+        this.#nostalgist = nostalgist;
+    }
+
+    trigger(s) {
+        if (s !== this.#isActive) {
+            this.#isActive = s;
+            this.#nostalgist.sendCommand(FastForwardListener.#command);
+        }
     }
 }
 
