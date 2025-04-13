@@ -179,7 +179,19 @@ export class UiManager {
             kbModeSelection.removeEventListener('change', this.#kb_mode_change_handler_bound)
             kbModeSelection.addEventListener('change', this.#kb_mode_change_handler_bound);
             this.#eventListeners.push({ element: kbModeSelection, handler: this.#kb_mode_change_handler_bound });
+        } else {
+            const select = document.getElementById('kbMode');
+            const valueToRemove = 'focusmode';
+
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === valueToRemove) {
+                    select.remove(i);
+                    break;
+                }
+            }
         }
+
+        this.#addKeyboardControlsPopover();
 
         addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
@@ -193,6 +205,58 @@ export class UiManager {
                 s('#canvas').requestPointerLock();
             });
         }
+    }
+
+    #addKeyboardControlsPopover() {
+        const popover = document.createElement('div');
+        popover.id = 'kbModePopover';
+        popover.className = 'kb-mode-popover';
+        popover.innerHTML = UiManager.#platform_manager.getHtmlControls();
+
+        document.body.appendChild(popover);
+
+        function isRetropadSelected() {
+            const kbModeSelect = document.getElementById('kbMode');
+            return kbModeSelect && kbModeSelect.value === 'retropad';
+        }
+
+        function showPopover(e) {
+            if (!isRetropadSelected()) return;
+
+            const popover = document.getElementById('kbModePopover');
+
+            const offset = 15;
+            popover.style.left = `${e.clientX + offset}px`;
+            popover.style.top = `${e.clientY + 2*offset}px`;
+
+            const rect = popover.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            if (rect.right > viewportWidth) {
+                popover.style.left = `${e.clientX - rect.width - offset}px`;
+            }
+
+            if (rect.bottom > viewportHeight) {
+                popover.style.top = `${e.clientY - rect.height - offset}px`;
+            }
+
+            popover.style.display = 'block';
+        }
+
+        function hidePopover() {
+            const popover = document.getElementById('kbModePopover');
+            popover.style.display = 'none';
+        }
+
+        kbMode.addEventListener('mousemove', showPopover);
+        kbMode.addEventListener('mouseleave', hidePopover);
+
+        document.getElementById('kbMode').addEventListener('change', function () {
+            if (!isRetropadSelected()) {
+                hidePopover();
+            }
+        });
     }
 
     #kbModeChangeHandler(event) {

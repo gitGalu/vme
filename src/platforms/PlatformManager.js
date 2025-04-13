@@ -149,6 +149,37 @@ export class PlatformManager {
         });
     }
 
+    getHtmlControls() {
+        if (typeof this.#selected_platform.keyboard_controller_info === 'function') {
+            const key = FileUtils.getFilenameWithoutExtension(romName);
+            return this.#getControls(this.#selected_platform.keyboard_controller_info(key));
+        } else {
+            return this.#getControls(this.#selected_platform.keyboard_controller_info);
+        }
+    }
+
+    #getControls(controlsMap) {
+        let html = "<table>";
+
+        for (const control in controlsMap) {
+            if (controlsMap.hasOwnProperty(control)) {
+                const description = controlsMap[control];
+                html += `
+                <tr class="kbControls-row">
+                  <td class="kbControls-col-left">${control}</td>
+                  <td class="kbControls-col-right">${description}</td>
+                </tr>
+              `;
+            }
+        }
+
+        html += "</table>";
+
+        return html;
+    }
+
+
+
     #printControls(controlsMap) {
         this.#cli.print("&nbsp;");
         this.#cli.print("&nbsp;");
