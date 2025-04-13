@@ -74,38 +74,46 @@ export class SaveBrowser {
 
     #bindPanelEvents(panels) {
         if (!this.#flicking || this.#isDestroying) return;
-
+    
         const throttledParallax = this.#throttle(this.#updateParallax.bind(this), 16);
         const debouncedBackground = this.#debounce(this.#updateBackground.bind(this), 16);
-
+    
         this.#flicking.on("changed", e => {
             debouncedBackground();
             this.#updateActivePanel();
             this.#flicking.resize();
             if (this.#flicking.currentPanel) {
-                this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
+                requestAnimationFrame(() => {
+                    if (this.#flicking && this.#flicking.currentPanel) {
+                        this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
+                    }
+                });
             }
             this.#setUIReady(true);
         });
-
+    
         this.#flicking.on("move", e => {
             throttledParallax();
             this.#setUIReady(false);
         });
-
+    
         this.#flicking.on("moveEnd", e => {
             this.#updateActivePanel();
             this.#flicking.resize();
             if (this.#flicking.currentPanel) {
-                this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
+                requestAnimationFrame(() => {
+                    if (this.#flicking && this.#flicking.currentPanel) {
+                        this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
+                    }
+                });
             }
             this.#setUIReady(true);
         });
-
+    
         panels.forEach((panel, index) => {
             const clickHandler = () => {
                 if (this.#isDestroying) return;
-
+    
                 if (this.#flicking.currentPanel &&
                     this.#flicking.currentPanel.index === index) {
                     if (this.#selected && this.#uiReady) {
@@ -118,10 +126,14 @@ export class SaveBrowser {
                         }
                     }
                 } else {
-                    this.#flicking.moveTo(index);
+                    this.#setUIReady(false);
+                    this.#flicking.moveTo(index).then(() => {
+                    }).catch(err => {
+                        this.#setUIReady(true);
+                    });
                 }
             };
-
+    
             panel.addEventListener("click", clickHandler, { passive: true });
             this.#eventListeners.push({ element: panel, handler: clickHandler, type: 'click' });
         });
@@ -246,20 +258,18 @@ export class SaveBrowser {
 
     #updateParallax() {
         if (!this.#flicking?.camera || this.#isDestroying) return;
-
+    
         const background = document.getElementById('flicking-background');
         if (!background) return;
-
+    
         const now = performance.now();
         if (now - this.#lastParallaxUpdate < 16) return;
         this.#lastParallaxUpdate = now;
-
+    
         const flickingWidth = this.#flicking.element.clientWidth;
         const scrollRatio = this.#flicking.camera.position / flickingWidth;
-
-        requestAnimationFrame(() => {
-            background.style.transform = `translate3d(${scrollRatio * 50}px,0,0) scale(12)`;
-        });
+    
+        background.style.transform = `translate3d(${scrollRatio * 50}px,0,0) scale(12)`;
     }
 
     #updateActivePanel() {
@@ -301,34 +311,35 @@ export class SaveBrowser {
         if (filterElement) {
             filterElement.value = "all";
         }
-
+    
         let div = document.querySelector('#save-browser');
         div.classList.add('show');
         this.#destroy();
-
+    
         this.#flicking = new Flicking("#flicking", {
             circular: true,
             moveType: "snap",
             preventClickOnDrag: true,
             autoResize: true,
-            align: "center"
+            align: "center",
+            duration: 350
         });
-
+    
         const fb = document.getElementById('flicking-background');
         fb.classList.remove('show');
         setTimeout(() => {
             fb.classList.add('show');
         }, 10);
-
+    
         this.#showGameList();
-
+    
         const platformFilter = document.getElementById('platformFilter');
         platformFilter.removeEventListener('change', this.#filter_change_handler_bound);
         platformFilter.addEventListener('change', this.#filter_change_handler_bound);
         this.#eventListeners.push({ element: platformFilter, handler: this.#filter_change_handler_bound });
-
+    
         document.addEventListener("keydown", this.#kb_event_bound);
-
+    
         const deleteButton = s('#saveBrowserUiDelete');
         const deleteHandler = (pressed) => {
             if (pressed && this.#selected && this.#uiReady) {
@@ -337,7 +348,7 @@ export class SaveBrowser {
         };
         addButtonEventListeners(deleteButton, deleteHandler);
         this.#eventListeners.push({ element: deleteButton, handler: deleteHandler });
-
+    
         const loadButton = s('#saveBrowserUiLoad');
         const loadHandler = (pressed) => {
             if (pressed && this.#selected && this.#uiReady) {
@@ -346,7 +357,7 @@ export class SaveBrowser {
         };
         addButtonEventListeners(loadButton, loadHandler);
         this.#eventListeners.push({ element: loadButton, handler: loadHandler });
-
+    
         const openButton = s('#saveBrowserUiOpen');
         const openHandler = (pressed) => {
             if (pressed && this.#selected && this.#uiReady) {
@@ -360,7 +371,7 @@ export class SaveBrowser {
         };
         addButtonEventListeners(openButton, openHandler);
         this.#eventListeners.push({ element: openButton, handler: openHandler });
-
+    
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
     }
 
@@ -476,11 +487,19 @@ export class SaveBrowser {
         if (!this.#flicking || this.#flicking.animating) {
             return;
         }
-
+    
         if (event.key === "ArrowRight") {
-            this.#flicking.next().catch(() => { });
+            this.#setUIReady(false);
+            this.#flicking.next().then(() => {
+            }).catch(() => { 
+                this.#setUIReady(true);
+            });
         } else if (event.key === "ArrowLeft") {
-            this.#flicking.prev().catch(() => { });
+            this.#setUIReady(false);
+            this.#flicking.prev().then(() => {
+            }).catch(() => { 
+                this.#setUIReady(true);
+            });
         } else if (event.key === "Enter") {
             const activePanel = this.#flicking.currentPanel;
             if (activePanel && this.#selected && this.#uiReady) {
@@ -624,7 +643,6 @@ export class SaveBrowser {
                 }, 300);
     
             } catch (error) {
-                console.error('Error in showGameList:', error);
                 if (emptyElement) {
                     emptyElement.innerHTML = "Error loading saves. Please try again.";
                     emptyElement.style.display = "block";
