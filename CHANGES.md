@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.8] - 2025-04-14
+
+- desktop: show key mapping tooltip on hover over keyboard mode selector
+- improve Collections Browser animations and behaviour
+- improve Save Browser animations and behaviour
+- use longer captions for GUI buttons (avoid single letters)
+- temporarily hide guided tour button
+- improve Fast Forward button handling
+
 ## [0.9.7] - 2025-02-10
 
 - refine touch keyboard size & appearance
