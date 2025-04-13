@@ -1,4 +1,3 @@
-// GuiButton.js
 export function createGuiButton(
     buttonId, 
     buttonText, 
@@ -12,6 +11,7 @@ export function createGuiButton(
     const feedbackClass = customFeedbackClass || "guiBtn-pressed";
     addButtonToContainer(button, targetContainer);
     setupButtonInteractions(button, callback, visualFeedback, feedbackClass);
+    preventButtonFocus(button);
 }
 
 function createButtonElement(id, text, shortcut) {
@@ -22,6 +22,26 @@ function createButtonElement(id, text, shortcut) {
     button.dataset.originalText = `&nbsp;${text}&nbsp;`;
     button.classList.add("clabel");
     button.type = 'button';
+    button.tabIndex = -1;
+    button.setAttribute('tabindex', '-1');
+    button.setAttribute('aria-hidden', 'true');
+    button.style.pointerEvents = 'none';
+    return button;
+}
+
+function preventButtonFocus(button) {
+    setTimeout(() => {
+        button.style.pointerEvents = 'auto';
+    }, 0);
+    
+    button.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+    }, true);
+    
+    button.addEventListener('focus', (e) => {
+        button.blur();
+    });
+
     return button;
 }
 
@@ -133,6 +153,7 @@ function setupButtonInteractions(button, callback, visualFeedback, feedbackClass
     });
 
     button.addEventListener('mousedown', (e) => {
+        e.preventDefault();
         if (e.button === 0 && !isPressed) {
             isPressed = true;
             touchStartedInside = true;
@@ -163,27 +184,6 @@ function setupButtonInteractions(button, callback, visualFeedback, feedbackClass
             isPressed = false;
             touchStartedInside = false;
             removeFeedback();
-        }
-    });
-
-    button.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (!isPressed) {
-                isPressed = true;
-                addFeedback();
-            }
-        }
-    });
-
-    button.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (isPressed) {
-                isPressed = false;
-                debouncedCallback();
-                removeFeedback();
-            }
         }
     });
 }
