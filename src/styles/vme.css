@@ -1757,8 +1757,9 @@ a {
 }
 
 #menu-button-strip {
-  white-space: nowrap;
-  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1em; /* row-gap (vertical) and column-gap (horizontal) */
   width: 100%;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1802,10 +1803,6 @@ a {
   background-color: var(--color3);
   color: var(--color2);
   }
-}
-
-#menu-button-strip .clabel:not(:first-child) {
-  margin-left: 0.5em;
 }
 
 #menu-button-strip .clabel:active {

@@ -18,41 +18,41 @@ export class ButtonManager {
         this.addOpenButton();
         this.addFsButton();
         this.addAboutButton();
-        this.addTourButton();
+        // this.addTourButton();
     }
 
     addSystemButton() {
-        createGuiButton('menu-item-system', 'S', 'S', () => {
+        createGuiButton('menu-item-system', 'SYSTEM', 'S', () => {
             this.#cli.inject('sys ');
         });
     }
 
     addHelpButton() {
-        createGuiButton('menu-item-help', 'H', 'H', () => {
+        createGuiButton('menu-item-help', 'HELP', 'H', () => {
             this.#cli.inject('help');
         });
     }
 
     addSaveBrowserButton() {
-        createGuiButton('menu-item-savestates', 'R', 'R', () => {
+        createGuiButton('menu-item-savestates', 'RESTORE', 'R', () => {
             this.#cli.inject('r', true);
         });
     }
 
     addCollectionButton() {
-        createGuiButton('menu-item-compilations', 'C', 'C', () => {
+        createGuiButton('menu-item-compilations', 'COMPILATION', 'C', () => {
             this.#cli.inject('c', true);
         });
     }
 
     addOpenButton() {
-        createGuiButton('menu-item-open', 'O', 'O', () => {
+        createGuiButton('menu-item-open', 'IMPORT', 'O', () => {
             this.#cli.inject('open', true);
         });
     }
 
     addAboutButton() {
-        createGuiButton('menu-item-about', 'A', 'A', () => {
+        createGuiButton('menu-item-about', 'ABOUT', 'A', () => {
             this.#cli.inject('about');
         });
     }
@@ -116,9 +116,14 @@ export class ButtonManager {
                 animate: false,
                 showProgress: false,
                 overlayOpacity: "0.66",
-                stagePadding: 10,
+                stagePadding: 8,
                 smoothScroll: false,
-                steps: steps
+                allowClose: true,
+                overlayClickBehavior: "nextStep",
+                steps: steps,
+                onDestroyStarted: () => {
+                    driverObj.destroy();
+                }
             });
 
             driverObj.drive();
