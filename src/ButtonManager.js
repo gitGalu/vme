@@ -5,9 +5,11 @@ import { EnvironmentManager } from './EnvironmentManager.js';
 
 export class ButtonManager {
     #cli;
+    #collection_manager;
 
-    constructor(cli) {
+    constructor(cli, collection_manager) {
         this.#cli = cli;
+        this.#collection_manager = collection_manager;
     }
 
     addButtons() {
@@ -41,7 +43,7 @@ export class ButtonManager {
 
     addCollectionButton() {
         createGuiButton('menu-item-compilations', 'COMPILATION', 'C', () => {
-            this.#cli.inject('c', true);
+            this.#collection_manager.open();
         });
     }
 

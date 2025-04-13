@@ -112,7 +112,7 @@ export class VME {
 
         this.#kb.initButtons();
 
-        let bm = new ButtonManager(this.#cli);
+        let bm = new ButtonManager(this.#cli, this.#collection_browser);
         bm.addButtons();
 
         EnvironmentManager.detectDevice();
