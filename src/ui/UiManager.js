@@ -81,6 +81,11 @@ export class UiManager {
         let timeout;
 
         function addMouseMoveListenerToCanvas(observer) {
+            desktopUi.classList.add('visible');
+
+            timeout = setTimeout(function() {
+                desktopUi.classList.remove('visible');
+            }, 3000);
 
             desktopUi.addEventListener('mousemove', function () {
                 desktopUi.classList.add('visible');

@@ -1069,6 +1069,10 @@ a {
   margin-bottom: 0;
 }
 
+.kb-mode-popover {
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
+}
+
 .kbControls-col-left {
   text-align: right;
   font-weight: bold;
