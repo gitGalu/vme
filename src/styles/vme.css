@@ -621,6 +621,10 @@ a {
     grid-area: 8 / 33 / span 4 / span 9;
   }
 
+  #fastjoyport {
+    grid-area: 2 / 33 / span 4 / span 9;
+  }
+
   #fastjoy {
     grid-area: 14 / 1 / span 4 / span 9;
   }
@@ -772,6 +776,10 @@ a {
 
   #fastcursors {
     grid-area: 9 / 43 / span 4 / span 4;
+  }
+
+  #fastjoyport {
+    grid-area: 3 / 43 / span 4 / span 4;
   }
 
   #fastjoy {
@@ -1020,6 +1028,14 @@ a {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
   padding-right: 16px;
   padding-left: 16px;
+}
+
+.kbCtrlSmall {
+  font-size: 0.55em;
+  line-height: 1.1em;
+  white-space: pre-line;
+  text-align: center;
+  display: inline-block;
 }
 
 .kbCtrl:active {
@@ -1560,6 +1576,50 @@ a {
   display: block;
   grid-area: 4 / 18 / span 1 / span 2;
 }
+
+
+
+.keyboardQwerty>#keyG13 {
+  display: block;
+  grid-area: 1 / 7 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG14 {
+  display: block;
+  grid-area: 1 / 9 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG15 {
+  display: block;
+  grid-area: 1 / 11 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG16 {
+  display: block;
+  grid-area: 1 / 13 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG23 {
+  display: block;
+  grid-area: 2 / 7 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG24 {
+  display: block;
+  grid-area: 2 / 9 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG25 {
+  display: block;
+  grid-area: 2 / 11 / span 1 / span 2;
+}
+
+.keyboardQwerty>#keyG26 {
+  display: block;
+  grid-area: 2 / 13 / span 1 / span 2;
+}
+
+
 
 .keyboardQwerty>#keyMinus {
   display: block;

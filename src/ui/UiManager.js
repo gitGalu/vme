@@ -57,6 +57,10 @@ export class UiManager {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">KB</span>', undefined, 'fastkb', new InputSwitchListener(TOUCH_INPUT.KEYBOARD), FAST_BTN_RADIUS);
         }
 
+        if (UiManager.#platform_manager.getSelectedPlatform().joyport_toggle) {
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">JOYPORT</span>', undefined, 'fastjoyport', new RightControlListener(), FAST_BTN_RADIUS);
+        }
+
         if (UiManager.#platform_manager.getSelectedPlatform().arrow_keys) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">ARROWS</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
         }
@@ -662,6 +666,27 @@ export class UiManager {
                 fadeOut();
                 msgDiv.fadeOutTimeout = null;
             }, timeInMs);
+        }
+    }
+}
+
+class RightControlListener extends TouchButtonListener {
+    constructor() {
+        super();
+    }
+
+    trigger(s) {
+        if (s) {
+            const rightControlEvent = new KeyboardEvent('keydown', {
+                key: 'Control',
+                code: 'ControlRight', 
+                location: 2,
+                ctrlKey: true,
+                bubbles: true,
+                cancelable: true
+              });
+              
+              document.dispatchEvent(rightControlEvent);
         }
     }
 }
