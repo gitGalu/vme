@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10] - 2025-07-06
+
+- add IBM PC/XT (8088 + CGA) emulation (uses virtualxt core) - w.i.p.
+- add PICO-8 emulation (uses retro8 core) - w.i.p.
+- add NMB command to boot without media inserted (Atari 800, ZX Spectrum, C64, C128, C264, VIC-20)
+
 ## [0.9.8] - 2025-04-14
 
 - desktop: show key mapping tooltip on hover over keyboard mode selector
