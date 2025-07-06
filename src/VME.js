@@ -172,7 +172,7 @@ export class VME {
         this.#ui.initFastUI();
 
         if (defaultController) {
-            UiManager.setCurrentJoyTouchMode(JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC);
+            UiManager.setCurrentJoyTouchMode(defaultController);
         } else {
             UiManager.setCurrentJoyTouchMode(JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY);
         }
