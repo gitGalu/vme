@@ -19,6 +19,7 @@ import { RestoreBackupCommand } from './cli/RestoreBackupCommand.js';
 import { BrowseCommand } from './cli/BrowseCommand.js';
 import { ClearallCommand } from './cli/ClearallCommand.js';
 import { CheckFixCommand } from './cli/CheckFixCommand.js';
+import { BootCommand } from './cli/BootCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
@@ -105,6 +106,7 @@ export class VME {
         this.#cli.register_command(new RestoreBackupCommand(this.#db));
         this.#cli.register_command(new CheckFixCommand(this.#db));
         this.#cli.register_command(new SetCommand());
+        this.#cli.register_command(new BootCommand(this.#pl));
 
         this.#cli.register_default('find');
 
