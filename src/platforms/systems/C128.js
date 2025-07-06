@@ -15,6 +15,17 @@ const C128 = {
         '--font': 'PetMe1282Y',
         '--cursorwidth': '0.5em',
     },
+    startup_beforelaunch: async function (nostalgist, storageManager) {
+        var el = document.getElementById('kbCtrlClear');
+        el.classList.add('kbCtrlSmall');
+        el.textContent = 'RUN\nSTOP';
+        el = document.getElementById('keyBackspace');
+        el.textContent = 'DEL';
+    },
+    guessConfig: (fileName) => {
+        return {
+        };
+    },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
         "Arrow Keys": "Joystick Directions",
