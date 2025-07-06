@@ -22,8 +22,12 @@ const PICO8 = {
     video_smooth: false,
     keyboard_controller_info: {
         "Arrow Keys": "D-PAD",
-        "Z": "Button B",
-        "X": "Button A"
+        "Z": "Button O",
+        "X": "Button X"
+    },
+    keyboard_controller_mapping: {
+        input_player1_a: 'z',
+        input_player1_b: 'x'
     },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
