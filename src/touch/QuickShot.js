@@ -63,6 +63,8 @@ export class QuickShot {
         } else if (buttonsCount == 2) {
             if (platform_id == "snk" || platform_id == "mame") {
                 new DualTouchButton(bottomContainer, true, 'A', 'B', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
+            } else if (platform_id == "pico-8") {
+                new DualTouchButton(bottomContainer, true, 'O', 'X', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'a', 'b'), '12px');
             } else {
                 new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qsab', new DualTouchButtonJoyListener(this.#nostalgist, 'b', 'a'), '12px');
             }

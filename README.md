@@ -99,6 +99,10 @@ fbalpha2012_neogeo https://github.com/libretro/fbalpha2012_neogeo
 
 puae https://github.com/libretro/libretro-uae
 
+virtualxt https://github.com/virtualxt/virtualxt/
+
+retro8 https://github.com/libretro/retro8
+
 ### Assets used
 
 https://www.kreativekorp.com/software/fonts/c64/
