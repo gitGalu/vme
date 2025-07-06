@@ -59,4 +59,8 @@ export class SingleTouchButton {
         div.style.pointerEvents = 'auto';
         return div;
     }
+
+    setLabel(label) {
+        this.el.innerHTML = label;
+    }
 }

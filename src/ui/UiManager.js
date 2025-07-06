@@ -45,9 +45,15 @@ export class UiManager {
         fastuiContainer.id = 'fastui';
         fastuiContainer.style.display = 'none';
 
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new FastForwardListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
         new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener(), FAST_BTN_RADIUS);
+
+        if (!UiManager.#platform_manager.getSelectedPlatform().rewind_disabled) {
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
+        }
+
+        if (!UiManager.#platform_manager.getSelectedPlatform().ffd_disabled) {
+            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">FFD</span>', undefined, 'fastffd', new FastForwardListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
+        }
 
         if (!UiManager.#platform_manager.getSelectedPlatform().savestates_disabled) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(UiManager.#platform_manager), FAST_BTN_RADIUS);
@@ -80,6 +86,10 @@ export class UiManager {
 
         if (UiManager.#platform_manager.getSelectedPlatform().savestates_disabled) {
             document.getElementById('desktopUiSave').style.display = "none";
+        }
+
+        if (UiManager.#platform_manager.getSelectedPlatform().rewind_disabled) {
+            document.getElementById('desktopUiRewind').style.display = "none";
         }
 
         let timeout;
@@ -200,6 +210,22 @@ export class UiManager {
             }
         }
 
+        if (UiManager.#platform_manager.getSelectedPlatform().touch_controllers.length && UiManager.#platform_manager.getSelectedPlatform().touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
+            const select = document.getElementById('kbMode');
+            const valueToRemove = 'retropad';
+
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === valueToRemove) {
+                    select.remove(i);
+                    break;
+                }
+            }
+
+            select.disabled = true;
+
+            GameFocusManager.getInstance().enable();
+        }
+
         this.#addKeyboardControlsPopover();
 
         addButtonEventListeners(s('#desktopUiBack'),
@@ -236,7 +262,7 @@ export class UiManager {
 
             const offset = 15;
             popover.style.left = `${e.clientX + offset}px`;
-            popover.style.top = `${e.clientY + 2*offset}px`;
+            popover.style.top = `${e.clientY + 2 * offset}px`;
 
             const rect = popover.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
@@ -302,26 +328,36 @@ export class UiManager {
             }
         } else {
             const touch_controllers = UiManager.#platform_manager.getSelectedPlatform().touch_controllers;
-            if (touch_controllers.length == 1) return;
+            if (touch_controllers.length > 1) {
+                new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new InputSwitchListener(TOUCH_INPUT.JOYSTICK), FAST_BTN_RADIUS);
+            }
 
-            new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new InputSwitchListener(TOUCH_INPUT.JOYSTICK), FAST_BTN_RADIUS);
-
-            if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
-                class SpectrumJoyOptionsListener extends TouchButtonListener {
-                    trigger(event) {
-                        if (event.selected) {
-                            UiManager.#qj.updateKeyMap(event.label);
-                            UiManager.#ck.updateKeyMap(event.label);
-                        }
+            class KeymapOptionsListener extends TouchButtonListener {
+                trigger(event) {
+                    if (event.selected) {
+                        UiManager.#qj.updateKeyMap(event.label);
+                        UiManager.#ck.updateKeyMap(event.label);
                     }
                 }
+            }
 
+            if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
                 new MultiSelectTouchButton(
                     document.getElementById('fastui'),
                     ['Cursor', 'Interface 2', 'QAOP', 'QWRE', '1890'],
                     undefined,
                     'fastspectrumjoy',
-                    new SpectrumJoyOptionsListener(),
+                    new KeymapOptionsListener(),
+                    0,
+                    FAST_BTN_RADIUS
+                );
+            } else if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "xt") {
+                new MultiSelectTouchButton(
+                    document.getElementById('fastui'),
+                    ['Spc+Ret', 'Spc+X', 'Spc+Ctrl', 'Z+X', 'Spc+A', 'Spc+Shift'],
+                    undefined,
+                    'fastspectrumjoy',
+                    new KeymapOptionsListener(),
                     0,
                     FAST_BTN_RADIUS
                 );
@@ -679,14 +715,14 @@ class RightControlListener extends TouchButtonListener {
         if (s) {
             const rightControlEvent = new KeyboardEvent('keydown', {
                 key: 'Control',
-                code: 'ControlRight', 
+                code: 'ControlRight',
                 location: 2,
                 ctrlKey: true,
                 bubbles: true,
                 cancelable: true
-              });
-              
-              document.dispatchEvent(rightControlEvent);
+            });
+
+            document.dispatchEvent(rightControlEvent);
         }
     }
 }

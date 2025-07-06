@@ -3,7 +3,6 @@ import { SingleTouchButton } from "./SingleTouchButton";
 import { DualTouchButton } from "./DualTouchButton";
 import { TripleTouchButton } from "./TripleTouchButton";
 import { SingleTouchButtonJoyListener } from "./SingleTouchButtonJoyListener";
-import { SingleTouchButtonKbListener } from "./SingleTouchButtonKbListener";
 import { DualTouchButtonJoyListener } from "./DualTouchButtonJoyListener";
 import { TripleTouchButtonJoyListener } from "./TripleTouchButtonJoyListener";
 import { QuadrupleTouchButton } from './QuadrupleTouchButton.js';
@@ -80,7 +79,7 @@ export class QuickShot {
                 new QuadrupleTouchButton(bottomContainer, 'L', 'R', 'B', 'A', undefined, 'qs4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'l', 'r', 'b', 'a'), QuadrupleTouchButton.Layout.ABLR);
             } else if (platform_id == "snk" || platform_id == "mame") {
                 new QuadrupleTouchButton(bottomContainer, 'C', 'D', 'A', 'B', undefined, 'qsab4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'x', 'y', 'a', 'b'), QuadrupleTouchButton.Layout.ABCD);
-            }
+            } 
         } else if (buttonsCount == 6 || buttonsCount == 5) {
             new SextupleTouchButton(bottomContainer, 'L', 'A', 'Y', 'R', 'X', 'B', undefined, 'qs6tr', new SextupleTouchButtonJoyListener(this.#nostalgist, 'l', 'a', 'y', 'r', 'x', 'b'), QuadrupleTouchButton.Layout.TWO_ROWS);
         }

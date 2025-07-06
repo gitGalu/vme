@@ -23,6 +23,12 @@
 }
 
 @font-face {
+  font-family: CGA;
+  src: url('../assets/fonts/CGA.woff') format("woff");
+  font-display: block;
+}
+
+@font-face {
   font-family: Atascii;
   src: url('../assets/fonts/atascii.ttf') format("truetype");
   font-display: block;

@@ -24,6 +24,7 @@ import Coleco from './systems/Coleco.js';
 import SNES from './systems/SNES.js';
 import Intv from './systems/Intv.js';
 import MAME from './systems/MAME.js';
+import XT from './systems/XT.js';
 import JSZip from 'jszip';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -33,10 +34,10 @@ import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
 import { ToastManager } from '../ui/ToastManager.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
-
+import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT
 }
 
 export class PlatformManager {
@@ -82,6 +83,12 @@ export class PlatformManager {
 
         let retroarchConfigOverrides = {};
 
+        if (EnvironmentManager.isDesktop() && this.#selected_platform.touch_controllers.length == 1 && this.#selected_platform.touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
+            retroarchConfigOverrides = {
+                ...this.#selected_platform.touch_controller_mapping
+            }
+        }
+
         if (EnvironmentManager.hasTouch() && this.#selected_platform.touch_controller_mapping != undefined) {
             retroarchConfigOverrides = {
                 ...this.#selected_platform.touch_controller_mapping
@@ -124,7 +131,6 @@ export class PlatformManager {
                 input_pause_toggle: false,
                 video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
                 video_smooth: (this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth,
-
                 savestate_thumbnail_enable: true,
                 video_font_enable: false,
                 input_menu_toggle: 'nul',

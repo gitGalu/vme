@@ -1,5 +1,6 @@
 import PlatformBase from '../PlatformBase.js';
 import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
+import { KeyMaps } from '../../touch/KeyMaps.js';
 
 const Spectrum = {
     ...PlatformBase,
@@ -44,6 +45,16 @@ const Spectrum = {
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD
     ],
+    touch_key_mapping: {
+        keyMap: {
+            'Interface 2': KeyMaps.ZX_INTERFACE_2_LEFT,
+            'Cursor': KeyMaps.ZX_CURSOR,
+            'QAOP': KeyMaps.ZX_QOAP,
+            'QWRE': KeyMaps.ZX_ULTIMATE,
+            '1890': KeyMaps.ZX_DEATHCHASE
+        },
+        default: KeyMaps.ZX_CURSOR
+    },
     touch_controller_mapping: {
         input_player1_up: 'F13',
         input_player1_left: 'F14',

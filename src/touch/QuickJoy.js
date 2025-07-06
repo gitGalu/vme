@@ -40,13 +40,13 @@ export class QuickJoy {
 
         let btns = this.#platform_manager.getSelectedPlatform().fire_buttons;
 
-        let platform_id = this.#platform_manager.getSelectedPlatform().platform_id;
+        let touch_key_mapping = this.#platform_manager.getSelectedPlatform().touch_key_mapping;
 
-        if (platform_id == "spectrum") {
-            const DEF = KeyMaps.ZX_CURSOR;
+        if (touch_key_mapping != undefined) {
+            const DEF = touch_key_mapping.default;
             this.#lrKbListener = new DualTouchButtonKbListener(DEF.left.key, DEF.left.code, DEF.left.keyCode, DEF.right.key, DEF.right.code, DEF.right.keyCode, s('canvas'));
             this.#udKbListener = new DualTouchButtonKbListener(DEF.up.key, DEF.up.code, DEF.up.keyCode, DEF.down.key, DEF.down.code, DEF.down.keyCode, s('canvas'));
-            this.#fireKbListener = new SingleTouchButtonKbListener(DEF.fire.key, DEF.fire.code, DEF.fire.keyCode, s('canvas'));
+            this.#fireKbListener = new SingleTouchButtonKbListener(DEF.a.key, DEF.a.code, DEF.a.keyCode, s('canvas'));
             new DualTouchButton(bottomContainer, true, '\u2190', '\u2192', undefined, 'qjlr', this.#lrKbListener);
             new DualTouchButton(bottomContainer, false, '\u2191', '\u2193', undefined, 'qjud1', this.#udKbListener);
             new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'qja', this.#fireKbListener);
@@ -75,18 +75,12 @@ export class QuickJoy {
     }
 
     updateKeyMap(value) {
-        const keyMap = {
-            'Interface 2': KeyMaps.ZX_INTERFACE_2_LEFT,
-            'Cursor': KeyMaps.ZX_CURSOR,
-            'QAOP': KeyMaps.ZX_QOAP,
-            'QWRE': KeyMaps.ZX_ULTIMATE,
-            '1890': KeyMaps.ZX_DEATHCHASE
-        }[value];
-    
+        const keyMap = this.#platform_manager.getSelectedPlatform().touch_key_mapping.keyMap[value];
+
         if (keyMap) {
             this.#lrKbListener.updateKeyMapping(keyMap.left, keyMap.right);
             this.#udKbListener.updateKeyMapping(keyMap.up, keyMap.down);
-            this.#fireKbListener.updateKeyMapping(keyMap.fire);
+            this.#fireKbListener.updateKeyMapping(keyMap.a);
         }
     }
 }

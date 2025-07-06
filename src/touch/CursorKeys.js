@@ -7,7 +7,12 @@ export class CursorKeys {
     static #DEAD_ZONE_RADIUS = 30;
 
     #keyConfig;
-    #fireKbListener;
+    #fireAListener;
+    #fireAB1Listener;
+    #fireAB2Listener;
+    #fireA;
+    #fireAB1;
+    #fireAB2;
     #target;
 
     #joystickBase;
@@ -47,8 +52,15 @@ export class CursorKeys {
         if (this.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
             const DEF = KeyMaps.ZX_CURSOR;
             this.#keyConfig = DEF;
-            this.#fireKbListener = new SingleTouchButtonKbListener(DEF.fire.key, DEF.fire.code, DEF.fire.keyCode, s('canvas'));
-            new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'cursorbf', this.#fireKbListener);
+            this.#fireAListener = new SingleTouchButtonKbListener(DEF.a.key, DEF.a.code, DEF.a.keyCode, s('canvas'));
+            this.#fireA = new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'cursorbf', this.#fireAListener);
+        } else if (this.#platform_manager.getSelectedPlatform().platform_id == "xt") {
+            const DEF = KeyMaps.XT_ARROWS_SPACE_RETURN;
+            this.#keyConfig = DEF;
+            this.#fireAB1Listener = new SingleTouchButtonKbListener(' ', 'Space', '32', s('canvas'));
+            this.#fireAB2Listener = new SingleTouchButtonKbListener('Enter', 'Enter', '13', s('canvas'));
+            this.#fireAB1 = new SingleTouchButton(bottomContainer, 'SPACE', undefined, 'cursorb1', this.#fireAB1Listener);
+            this.#fireAB2 = new SingleTouchButton(bottomContainer, 'RETURN', undefined, 'cursorb2', this.#fireAB2Listener)
         } else {
             new SingleTouchButton(bottomContainer, 'SPACE', undefined, 'cursorb1', new SingleTouchButtonKbListener(' ', 'Space', '32', s('canvas')));
             new SingleTouchButton(bottomContainer, 'ENTER', undefined, 'cursorb2', new SingleTouchButtonKbListener('Enter', 'Enter', '13', s('canvas')));
@@ -73,21 +85,23 @@ export class CursorKeys {
         this.#joystickContainer.addEventListener('touchmove', this.#onTouchMove);
         this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd);
         this.#joystickContainer.addEventListener('touchcancel', this.#onTouchEnd);
-
     }
 
     updateKeyMap(value) {
-        const keyMap = {
-            'Interface 2': KeyMaps.ZX_INTERFACE_2_LEFT,
-            'Cursor': KeyMaps.ZX_CURSOR,
-            'QAOP': KeyMaps.ZX_QOAP,
-            'QWRE': KeyMaps.ZX_ULTIMATE,
-            '1890': KeyMaps.ZX_DEATHCHASE
-        }[value];
+        const keyMap = this.#platform_manager.getSelectedPlatform().touch_key_mapping.keyMap[value];
 
         if (keyMap) {
             this.#keyConfig = keyMap;
-            this.#fireKbListener.updateKeyMapping(keyMap.fire);
+
+            if (this.#keyConfig.b != undefined) {
+                this.#fireAB1.setLabel(keyMap.a.label);
+                this.#fireAB1Listener.updateKeyMapping(keyMap.a);
+                this.#fireAB2.setLabel(keyMap.b.label);
+                this.#fireAB2Listener.updateKeyMapping(keyMap.b);
+            } else {
+                this.#fireA.setLabel('FIRE');
+                this.#fireAListener.updateKeyMapping(keyMap.a);
+            }
         }
     }
 
