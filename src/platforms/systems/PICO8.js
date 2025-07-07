@@ -13,8 +13,9 @@ const PICO8 = {
         '--color2': '#FF004D',
         '--color3': '#FFEC27',
         '--font': 'PICO8',
-        '--fontsize': '2em',
-        '--cursorwidth': '1em'
+        '--fontsize': '1em',
+        '--cursorwidth': '1em',
+        '--portrait-fontsize': '100%'
     },
     savestates_disabled: true,
     rewind_disabled: true,
