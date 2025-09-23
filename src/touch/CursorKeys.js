@@ -144,14 +144,14 @@ export class CursorKeys {
     #createJoystickElements(touch) {
         this.#joystickBase = document.createElement('div');
         this.#joystickBase.classList.add('cursor-base');
-        this.#joystickBase.style.left = `${touch.pageX - 50}px`;
-        this.#joystickBase.style.top = `${touch.pageY - 50}px`;
+        this.#joystickBase.style.left = `${touch.clientX - 50}px`;
+        this.#joystickBase.style.top = `${touch.clientY - 50}px`;
         this.#joystickContainer.appendChild(this.#joystickBase);
 
         this.#joystickThumb = document.createElement('div');
         this.#joystickThumb.classList.add('cursor-thumb');
-        this.#joystickThumb.style.left = `${touch.pageX - 25}px`;
-        this.#joystickThumb.style.top = `${touch.pageY - 25}px`;
+        this.#joystickThumb.style.left = `${touch.clientX - 25}px`;
+        this.#joystickThumb.style.top = `${touch.clientY - 25}px`;
         this.#joystickContainer.appendChild(this.#joystickThumb);
     }
 
@@ -192,18 +192,19 @@ export class CursorKeys {
                     y: baseRect.top + baseRect.height / 2
                 };
 
-                let distance = this.#getDistance(baseCenter, { x: touch.pageX, y: touch.pageY });
+                const touchPoint = { x: touch.clientX, y: touch.clientY };
+                let distance = this.#getDistance(baseCenter, touchPoint);
 
                 if (distance > baseRect.width / 2) {
-                    let angle = Math.atan2(touch.pageY - baseCenter.y, touch.pageX - baseCenter.x);
-                    this.#joystickBase.style.left = `${touch.pageX - baseRect.width / 2 - Math.cos(angle) * baseRect.width / 2}px`;
-                    this.#joystickBase.style.top = `${touch.pageY - baseRect.height / 2 - Math.sin(angle) * baseRect.height / 2}px`;
+                    let angle = Math.atan2(touchPoint.y - baseCenter.y, touchPoint.x - baseCenter.x);
+                    this.#joystickBase.style.left = `${touchPoint.x - baseRect.width / 2 - Math.cos(angle) * baseRect.width / 2}px`;
+                    this.#joystickBase.style.top = `${touchPoint.y - baseRect.height / 2 - Math.sin(angle) * baseRect.height / 2}px`;
                 }
 
-                this.#joystickThumb.style.left = `${touch.pageX - 25}px`;
-                this.#joystickThumb.style.top = `${touch.pageY - 25}px`;
+                this.#joystickThumb.style.left = `${touchPoint.x - 25}px`;
+                this.#joystickThumb.style.top = `${touchPoint.y - 25}px`;
 
-                let angle = Math.atan2(touch.pageY - baseCenter.y, touch.pageX - baseCenter.x);
+                let angle = Math.atan2(touchPoint.y - baseCenter.y, touchPoint.x - baseCenter.x);
                 let angleDeg = angle * (180 / Math.PI);
                 if (angleDeg < 0) angleDeg += 360;
 
