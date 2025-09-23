@@ -50,8 +50,8 @@ export class DualTouchButton {
             el2.style[key] = value;
         });
 
-        el1.textContent = label1;
-        el2.textContent = label2;
+        el1.innerHTML = label1;
+        el2.innerHTML = label2;
 
         this.el1 = el1;
         this.el2 = el2;

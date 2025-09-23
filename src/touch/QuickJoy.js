@@ -5,7 +5,6 @@ import { SingleTouchButtonJoyListener } from "./SingleTouchButtonJoyListener";
 import { DualTouchButtonJoyListener } from "./DualTouchButtonJoyListener";
 import { SingleTouchButtonKbListener } from './SingleTouchButtonKbListener.js';
 import { DualTouchButtonKbListener } from './DualTouchButtonKbListener.js';
-import { KeyMaps } from './KeyMaps.js';
 
 export class QuickJoy {
     #platform_manager;
@@ -47,16 +46,16 @@ export class QuickJoy {
             this.#lrKbListener = new DualTouchButtonKbListener(DEF.left.key, DEF.left.code, DEF.left.keyCode, DEF.right.key, DEF.right.code, DEF.right.keyCode, s('canvas'));
             this.#udKbListener = new DualTouchButtonKbListener(DEF.up.key, DEF.up.code, DEF.up.keyCode, DEF.down.key, DEF.down.code, DEF.down.keyCode, s('canvas'));
             this.#fireKbListener = new SingleTouchButtonKbListener(DEF.a.key, DEF.a.code, DEF.a.keyCode, s('canvas'));
-            new DualTouchButton(bottomContainer, true, '\u2190', '\u2192', undefined, 'qjlr', this.#lrKbListener);
-            new DualTouchButton(bottomContainer, false, '\u2191', '\u2193', undefined, 'qjud1', this.#udKbListener);
+            new DualTouchButton(bottomContainer, true, 'LEFT', 'RIGHT', undefined, 'qjlr', this.#lrKbListener);
+            new DualTouchButton(bottomContainer, false, 'UP', 'DOWN', undefined, 'qjud1', this.#udKbListener);
             new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'qja', this.#fireKbListener);
         } else {
-            new DualTouchButton(bottomContainer, true, '\u2190', '\u2192', undefined, 'qjlr', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'left', 'right'));
+            new DualTouchButton(bottomContainer, true, 'LEFT', 'RIGHT', undefined, 'qjlr', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'left', 'right'));
             if (btns == 1) {
-                new DualTouchButton(bottomContainer, false, '\u2191', '\u2193', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
+                new DualTouchButton(bottomContainer, false, 'UP', 'DOWN', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
                 new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'qja', new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b'));
             } else if (btns == 2) {
-                new DualTouchButton(bottomContainer, false, '\u2191', '\u2193', undefined, 'qjud2', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
+                new DualTouchButton(bottomContainer, false, 'UP', 'DOWN', undefined, 'qjud2', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
                 new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qjab', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b', 'a'));
             }
         }
