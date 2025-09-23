@@ -69,7 +69,6 @@ export class QuickJoy {
     }
 
     hide() {
-        hide("#quickjoy");
         hide("#quickjoys");
     }
 
