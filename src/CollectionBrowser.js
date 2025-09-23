@@ -1,4 +1,4 @@
-import { s, addButtonEventListeners } from "./dom.js";
+import { s, addButtonEventListeners, removeButtonEventListeners } from "./dom.js";
 import { VME } from './VME.js';
 import Flicking from "@egjs/flicking";
 import { Arrow } from "@egjs/flicking-plugins";
@@ -19,11 +19,20 @@ export class CollectionBrowser {
     #selected;
     #launched;
     #kb_event_bound;
+    #wheel_event_bound;
     #isDragging;
     #uiReady = false;
     #urlsToRevoke = new Set();
     #lastBackgroundUpdate = 0;
     #lastParallaxUpdate = 0;
+    #wheelReleaseTimer = null;
+    #wheelPixelThreshold = 35;
+    #wheelLineThreshold = 1;
+    #wheelScrollMultiplier = 0.45;
+    #wheelSnapDelay = 160;
+    #buttonElements = new Set();
+    #backButton;
+    #backHandler;
 
     constructor(vme, platform_manager, storage_manager, cli) {
         this.#vme = vme;
@@ -33,20 +42,20 @@ export class CollectionBrowser {
         this.#isDragging = false;
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
+        this.#wheel_event_bound = this.#handleWheel.bind(this);
 
-        const backButton = s('#collectionBrowserUiBack');
-        backButton.classList.remove('disabled');
-        addButtonEventListeners(backButton,
-            (pressed) => {
-                if (pressed) {
-                    StorageManager.clearValue(BOOT_TO);
-                    StorageManager.clearValue(COLLECTION_BROWSER_COLLECTION_INDEX);
-                    StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
-                    this.close();
-                    this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
-                }
-            });
-            
+        this.#backButton = s('#collectionBrowserUiBack');
+        this.#backButton.classList.remove('disabled');
+        this.#backHandler = (pressed) => {
+            if (pressed) {
+                StorageManager.clearValue(BOOT_TO);
+                StorageManager.clearValue(COLLECTION_BROWSER_COLLECTION_INDEX);
+                StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
+                this.close();
+                this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            }
+        };
+
         this.#addLaunchAnimationStyles();
     }
     
@@ -226,6 +235,11 @@ export class CollectionBrowser {
 
         this.#destroy();
 
+        if (this.#backButton && this.#backHandler) {
+            addButtonEventListeners(this.#backButton, this.#backHandler);
+            this.#buttonElements.add(this.#backButton);
+        }
+
         this.#flicking = new Flicking("#collection-flicking", {
             circular: false,
             moveType: "snap",
@@ -233,6 +247,11 @@ export class CollectionBrowser {
             autoResize: true,
             align: "center"
         });
+
+        const flickingElement = this.#flicking?.element;
+        if (flickingElement) {
+            flickingElement.addEventListener('wheel', this.#wheel_event_bound, { passive: false });
+        }
 
         const self = this;
         this.#setUIReady(false);
@@ -277,9 +296,12 @@ export class CollectionBrowser {
             if (isAnimating || this.#isDragging || !this.#uiReady) return;
 
             const activePanel = this.#flicking.currentPanel;
-            const isAlreadyActive = activePanel && activePanel.index === index;
+            const isAlreadyActive = activePanel && activePanel.element === element;
 
             if (isAlreadyActive) {
+                if (this.#flicking.animating) {
+                    return;
+                }
                 if (element.dataset.save !== "undefined") {
                     this.#restoreSelected();
                 } else {
@@ -287,9 +309,7 @@ export class CollectionBrowser {
                 }
             } else {
                 isAnimating = true;
-                this.#flicking.moveTo(index).then(() => {
-                    isAnimating = false;
-                }).catch(() => {
+                this.#flicking.moveTo(index).finally(() => {
                     isAnimating = false;
                 });
             }
@@ -406,19 +426,23 @@ export class CollectionBrowser {
 
         document.addEventListener("keydown", this.#kb_event_bound);
 
-        addButtonEventListeners(s('#collectionBrowserUiLoad'),
+        const loadButton = s('#collectionBrowserUiLoad');
+        addButtonEventListeners(loadButton,
             (pressed) => {
                 if (pressed && this.#selected && this.#uiReady) {
                     this.#loadSelected();
                 }
             });
+        this.#buttonElements.add(loadButton);
 
-        addButtonEventListeners(s('#collectionBrowserUiRestore'),
+        const restoreButton = s('#collectionBrowserUiRestore');
+        addButtonEventListeners(restoreButton,
             (pressed) => {
                 if (pressed && this.#selected && this.#uiReady) {
                     this.#restoreSelected();
                 }
             });
+        this.#buttonElements.add(restoreButton);
 
         StorageManager.storeValue(BOOT_TO, BOOT_TO_COLLECTION_BROWSER);
 
@@ -505,9 +529,20 @@ export class CollectionBrowser {
             }
         });
         this.#urlsToRevoke.clear();
+
+        this.#buttonElements.forEach(button => {
+            if (button) {
+                removeButtonEventListeners(button);
+            }
+        });
+        this.#buttonElements.clear();
         
         if (this.#flicking) {
             try {
+                const flickingElement = this.#flicking.element;
+                if (flickingElement) {
+                    flickingElement.removeEventListener('wheel', this.#wheel_event_bound);
+                }
                 this.#flicking.off("changed");
                 this.#flicking.off("move");
                 this.#flicking.off("moveEnd");
@@ -532,7 +567,11 @@ export class CollectionBrowser {
         this.#launched = false;
         this.#uiReady = false;
         this.#isDragging = false;
-        
+        if (this.#wheelReleaseTimer) {
+            clearTimeout(this.#wheelReleaseTimer);
+            this.#wheelReleaseTimer = null;
+        }
+
         const background = document.getElementById('collection-flicking-background');
         if (background) {
             background.style.backgroundImage = 'none';
@@ -555,6 +594,114 @@ export class CollectionBrowser {
             this.close();
             this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
         }
+    }
+
+    #handleWheel(event) {
+        const flicking = this.#flicking;
+        if (!flicking) {
+            return;
+        }
+
+        const hasDelta = Math.abs(event.deltaY) > 0 || Math.abs(event.deltaX) > 0;
+        if (!hasDelta) {
+            return;
+        }
+
+        const primaryDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+            ? event.deltaY
+            : event.deltaX;
+
+        if (primaryDelta === 0) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (flicking.animating) {
+            flicking.control.stopAnimation();
+        }
+
+        const threshold = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+            ? this.#wheelLineThreshold
+            : this.#wheelPixelThreshold;
+
+        const currentPanel = flicking.currentPanel;
+        const referenceSize = currentPanel?.size || flicking.camera.size || 1;
+        const rawMovement = (primaryDelta / threshold) * referenceSize * this.#wheelScrollMultiplier;
+        const maxMovement = referenceSize * 2;
+        const movement = Math.max(-maxMovement, Math.min(maxMovement, rawMovement));
+
+        if (!Number.isFinite(movement) || movement === 0) {
+            this.#scheduleWheelSnap();
+            return;
+        }
+
+        const camera = flicking.camera;
+        const nextPosition = camera.clampToReachablePosition(camera.position + movement);
+
+        if (!Number.isFinite(nextPosition) || nextPosition === camera.position) {
+            this.#scheduleWheelSnap();
+            return;
+        }
+
+        this.#setUIReady(false);
+        camera.lookAt(nextPosition);
+        flicking.control.updateInput();
+        this.#updateBackground();
+        this.#updateParallax();
+
+        this.#scheduleWheelSnap();
+    }
+
+    #scheduleWheelSnap() {
+        if (this.#wheelReleaseTimer) {
+            clearTimeout(this.#wheelReleaseTimer);
+        }
+
+        this.#wheelReleaseTimer = setTimeout(() => {
+            this.#wheelReleaseTimer = null;
+            this.#snapToNearestPanel();
+        }, this.#wheelSnapDelay);
+    }
+
+    #snapToNearestPanel() {
+        const flicking = this.#flicking;
+        if (!flicking) {
+            this.#setUIReady(true);
+            return;
+        }
+
+        const camera = flicking.camera;
+        const anchor = camera.findNearestAnchor(camera.position);
+        if (!anchor) {
+            this.#setUIReady(true);
+            return;
+        }
+
+        const targetPanel = anchor.panel;
+        const targetIndex = targetPanel.index;
+        const activePanel = flicking.currentPanel;
+
+        if (flicking.animating) {
+            flicking.control.stopAnimation();
+        }
+
+        this.#setUIReady(false);
+        flicking.control.updateInput();
+
+        const baseDuration = flicking.options?.duration ?? 350;
+        const indexDistance = activePanel ? Math.abs(activePanel.index - targetIndex) : 1;
+        const durationFactor = Math.max(0.25, 0.55 / Math.max(indexDistance, 1));
+        const duration = Math.max(80, Math.round(baseDuration * durationFactor));
+
+        flicking.moveTo(targetIndex, duration)
+            .catch(() => {
+                this.#setUIReady(true);
+            })
+            .finally(() => {
+                this.#setUIReady(true);
+                this.#isDragging = false;
+            });
     }
     
     #throttle(func, limit) {

@@ -2,6 +2,8 @@ export function s(sel) {
 	return document.querySelector(sel);
 }
 
+const buttonListenerMap = new WeakMap();
+
 export function insert(el, html) {
 	if (typeof el === "string" || el instanceof String) {
 		el = s(el);
@@ -37,26 +39,41 @@ export function addButtonEventListeners(button, handleAction) {
         handleAction(pressed);
     };
 
-    button.addEventListener('mousedown', () => {
+    const onMouseDown = () => {
         isPressed = true;
         handleEvent(true);
-    });
-    button.addEventListener('mouseup', () => {
+    };
+    const onMouseUp = () => {
         if (isPressed) {
             handleEvent(false);
             isPressed = false;
         }
-    });
-    button.addEventListener('mouseleave', () => {
+    };
+    const onMouseLeave = () => {
         if (isPressed) {
             handleEvent(false);
             isPressed = false;
         }
-    });
+    };
+
+    button.addEventListener('mousedown', onMouseDown);
+    button.addEventListener('mouseup', onMouseUp);
+    button.addEventListener('mouseleave', onMouseLeave);
+
+    const existing = buttonListenerMap.get(button) || [];
+    existing.push({ onMouseDown, onMouseUp, onMouseLeave });
+    buttonListenerMap.set(button, existing);
 }
 
 export function removeButtonEventListeners(button) {
-    button.removeEventListener('mousedown', handleAction);
-    button.removeEventListener('mouseup', handleAction);
-    button.removeEventListener('mouseleave', handleAction);
+    const listeners = buttonListenerMap.get(button);
+    if (!listeners) return;
+
+    listeners.forEach(({ onMouseDown, onMouseUp, onMouseLeave }) => {
+        button.removeEventListener('mousedown', onMouseDown);
+        button.removeEventListener('mouseup', onMouseUp);
+        button.removeEventListener('mouseleave', onMouseLeave);
+    });
+
+    buttonListenerMap.delete(button);
 }

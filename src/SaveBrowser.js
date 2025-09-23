@@ -13,8 +13,17 @@ export class SaveBrowser {
     #selected;
     #launched;
     #kb_event_bound;
+    #wheel_event_bound;
     #filter_change_handler_bound;
+    #wheelReleaseTimer = null;
+    #wheelPixelThreshold = 35;
+    #wheelLineThreshold = 1;
+    #wheelScrollMultiplier = 0.45;
+    #wheelSnapDelay = 160;
     #eventListeners = [];
+    #buttonElements = new Set();
+    #backButton;
+    #backHandler;
     #currentPlatformFilter = "all";
     #isGameView = false;
     #uiReady = false;
@@ -32,13 +41,14 @@ export class SaveBrowser {
         this.#cli = cli;
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
+        this.#wheel_event_bound = this.#handleWheel.bind(this);
 
         this.#filter_change_handler_bound = this.#filterChangeHandler.bind(this);
 
-        const backButton = s('#saveBrowserUiBack');
-        backButton.classList.remove('disabled');
+        this.#backButton = s('#saveBrowserUiBack');
+        this.#backButton.classList.remove('disabled');
         
-        const backHandler = (pressed) => {
+        this.#backHandler = (pressed) => {
             if (pressed) {
                 if (this.#isGameView) {
                     this.#showGameList(this.#lastGamePosition);
@@ -48,8 +58,6 @@ export class SaveBrowser {
                 }
             }
         };
-        addButtonEventListeners(backButton, backHandler);
-        this.#eventListeners.push({ element: backButton, handler: backHandler });
 
         const platformFilter = document.getElementById('platformFilterContainer');
         platformFilter.classList.add('none');
@@ -113,9 +121,13 @@ export class SaveBrowser {
         panels.forEach((panel, index) => {
             const clickHandler = () => {
                 if (this.#isDestroying) return;
-    
-                if (this.#flicking.currentPanel &&
-                    this.#flicking.currentPanel.index === index) {
+
+                const currentPanel = this.#flicking.currentPanel;
+
+                if (currentPanel && currentPanel.element === panel) {
+                    if (this.#flicking.animating) {
+                        return;
+                    }
                     if (this.#selected && this.#uiReady) {
                         if (!this.#isGameView) {
                             const programName = panel.getAttribute('data-program-name');
@@ -127,8 +139,7 @@ export class SaveBrowser {
                     }
                 } else {
                     this.#setUIReady(false);
-                    this.#flicking.moveTo(index).then(() => {
-                    }).catch(err => {
+                    this.#flicking.moveTo(index).catch(err => {
                         this.#setUIReady(true);
                     });
                 }
@@ -315,7 +326,12 @@ export class SaveBrowser {
         let div = document.querySelector('#save-browser');
         div.classList.add('show');
         this.#destroy();
-    
+
+        if (this.#backButton && this.#backHandler) {
+            addButtonEventListeners(this.#backButton, this.#backHandler);
+            this.#buttonElements.add(this.#backButton);
+        }
+
         this.#flicking = new Flicking("#flicking", {
             circular: true,
             moveType: "snap",
@@ -324,6 +340,12 @@ export class SaveBrowser {
             align: "center",
             duration: 350
         });
+
+        const flickingElement = this.#flicking?.element;
+        if (flickingElement) {
+            flickingElement.addEventListener('wheel', this.#wheel_event_bound, { passive: false });
+            this.#eventListeners.push({ element: flickingElement, handler: this.#wheel_event_bound, type: 'wheel' });
+        }
     
         const fb = document.getElementById('flicking-background');
         fb.classList.remove('show');
@@ -336,7 +358,7 @@ export class SaveBrowser {
         const platformFilter = document.getElementById('platformFilter');
         platformFilter.removeEventListener('change', this.#filter_change_handler_bound);
         platformFilter.addEventListener('change', this.#filter_change_handler_bound);
-        this.#eventListeners.push({ element: platformFilter, handler: this.#filter_change_handler_bound });
+        this.#eventListeners.push({ element: platformFilter, handler: this.#filter_change_handler_bound, type: 'change' });
     
         document.addEventListener("keydown", this.#kb_event_bound);
     
@@ -347,7 +369,7 @@ export class SaveBrowser {
             }
         };
         addButtonEventListeners(deleteButton, deleteHandler);
-        this.#eventListeners.push({ element: deleteButton, handler: deleteHandler });
+        this.#buttonElements.add(deleteButton);
     
         const loadButton = s('#saveBrowserUiLoad');
         const loadHandler = (pressed) => {
@@ -356,7 +378,7 @@ export class SaveBrowser {
             }
         };
         addButtonEventListeners(loadButton, loadHandler);
-        this.#eventListeners.push({ element: loadButton, handler: loadHandler });
+        this.#buttonElements.add(loadButton);
     
         const openButton = s('#saveBrowserUiOpen');
         const openHandler = (pressed) => {
@@ -370,7 +392,7 @@ export class SaveBrowser {
             }
         };
         addButtonEventListeners(openButton, openHandler);
-        this.#eventListeners.push({ element: openButton, handler: openHandler });
+        this.#buttonElements.add(openButton);
     
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
     }
@@ -448,6 +470,13 @@ export class SaveBrowser {
     #destroy() {
         this.#isDestroying = true;
 
+        this.#buttonElements.forEach(button => {
+            if (button) {
+                removeButtonEventListeners(button);
+            }
+        });
+        this.#buttonElements.clear();
+
         this.#eventListeners.forEach(({ element, handler, type = 'change' }) => {
             if (element && handler) {
                 element.removeEventListener(type, handler);
@@ -473,6 +502,10 @@ export class SaveBrowser {
         this.#launched = false;
         this.#uiReady = false;
         this.#lastGamePosition = null;
+        if (this.#wheelReleaseTimer) {
+            clearTimeout(this.#wheelReleaseTimer);
+            this.#wheelReleaseTimer = null;
+        }
 
         const background = document.getElementById('flicking-background');
         if (background) {
@@ -519,6 +552,113 @@ export class SaveBrowser {
                 this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
             }
         }
+    }
+
+    #handleWheel(event) {
+        const flicking = this.#flicking;
+        if (!flicking) {
+            return;
+        }
+
+        const hasDelta = Math.abs(event.deltaY) > 0 || Math.abs(event.deltaX) > 0;
+        if (!hasDelta) {
+            return;
+        }
+
+        const primaryDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+            ? event.deltaY
+            : event.deltaX;
+
+        if (primaryDelta === 0) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (flicking.animating) {
+            flicking.control.stopAnimation();
+        }
+
+        const threshold = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+            ? this.#wheelLineThreshold
+            : this.#wheelPixelThreshold;
+
+        const currentPanel = flicking.currentPanel;
+        const referenceSize = currentPanel?.size || flicking.camera.size || 1;
+        const rawMovement = (primaryDelta / threshold) * referenceSize * this.#wheelScrollMultiplier;
+        const maxMovement = referenceSize * 2;
+        const movement = Math.max(-maxMovement, Math.min(maxMovement, rawMovement));
+
+        if (!Number.isFinite(movement) || movement === 0) {
+            this.#scheduleWheelSnap();
+            return;
+        }
+
+        const camera = flicking.camera;
+        const nextPosition = camera.clampToReachablePosition(camera.position + movement);
+
+        if (!Number.isFinite(nextPosition) || nextPosition === camera.position) {
+            this.#scheduleWheelSnap();
+            return;
+        }
+
+        this.#setUIReady(false);
+        camera.lookAt(nextPosition);
+        flicking.control.updateInput();
+        this.#updateBackground();
+        this.#updateParallax();
+
+        this.#scheduleWheelSnap();
+    }
+
+    #scheduleWheelSnap() {
+        if (this.#wheelReleaseTimer) {
+            clearTimeout(this.#wheelReleaseTimer);
+        }
+
+        this.#wheelReleaseTimer = setTimeout(() => {
+            this.#wheelReleaseTimer = null;
+            this.#snapToNearestPanel();
+        }, this.#wheelSnapDelay);
+    }
+
+    #snapToNearestPanel() {
+        const flicking = this.#flicking;
+        if (!flicking) {
+            this.#setUIReady(true);
+            return;
+        }
+
+        const camera = flicking.camera;
+        const anchor = camera.findNearestAnchor(camera.position);
+        if (!anchor) {
+            this.#setUIReady(true);
+            return;
+        }
+
+        const targetPanel = anchor.panel;
+        const targetIndex = targetPanel.index;
+        const activePanel = flicking.currentPanel;
+        if (flicking.animating) {
+            flicking.control.stopAnimation();
+        }
+
+        this.#setUIReady(false);
+
+        flicking.control.updateInput();
+
+        const baseDuration = flicking.options?.duration ?? 350;
+        const indexDistance = activePanel ? Math.abs(activePanel.index - targetIndex) : 1;
+        const durationFactor = Math.max(0.25, 0.55 / Math.max(indexDistance, 1));
+        const duration = Math.max(80, Math.round(baseDuration * durationFactor));
+
+        flicking.moveTo(targetIndex, duration)
+            .catch(() => {
+                this.#setUIReady(true);
+            })
+            .finally(() => {
+                this.#setUIReady(true);
+            });
     }
 
     #cleanFilename(filename) {
