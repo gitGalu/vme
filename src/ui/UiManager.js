@@ -24,6 +24,7 @@ export class UiManager {
     static #ha;
     static #mousepad;
     static #ck;
+    static #keymapSelector;
 
     static #currentInputMethod;
     static #previousInputMethod;
@@ -319,6 +320,11 @@ export class UiManager {
     }
 
     initTouchControllerMenu() {
+        if (UiManager.#keymapSelector) {
+            UiManager.#keymapSelector.destroy();
+            UiManager.#keymapSelector = undefined;
+        }
+
         const overridenController = this.#getOverridenControllerType();
         if (overridenController) {
             if ("lightgun" == overridenController) {
@@ -342,7 +348,7 @@ export class UiManager {
             }
 
             if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
-                new MultiSelectTouchButton(
+                UiManager.#keymapSelector = new MultiSelectTouchButton(
                     document.getElementById('fastui'),
                     ['Cursor', 'Interface 2', 'QAOP', 'QWRE', '1890'],
                     undefined,
@@ -352,7 +358,7 @@ export class UiManager {
                     FAST_BTN_RADIUS
                 );
             } else if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "xt") {
-                new MultiSelectTouchButton(
+                UiManager.#keymapSelector = new MultiSelectTouchButton(
                     document.getElementById('fastui'),
                     ['Spc+Ret', 'Spc+X', 'Spc+Ctrl', 'Z+X', 'Spc+A', 'Spc+Shift'],
                     undefined,

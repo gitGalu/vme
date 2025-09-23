@@ -6,6 +6,9 @@ export class MultiSelectTouchButton {
         this.elListener = elListener;
         this.isExpanded = false;
         this.selectedIndex = initialIndex;
+        this.#handleOutsideTouch = null;
+        this.#handleMainTouchStart = null;
+        this.#handleMainTouchEnd = null;
 
         this.container = document.createElement('div');
         this.container.style.position = 'relative';
@@ -27,14 +30,18 @@ export class MultiSelectTouchButton {
         this.#createOptionElements(radius);
         
         parent.appendChild(this.container);
-        
+
         this.#bindEvents();
     }
-    
+
+    #handleOutsideTouch;
+    #handleMainTouchStart;
+    #handleMainTouchEnd;
+
     #createOptionElements(radius) {
         this.optionsContainer.innerHTML = '';
         this.optionElements = [];
-        
+
         this.options.forEach((label, index) => {
             if (index !== this.selectedIndex) {
                 const option = this.#createOptionElement(label, radius);
@@ -124,14 +131,14 @@ export class MultiSelectTouchButton {
         container.style.height = '100%';
         return container;
     }
-    
+
     #bindEvents() {
-        this.mainButton.addEventListener('touchstart', (e) => {
+        this.#handleMainTouchStart = (e) => {
             e.preventDefault();
             e.stopPropagation();
-        });
-        
-        this.mainButton.addEventListener('touchend', (e) => {
+        };
+
+        this.#handleMainTouchEnd = (e) => {
             e.preventDefault();
             e.stopPropagation();
             if (this.isExpanded) {
@@ -139,17 +146,20 @@ export class MultiSelectTouchButton {
             } else {
                 this.#expand();
             }
-        });
-        
-        const handleOutsideTouch = (e) => {
+        };
+
+        this.mainButton.addEventListener('touchstart', this.#handleMainTouchStart);
+        this.mainButton.addEventListener('touchend', this.#handleMainTouchEnd);
+
+        this.#handleOutsideTouch = (e) => {
             if (this.isExpanded && !this.container.contains(e.target)) {
                 this.#collapse();
             }
         };
-        
-        document.addEventListener('touchstart', handleOutsideTouch);
+
+        document.addEventListener('touchstart', this.#handleOutsideTouch);
     }
-    
+
     #selectOption(index) {
         if (index >= 0 && index < this.options.length) {
             this.selectedIndex = index;
@@ -197,5 +207,27 @@ export class MultiSelectTouchButton {
         setTimeout(() => {
             this.optionsContainer.style.visibility = 'hidden';
         }, 200);
+    }
+
+    destroy() {
+        this.#collapse();
+
+        if (this.mainButton && this.#handleMainTouchStart) {
+            this.mainButton.removeEventListener('touchstart', this.#handleMainTouchStart);
+        }
+
+        if (this.mainButton && this.#handleMainTouchEnd) {
+            this.mainButton.removeEventListener('touchend', this.#handleMainTouchEnd);
+        }
+
+        if (this.#handleOutsideTouch) {
+            document.removeEventListener('touchstart', this.#handleOutsideTouch);
+        }
+
+        this.container.remove();
+        this.optionElements = [];
+        this.optionsContainer = null;
+        this.mainButton = null;
+        this.container = null;
     }
 }
