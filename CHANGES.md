@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20] - 2025-09-27
+
+- add support for custom controller schemes in touch mode
+- Amiga: add Pinball Dreams / Pinball Fantasies custom touch controller
+- add smooth scrolling & mousewheel scrolling to Save Browser and Collection Browser
+- visual touch controller adjustments 
+
 ## [0.10] - 2025-07-06
 
 - add IBM PC/XT (8088 + CGA) emulation (uses virtualxt core) - w.i.p.
