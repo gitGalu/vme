@@ -11,6 +11,7 @@ import { Mousepad } from '../touch/Mousepad.js';
 import { Hideaway } from '../touch/Hideaway.js';
 import { CursorKeys } from '../touch/CursorKeys.js';
 import { JOYSTICK_TOUCH_MODE, FAST_BTN_RADIUS } from '../Constants.js';
+import { CustomControllerManager } from '../touch/custom/CustomControllerManager.js';
 import { FileUtils } from '../utils/FileUtils.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { TOUCH_INPUT } from '../Constants.js';
@@ -24,7 +25,9 @@ export class UiManager {
     static #ha;
     static #mousepad;
     static #ck;
+    static #customControllerManager;
     static #keymapSelector;
+    static #specialButton;
 
     static #currentInputMethod;
     static #previousInputMethod;
@@ -67,6 +70,9 @@ export class UiManager {
         if (UiManager.#platform_manager.getSelectedPlatform().joyport_toggle) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">JOYPORT</span>', undefined, 'fastjoyport', new RightControlListener(), FAST_BTN_RADIUS);
         }
+
+        UiManager.#specialButton = new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">CUSTOM</span>', undefined, 'fastcustom', new InputSwitchListener(TOUCH_INPUT.CUSTOM), FAST_BTN_RADIUS);
+        UiManager.#specialButton.el.style.display = 'none';
 
         if (UiManager.#platform_manager.getSelectedPlatform().arrow_keys) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">ARROWS</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
@@ -488,6 +494,48 @@ export class UiManager {
         UiManager.#ck = new CursorKeys(UiManager.#platform_manager);
     }
 
+    initCustomControllers() {
+        if (UiManager.#customControllerManager) {
+            UiManager.#customControllerManager.destroy();
+            UiManager.#customControllerManager = undefined;
+        }
+
+        const config = UiManager.#platform_manager.getSelectedPlatform().custom_controllers;
+
+        if (config && Array.isArray(config.presets) && config.presets.length > 0) {
+            UiManager.#customControllerManager = new CustomControllerManager(
+                UiManager.#platform_manager,
+                config,
+                {
+                    onPresetActivated: (preset) => {
+                        GameFocusManager.getInstance().enable();
+                        UiManager.#currentInputMethod = TOUCH_INPUT.CUSTOM;
+                        UiManager.showTouchOnly(UiManager.#customControllerManager);
+                        if (preset?.name) {
+                            UiManager.osdMessage(preset.name, 1000);
+                        }
+                    },
+                    onPickerDismissed: () => {
+                        if (UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM && !UiManager.#customControllerManager?.getActivePreset()) {
+                            UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK, true);
+                        }
+                    }
+                }
+            );
+
+            const specialButtonConfig = config.special_button || {};
+            const label = specialButtonConfig.label ?? 'CUSTOM';
+
+            if (UiManager.#specialButton) {
+                UiManager.#specialButton.el.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
+                UiManager.#specialButton.el.style.display = 'flex';
+            }
+        }
+        else if (UiManager.#specialButton) {
+            UiManager.#specialButton.el.style.display = 'none';
+        }
+    }
+
     #placeItems(container) {
         let cell = 3;
         let counter = 1;
@@ -519,6 +567,7 @@ export class UiManager {
         }
         s('#quickshots').style.display = 'none';
         s('#quickjoys').style.display = 'none';
+        UiManager.hideCustomControllers();
     }
 
     static hideCursors() {
@@ -569,8 +618,9 @@ export class UiManager {
             UiManager.#qs,
             UiManager.#qj,
             UiManager.#mousepad,
-            UiManager.#ck
-        ];
+            UiManager.#ck,
+            UiManager.#customControllerManager
+        ].filter(Boolean);
 
         elements.forEach((e) => {
             if (e !== el) {
@@ -601,6 +651,10 @@ export class UiManager {
                 UiManager.#currentControllerIndex = (UiManager.#currentControllerIndex + 1) % touch_controllers.length;
                 UiManager.#currentJoyTouchMode = touch_controllers[UiManager.#currentControllerIndex];
             }
+            if (inputMethod == TOUCH_INPUT.CUSTOM) {
+                UiManager.toggleSpecial(false, true);
+                return;
+            }
         }
 
         switch (UiManager.#currentInputMethod) {
@@ -610,12 +664,16 @@ export class UiManager {
             case TOUCH_INPUT.CURSORS:
                 GameFocusManager.getInstance().disable();
                 break;
+            case TOUCH_INPUT.CUSTOM:
+                GameFocusManager.getInstance().disable();
+                break;
         }
 
         if (inputMethod == TOUCH_INPUT.KEYBOARD) {
             UiManager.#previousInputMethod = this.#currentInputMethod;
         }
 
+        const previousInputMethod = UiManager.#currentInputMethod;
         UiManager.#currentInputMethod = inputMethod;
 
         switch (inputMethod) {
@@ -631,6 +689,9 @@ export class UiManager {
             case TOUCH_INPUT.KEYBOARD:
                 this.toggleKeyboard(false);
                 break;
+            case TOUCH_INPUT.CUSTOM:
+                this.toggleSpecial(false, previousInputMethod === TOUCH_INPUT.CUSTOM);
+                break;
         }
     }
 
@@ -639,6 +700,7 @@ export class UiManager {
         UiManager.hideJoystick();
         UiManager.hideCursors();
         UiManager.hideMousepad();
+        UiManager.hideCustomControllers();
         UiManager.showKeyboard();
         UiManager.#kb_manager.showTouchKeyboard();
     }
@@ -679,6 +741,34 @@ export class UiManager {
         if (showSplash) UiManager.osdMessage('Cursor keys', 1000);
         GameFocusManager.getInstance().enable();
         UiManager.showTouchOnly(UiManager.#ck);
+    }
+
+    static toggleSpecial = (showSplash, forcePicker = false) => {
+        if (!UiManager.#customControllerManager) {
+            return;
+        }
+
+        if (forcePicker || !UiManager.#customControllerManager.getActivePreset()) {
+            UiManager.#customControllerManager.openPresetPicker();
+            return;
+        }
+
+        GameFocusManager.getInstance().enable();
+
+        if (showSplash) {
+            const preset = UiManager.#customControllerManager.getActivePreset();
+            if (preset?.name) {
+                UiManager.osdMessage(preset.name, 1000);
+            }
+        }
+
+        UiManager.showTouchOnly(UiManager.#customControllerManager);
+    }
+
+    static hideCustomControllers() {
+        if (UiManager.#customControllerManager) {
+            UiManager.#customControllerManager.hide();
+        }
     }
 
     static osdMessage(message, timeInMs = null) {

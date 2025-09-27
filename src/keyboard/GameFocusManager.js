@@ -34,7 +34,7 @@ class GameFocusManager {
     enable() {
       if (!this.#isGameFocusOn) {
         this.#toggle();
-      }
+      } 
     }
   
     disable() {

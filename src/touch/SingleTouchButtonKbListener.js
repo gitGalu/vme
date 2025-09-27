@@ -40,7 +40,7 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
             bubbles: true,
             cancelable: true
         });
-    
+
         this.#target.dispatchEvent(event);
     }
 
@@ -53,7 +53,7 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
             bubbles: true,
             cancelable: true
         });
-    
+
         this.#target.dispatchEvent(event);
     }
 }

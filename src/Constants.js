@@ -13,7 +13,8 @@ export const TOUCH_INPUT = {
     JOYSTICK: 100,
     MOUSE: 300,
     KEYBOARD: 500,
-    CURSORS: 600
+    CURSORS: 600,
+    SPECIAL: 700
 }
 
 export const JOYSTICK_TOUCH_MODE = {

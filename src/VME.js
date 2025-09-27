@@ -170,6 +170,7 @@ export class VME {
         this.#ui.initCursorKeys();
 
         this.#ui.initFastUI();
+        this.#ui.initCustomControllers();
 
         if (defaultController) {
             UiManager.setCurrentJoyTouchMode(defaultController);

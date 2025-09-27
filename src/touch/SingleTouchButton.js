@@ -20,7 +20,6 @@ export class SingleTouchButton {
         });
 
         div.addEventListener('touchend', function (e) {
-            e.preventDefault();
             self.touch(e, false);
         });
     }

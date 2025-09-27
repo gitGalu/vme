@@ -1,4 +1,4 @@
-import { TouchButtonListener  } from "./TouchButtonListener";
+import { TouchButtonListener } from './TouchButtonListener.js';
 
 export class SextupleTouchButtonJoyListener extends TouchButtonListener {
     #nostalgist;

@@ -297,7 +297,7 @@ body, html {
 
 .btn {
   background-color: #88888855;
-  border-radius: 4vmin;
+  border-radius: 2vmin;
   width: 100%;
   height: 100%;
   text-align: center;
@@ -560,45 +560,41 @@ a {
     height: 50% !important;
   }
 
-  #fastui {
-    top: 50%;
-    height: 50% !important;
-  }
 
   #fast1 {
-    grid-area: 2 / -10 / span 4 / span 9;
+    grid-area: 26 / -10 / span 2 / span 9;
   }
 
   #fast2 {
-    grid-area: 8 / -10 / span 4 / span 9;
+    grid-area: 29 / -10 / span 2 / span 9;
   }
 
   #fast3 {
-    grid-area: 14 / -10 / span 4 / span 9;
+    grid-area: 32 / -10 / span 2 / span 9;
   }
 
   #fast4 {
-    grid-area: 20 / -10 / span 4 / span 9;
+    grid-area: 35 / -10 / span 2 / span 9;
   }
 
   #fastspectrumjoy {
-    grid-area: 20 / 1 / span 4 / span 12;
+    grid-area: 35 / 1 / span 2 / span 12;
   }
 
   #fastui-msg {
-    grid-area: 15 / 10 / span 4 / span 9;
+    grid-area: 26 / 10 / span 2 / span 9;
   }
 
   #faststates {
-    grid-area: 2 / -10 / span 4 / span 9;
+    grid-area: 27 / -10 / span 2 / span 9;
   }
 
   #fastrewind {
-    grid-area: 20 / -19 / span 4 / span 9
+    grid-area: 35 / -20 / span 2 / span 9
   }
 
   #fastffd {
-    grid-area: 20 / -10 / span 4 / span 9
+    grid-area: 35 / -10 / span 2 / span 9
   }
 
   #cursorb2 {
@@ -614,35 +610,39 @@ a {
   }
 
   #fastsave {
-    grid-area: 8 / 1 / span 4 / span 9;
+    grid-area: 29 / 1 / span 2 / span 9;
   }
 
   #fastmenu {
-    grid-area: 2 / 1 / span 4 / span 9;
+    grid-area: 26 / 1 / span 2 / span 9;
   }
 
   #fastsize {
-    grid-area: 8 / 1 / span 4 / span 9;
+    grid-area: 30 / 1 / span 2 / span 9;
   }
 
   #fastkb {
-    grid-area: 14 / 33 / span 4 / span 9;
+    grid-area: 32 / 32 / span 2 / span 9;
   }
 
   #fastcursors {
-    grid-area: 8 / 33 / span 4 / span 9;
+    grid-area: 29 / 32 / span 2 / span 9;
+  }
+
+  #fastcustom {
+    grid-area: 26 / 32 / span 2 / span 9;
   }
 
   #fastjoyport {
-    grid-area: 2 / 33 / span 4 / span 9;
+    grid-area: 26 / 32 / span 2 / span 9;
   }
 
   #fastjoy {
-    grid-area: 14 / 1 / span 4 / span 9;
+    grid-area: 32 / 1 / span 2 / span 9;
   }
 
   #fastmouse {
-    grid-area: 20 / 1 / span 4 / span 9;
+    grid-area: 35 / 1 / span 2 / span 9;
   }
 
   #qjlr {
@@ -788,6 +788,10 @@ a {
 
   #fastcursors {
     grid-area: 9 / 43 / span 4 / span 4;
+  }
+
+  #fastcustom {
+    grid-area: 3 / 43 / span 4 / span 4;
   }
 
   #fastjoyport {
@@ -2078,6 +2082,203 @@ a {
   padding-right: env(safe-area-inset-right);
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+#custom-touch-controller {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  z-index: 7776;
+  pointer-events: none;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+#custom-touch-controller.custom-touch-controller--floating {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 7776;
+}
+
+.custom-touch-controller__grid {
+  display: grid;
+  grid-template-columns: repeat(50, 1fr);
+  grid-template-rows: repeat(50, 1fr);
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+  justify-content: center;
+  text-align: center;
+  font-family: "Helvetica, Arial, sans-serif !important";
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.custom-touch-controller--floating .custom-touch-controller__grid {
+  max-width: 960px;
+}
+
+.custom-touch-controller__grid .fast-button {
+  pointer-events: auto;
+  border-radius: 2vmin !important;
+  font-family: helvetica, Arial !important;
+}
+
+.custom-touch-controller__grid .fast-button.custom-small-button {
+  font-size: 50% !important;
+  border-radius: 6px !important;
+}
+
+.custom-touch-controller__grid .fast-button.custom-medium-button {
+  border-radius: 6px !important;
+}
+
+@keyframes custom-controller-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes custom-controller-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes custom-controller-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes custom-controller-dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+.custom-controller-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 18, 0.18);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  animation: custom-controller-fade-in 120ms ease-out forwards;
+  backdrop-filter: blur(12px) brightness(0.3);
+  -webkit-backdrop-filter: blur(12px) brightness(0.3);
+}
+
+.custom-controller-modal[data-state="closing"] {
+  pointer-events: none;
+  animation: custom-controller-fade-out 160ms ease-in forwards;
+}
+
+.custom-controller-dialog {
+  background: rgba(20, 24, 38, 0.18);
+  border-radius: 22px;
+  border: 1px solid rgba(220, 230, 255, 0.24);
+  padding: 28px;
+  width: min(420px, 90vw);
+  color: #f2f5ff;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 24px 48px rgba(6, 9, 18, 0.48);
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  background-clip: padding-box;
+  animation: custom-controller-dialog-in 160ms ease-out forwards;
+}
+
+.custom-controller-dialog::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(120, 160, 255, 0.12));
+  pointer-events: none;
+  z-index: -1;
+}
+
+.custom-controller-modal[data-state="closing"] .custom-controller-dialog {
+  animation: custom-controller-dialog-out 160ms ease-in forwards;
+}
+
+.custom-controller-dialog__hint {
+  margin: 0;
+  font-size: 0.95rem;
+  text-align: center;
+  color: rgba(242, 245, 255, 0.76);
+}
+
+.custom-controller-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.custom-controller-dialog__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 230, 255, 0.18);
+  background: rgba(24, 28, 40, 0.55);
+  color: #f2f2f2;
+  font-weight: 600;
+  text-align: left;
+  width: 100%;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.custom-controller-dialog__item:active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(1px);
+}
+
+.custom-controller-dialog__item-name {
+  font-size: 1rem;
+}
+
+.custom-controller-dialog__item-description {
+  font-size: 0.8rem;
+  color: #d3d6ec;
 }
 
 #desktopUi {
