@@ -511,9 +511,6 @@ export class UiManager {
                         GameFocusManager.getInstance().enable();
                         UiManager.#currentInputMethod = TOUCH_INPUT.CUSTOM;
                         UiManager.showTouchOnly(UiManager.#customControllerManager);
-                        if (preset?.name) {
-                            UiManager.osdMessage(preset.name, 1000);
-                        }
                     },
                     onPickerDismissed: () => {
                         if (UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM && !UiManager.#customControllerManager?.getActivePreset()) {

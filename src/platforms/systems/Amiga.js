@@ -115,9 +115,9 @@ const Amiga = {
         },
         presets: [
             {
-                "id": "amiga-pinball-shifts-imported-2",
-                "name": "Pinball DICE",
-                "description": "Pinball Dreams / Pinball Fantasies",
+                "id": "amiga-pinball-1",
+                "name": "Pinball 1",
+                "description": "Pinball Dreams, Pinball Fantasies",
                 "layout": {
                     "landscape": {
                         "columns": 50,
@@ -226,7 +226,7 @@ const Amiga = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "9 / 5 / span 4 / span 4",
+                            "landscape": "8 / 5 / span 4 / span 4",
                             "portrait": "38 / 11 / span 2 / span 9"
                         },
                         "label": "F2"
@@ -243,7 +243,7 @@ const Amiga = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "15 / 5 / span 4 / span 4",
+                            "landscape": "13 / 5 / span 4 / span 4",
                             "portrait": "41 / 1 / span 2 / span 9"
                         },
                         "label": "F3"
@@ -260,7 +260,7 @@ const Amiga = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "21 / 5 / span 4 / span 4",
+                            "landscape": "18 / 5 / span 4 / span 4",
                             "portrait": "41 / 11 / span 2 / span 9"
                         },
                         "label": "F4"
@@ -294,13 +294,217 @@ const Amiga = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "9 / 47 / span 4 / span 4",
+                            "landscape": "8 / 47 / span 4 / span 4",
                             "portrait": "29 / 42 / span 2 / span 9"
                         },
                         "label": "Y"
                     }
                 ]
-            }
+            },
+{
+  "id": "amiga-pinball-2",
+  "name": "Pinball 2",
+  "description": "Pinball Illusions",
+  "layout": {
+    "landscape": {
+      "columns": 50,
+      "rows": 50
+    },
+    "portrait": {
+      "columns": 50,
+      "rows": 50
+    }
+  },
+  "elements": [
+    {
+      "id": "amiga-pinball-left-shift",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "Shift",
+          "code": "ShiftLeft",
+          "keyCode": 16
+        }
+      },
+      "gridArea": {
+        "landscape": "37 / 1 / span 14 / span 10",
+        "portrait": "44 / 1 / span 7 / span 23"
+      },
+      "label": "LEFT"
+    },
+    {
+      "id": "amiga-pinball-right-shift",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "Shift",
+          "code": "ShiftRight",
+          "keyCode": 16
+        }
+      },
+      "gridArea": {
+        "landscape": "37 / 41 / span 14 / span 10",
+        "portrait": "44 / 28 / span 7 / span 23"
+      },
+      "label": "RIGHT"
+    },
+    {
+      "id": "amiga-pinball-plunger",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "Enter",
+          "code": "Enter",
+          "keyCode": "13"
+        }
+      },
+      "gridArea": {
+        "landscape": "27 / 43 / span 9 / span 8",
+        "portrait": "38 / 32 / span 5 / span 19"
+      },
+      "label": "PLUNGER"
+    },
+    {
+      "id": "amiga-pinball-tilt",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "X",
+          "code": "Space",
+          "keyCode": 32
+        }
+      },
+      "gridArea": {
+        "landscape": "26 / 1 / span 10 / span 4",
+        "portrait": "38 / 1 / span 5 / span 9"
+      },
+      "label": "TILT"
+    },
+    {
+      "id": "amiga-pinball-f1",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "F1",
+          "code": "F1",
+          "keyCode": "112"
+        }
+      },
+      "gridArea": {
+        "landscape": "3 / 5 / span 4 / span 4",
+        "portrait": "26 / 11 / span 2 / span 9"
+      },
+      "label": "F1"
+    },
+    {
+      "id": "amiga-pinball-f2",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "ArrowUp",
+          "code": "ArrowUp",
+          "keyCode": "38"
+        }
+      },
+      "gridArea": {
+        "landscape": "8 / 5 / span 4 / span 4",
+        "portrait": "29 / 11 / span 2 / span 9"
+      },
+      "label": "▲"
+    },
+    {
+      "id": "amiga-pinball-f3",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "ArrowDown",
+          "code": "ArrowDown",
+          "keyCode": "40"
+        }
+      },
+      "gridArea": {
+        "landscape": "13 / 5 / span 4 / span 4",
+        "portrait": "32 / 11 / span 2 / span 9"
+      },
+      "label": "▼"
+    },
+    {
+      "id": "amiga-pinball-f4",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "X",
+          "code": "Space",
+          "keyCode": "32"
+        }
+      },
+      "gridArea": {
+        "landscape": "18 / 5 / span 4 / span 4",
+        "portrait": "35 / 11 / span 2 / span 9"
+      },
+      "label": "OK"
+    },
+    {
+      "id": "amiga-pinball-esc",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "Escape",
+          "code": "Escape",
+          "keyCode": 27
+        }
+      },
+      "gridArea": {
+        "landscape": "3 / 47 / span 4 / span 4",
+        "portrait": "26 / 42 / span 2 / span 9"
+      },
+      "label": "ESC"
+    },
+    {
+      "id": "amiga-pinball-y",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "y",
+          "code": "KeyY",
+          "keyCode": 89
+        }
+      },
+      "gridArea": {
+        "landscape": "8 / 47 / span 4 / span 4",
+        "portrait": "29 / 42 / span 2 / span 9"
+      },
+      "label": "Y"
+    },
+    {
+      "id": "tilt-2",
+      "component": "SingleTouchButton",
+      "binding": {
+        "type": "keyboard",
+        "key": {
+          "key": "Meta",
+          "code": "MetaLeft",
+          "keyCode": "91"
+        }
+      },
+      "gridArea": {
+        "landscape": "26 / 5 / span 10 / span 4",
+        "portrait": "38 / 11 / span 5 / span 9"
+      },
+      "label": "TILT"
+    }
+  ]
+}
         ]
     },
     fire_buttons: 1,

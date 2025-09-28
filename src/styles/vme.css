@@ -560,7 +560,6 @@ a {
     height: 50% !important;
   }
 
-
   #fast1 {
     grid-area: 26 / -10 / span 2 / span 9;
   }
@@ -735,15 +734,15 @@ a {
   }
 
   #fast2 {
-    grid-area: 9 / -5 / span 4 / span 4;
+    grid-area: 8 / -5 / span 4 / span 4;
   }
 
   #fast3 {
-    grid-area: 15 / -5 / span 4 / span 4;
+    grid-area: 13 / -5 / span 4 / span 4;
   }
 
   #fast4 {
-    grid-area: 21 / -5 / span 4 / span 4;
+    grid-area: 19 / -5 / span 4 / span 4;
   }
 
   #fastspectrumjoy {
@@ -775,7 +774,7 @@ a {
   }
 
   #fastsave {
-    grid-area: 9 / 1 / span 4 / span 4;
+    grid-area: 8 / 1 / span 4 / span 4;
   }
 
   #fastmenu {
@@ -783,11 +782,11 @@ a {
   }
 
   #fastkb {
-    grid-area: 15 / 43 / span 4 / span 4;
+    grid-area: 13 / 43 / span 4 / span 4;
   }
 
   #fastcursors {
-    grid-area: 9 / 43 / span 4 / span 4;
+    grid-area: 8 / 43 / span 4 / span 4;
   }
 
   #fastcustom {
@@ -799,19 +798,19 @@ a {
   }
 
   #fastjoy {
-    grid-area: 15 / 1 / span 4 / span 4;
+    grid-area: 13 / 1 / span 4 / span 4;
   }
 
   #fastmouse {
-    grid-area: 21 / 1 / span 4 / span 4;
+    grid-area: 18 / 1 / span 4 / span 4;
   }
 
   #fastrewind {
-    grid-area: 21 / -9 / span 4 / span 4;
+    grid-area: 18 / -9 / span 4 / span 4;
   }
 
   #fastffd {
-    grid-area: 21 / -5 / span 4 / span 4;
+    grid-area: 18 / -5 / span 4 / span 4;
   }
 
   #cursorb2 {
