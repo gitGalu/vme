@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.1] - 2025-09-28
+
+- Amiga: add Pinball Illusions custom touch controller
+- touch: custom controller fixes
+
 ## [0.20] - 2025-09-27
 
 - add support for custom controller schemes in touch mode
