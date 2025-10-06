@@ -508,7 +508,13 @@ export class UiManager {
                 config,
                 {
                     onPresetActivated: (preset) => {
-                        GameFocusManager.getInstance().enable();
+                        const focusManager = GameFocusManager.getInstance();
+                        const wantsGameFocus = UiManager.#customControllerManager.isGameFocusEnabled();
+                        if (wantsGameFocus) {
+                            focusManager.enable();
+                        } else {
+                            focusManager.disable();
+                        }
                         UiManager.#currentInputMethod = TOUCH_INPUT.CUSTOM;
                         UiManager.showTouchOnly(UiManager.#customControllerManager);
                     },
@@ -527,8 +533,7 @@ export class UiManager {
                 UiManager.#specialButton.el.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
                 UiManager.#specialButton.el.style.display = 'flex';
             }
-        }
-        else if (UiManager.#specialButton) {
+        } else if (UiManager.#specialButton) {
             UiManager.#specialButton.el.style.display = 'none';
         }
     }
@@ -750,7 +755,12 @@ export class UiManager {
             return;
         }
 
-        GameFocusManager.getInstance().enable();
+        const focusManager = GameFocusManager.getInstance();
+        if (UiManager.#customControllerManager.isGameFocusEnabled()) {
+            focusManager.enable();
+        } else {
+            focusManager.disable();
+        }
 
         if (showSplash) {
             const preset = UiManager.#customControllerManager.getActivePreset();

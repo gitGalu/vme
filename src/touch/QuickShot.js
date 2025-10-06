@@ -10,24 +10,19 @@ import { QuadrupleTouchButtonJoyListener } from './QuadrupleTouchButtonJoyListen
 import { SextupleTouchButton } from './SextupleTouchButton.js';
 import { SextupleTouchButtonJoyListener } from './SextupleTouchButtonJoyListener.js';
 import { FileUtils } from '../utils/FileUtils.js';
+import { QuickshotComponent } from './QuickshotComponent.js';
 
 export class QuickShot {
-    static #DEAD_ZONE_RADIUS = 30;
-
     #platform_manager;
     #nostalgist;
 
-    #joystickBase;
-    #joystickThumb;
     #joystickContainer;
-    #activeTouchId = null;
-    #activeDirections = new Set();
+    #joystickComponent;
 
     constructor(platform_manager) {
         this.#platform_manager = platform_manager;
         this.#nostalgist = platform_manager.getNostalgist();
         this.#init();
-        this.#activeDirections = new Set();
     }
 
     #init() {
@@ -98,12 +93,16 @@ export class QuickShot {
         this.#joystickContainer.style.height = '100%';
         this.#joystickContainer.style.zIndex = '666';
         this.#joystickContainer.style.display = 'none';
+        this.#joystickContainer.style.pointerEvents = 'auto';
         document.body.appendChild(this.#joystickContainer);
 
-        this.#joystickContainer.addEventListener('touchstart', this.#onTouchStart);
-        this.#joystickContainer.addEventListener('touchmove', this.#onTouchMove);
-        this.#joystickContainer.addEventListener('touchend', this.#onTouchEnd);
-        this.#joystickContainer.addEventListener('touchcancel', this.#onTouchEnd);
+        this.#joystickComponent = new QuickshotComponent(
+            this.#joystickContainer,
+            null,
+            'quickshot-stick',
+            this.#platform_manager,
+            { mode: 'nostalgist', showHint: false, target: s('canvas') }
+        );
     }
 
     show() {
@@ -114,133 +113,6 @@ export class QuickShot {
     hide() {
         hide("#quickshot");
         hide("#quickshots");
-    }
-
-    #getDistance(point1, point2) {
-        let dx = point2.x - point1.x;
-        let dy = point2.y - point1.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    #getDirections(angleDeg) {
-        if (angleDeg >= 337.5 || angleDeg < 22.5) {
-            return ['right'];
-        } else if (angleDeg >= 22.5 && angleDeg < 67.5) {
-            return ['right', 'down'];
-        } else if (angleDeg >= 67.5 && angleDeg < 112.5) {
-            return ['down'];
-        } else if (angleDeg >= 112.5 && angleDeg < 157.5) {
-            return ['down', 'left'];
-        } else if (angleDeg >= 157.5 && angleDeg < 202.5) {
-            return ['left'];
-        } else if (angleDeg >= 202.5 && angleDeg < 247.5) {
-            return ['left', 'up'];
-        } else if (angleDeg >= 247.5 && angleDeg < 292.5) {
-            return ['up'];
-        } else {
-            return ['up', 'right'];
-        }
-    }
-
-    #createJoystickElements(touch) {
-        this.#joystickBase = document.createElement('div');
-        this.#joystickBase.classList.add('joystick-base');
-        this.#joystickBase.style.left = `${touch.clientX - 50}px`;
-        this.#joystickBase.style.top = `${touch.clientY - 50}px`;
-        this.#joystickContainer.appendChild(this.#joystickBase);
-
-        this.#joystickThumb = document.createElement('div');
-        this.#joystickThumb.classList.add('joystick-thumb');
-        this.#joystickThumb.style.left = `${touch.clientX - 25}px`;
-        this.#joystickThumb.style.top = `${touch.clientY - 25}px`;
-        this.#joystickContainer.appendChild(this.#joystickThumb);
-    }
-
-    #onTouchEnd = (event) => {
-        event.preventDefault();
-        for (let touch of event.changedTouches) {
-            if (touch.identifier === this.#activeTouchId) {
-                this.#updateDirections([]);
-                if (this.#joystickBase && this.#joystickThumb) {
-                    this.#joystickBase.remove();
-                    this.#joystickThumb.remove();
-                }
-                this.#activeTouchId = null;
-            }
-        }
-    }
-
-    #onTouchStart = (event) => {
-        event.preventDefault();
-        if (this.#activeTouchId === null) {
-            for (let touch of event.touches) {
-                if (touch.target.id === 'quickshot') {
-                    this.#activeTouchId = touch.identifier;
-                    this.#createJoystickElements(touch);
-                    break;
-                }
-            }
-        }
-    }
-
-    #onTouchMove = (event) => {
-        event.preventDefault();
-        for (let touch of event.touches) {
-            if (touch.identifier === this.#activeTouchId) {
-                let baseRect = this.#joystickBase.getBoundingClientRect();
-                let baseCenter = {
-                    x: baseRect.left + baseRect.width / 2,
-                    y: baseRect.top + baseRect.height / 2
-                };
-
-                const touchPoint = { x: touch.clientX, y: touch.clientY };
-                let distance = this.#getDistance(baseCenter, touchPoint);
-
-                if (distance > baseRect.width / 2) {
-                    let angle = Math.atan2(touchPoint.y - baseCenter.y, touchPoint.x - baseCenter.x);
-                    this.#joystickBase.style.left = `${touchPoint.x - baseRect.width / 2 - Math.cos(angle) * baseRect.width / 2}px`;
-                    this.#joystickBase.style.top = `${touchPoint.y - baseRect.height / 2 - Math.sin(angle) * baseRect.height / 2}px`;
-                }
-
-                this.#joystickThumb.style.left = `${touchPoint.x - 25}px`;
-                this.#joystickThumb.style.top = `${touchPoint.y - 25}px`;
-
-                let angle = Math.atan2(touchPoint.y - baseCenter.y, touchPoint.x - baseCenter.x);
-                let angleDeg = angle * (180 / Math.PI);
-                if (angleDeg < 0) angleDeg += 360;
-
-                if (distance > QuickShot.#DEAD_ZONE_RADIUS) {
-                    let directions = this.#getDirections(angleDeg);
-                    this.#updateDirections(directions);
-                } else {
-                    this.#updateDirections([]);
-                }
-            }
-        }
-    }
-
-    #updateDirections(newDirections) {
-        const newDirectionsSet = new Set(newDirections);
-
-        const keysToRelease = new Set([...this.#activeDirections].filter(x => !newDirectionsSet.has(x)));
-        const keysToPress = new Set([...newDirectionsSet].filter(x => !this.#activeDirections.has(x)));
-
-        keysToRelease.forEach(direction => {
-            this.#keyUp(direction);
-            this.#activeDirections.delete(direction);
-        });
-
-        keysToPress.forEach(direction => {
-            this.#keyDown(direction);
-            this.#activeDirections.add(direction);
-        });
-    }
-
-    #keyDown(dir) {
-        this.#nostalgist.pressDown(dir);
-    }
-
-    #keyUp(dir) {
-        this.#nostalgist.pressUp(dir);
+        this.#joystickComponent?.cancelActiveTouch?.();
     }
 }

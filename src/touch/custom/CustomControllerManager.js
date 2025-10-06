@@ -5,6 +5,9 @@ import { DualTouchButton } from '../DualTouchButton.js';
 import { TripleTouchButton } from '../TripleTouchButton.js';
 import { QuadrupleTouchButton } from '../QuadrupleTouchButton.js';
 import { SextupleTouchButton } from '../SextupleTouchButton.js';
+import { TouchpadComponent } from '../TouchpadComponent.js';
+import { QuickshotComponent } from '../QuickshotComponent.js';
+import { CursorKeysComponent } from '../CursorKeysComponent.js';
 import { SingleTouchButtonJoyListener } from '../SingleTouchButtonJoyListener.js';
 import { DualTouchButtonJoyListener } from '../DualTouchButtonJoyListener.js';
 import { TripleTouchButtonJoyListener } from '../TripleTouchButtonJoyListener.js';
@@ -30,6 +33,7 @@ export class CustomControllerManager extends TouchControllerBase {
     #onPickerDismissed;
     #modal;
     #resizeHandler;
+    #isGameFocusEnabledForActivePreset = true;
 
     constructor(platformManager, config, { onPresetActivated, onPickerDismissed } = {}) {
         super();
@@ -113,6 +117,7 @@ export class CustomControllerManager extends TouchControllerBase {
         }
 
         this.#activePresetId = presetId;
+        this.#isGameFocusEnabledForActivePreset = this.#shouldEnableGameFocus(preset);
         this.#renderPreset(preset);
 
         if (typeof this.#onPresetActivated === 'function') {
@@ -122,6 +127,10 @@ export class CustomControllerManager extends TouchControllerBase {
 
     getActivePreset() {
         return this.#config.presets.find(p => p.id === this.#activePresetId) ?? null;
+    }
+
+    isGameFocusEnabled() {
+        return this.#isGameFocusEnabledForActivePreset;
     }
 
     show() {
@@ -155,6 +164,8 @@ export class CustomControllerManager extends TouchControllerBase {
             window.removeEventListener('resize', this.#resizeHandler);
             this.#resizeHandler = null;
         }
+
+        this.#isGameFocusEnabledForActivePreset = true;
     }
 
     #init() {
@@ -188,6 +199,17 @@ export class CustomControllerManager extends TouchControllerBase {
             const areaDefinition = elementDef.gridArea?.[orientation] ?? elementDef.gridArea?.default ?? elementDef.gridArea;
             this.#mountElement(elementDef, areaDefinition);
         });
+    }
+
+    #shouldEnableGameFocus(preset) {
+        if (typeof preset?.gameFocus === 'boolean') {
+            return preset.gameFocus;
+        }
+        const defaults = this.#config?.focus_defaults ?? this.#config?.focusDefaults;
+        if (defaults && typeof defaults[preset.id] === 'boolean') {
+            return defaults[preset.id];
+        }
+        return true;
     }
 
     #initFullViewport() {
@@ -351,6 +373,51 @@ export class CustomControllerManager extends TouchControllerBase {
                     if (listener && typeof listener.trigger === 'function') {
                         listener.trigger(0);
                     }
+                    if (instance && typeof instance.destroy === 'function') {
+                        instance.destroy();
+                    }
+                };
+                break;
+            }
+            case 'TouchpadComponent': {
+                instance = new TouchpadComponent(
+                    this.#gridHost,
+                    gridArea,
+                    elementDef.id,
+                    this.#platformManager,
+                    elementDef.options
+                );
+                releaseFn = () => {
+                    if (instance && typeof instance.destroy === 'function') {
+                        instance.destroy();
+                    }
+                };
+                break;
+            }
+            case 'QuickshotComponent': {
+                instance = new QuickshotComponent(
+                    this.#gridHost,
+                    gridArea,
+                    elementDef.id,
+                    this.#platformManager,
+                    elementDef.options
+                );
+                releaseFn = () => {
+                    if (instance && typeof instance.destroy === 'function') {
+                        instance.destroy();
+                    }
+                };
+                break;
+            }
+            case 'CursorKeysComponent': {
+                instance = new CursorKeysComponent(
+                    this.#gridHost,
+                    gridArea,
+                    elementDef.id,
+                    this.#platformManager,
+                    elementDef.options
+                );
+                releaseFn = () => {
                     if (instance && typeof instance.destroy === 'function') {
                         instance.destroy();
                     }
