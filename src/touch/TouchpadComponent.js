@@ -12,6 +12,10 @@ export class TouchpadComponent {
     #styleVariant;
     #labelText;
     #hasExplicitLabel;
+    #tapToClick;
+    #touchStartTime;
+    #touchStartX;
+    #touchStartY;
 
     constructor(parent, gridArea, id, platformManager, options = {}) {
         const providedStyle = options?.style ?? 'filled';
@@ -34,6 +38,10 @@ export class TouchpadComponent {
         this.#ly = -1;
         this.#mouseSpeed = 1;
         this.#activeTouchId = null;
+        this.#tapToClick = options?.tapToClick ?? false;
+        this.#touchStartTime = 0;
+        this.#touchStartX = 0;
+        this.#touchStartY = 0;
 
         this.#initTouchHandlers();
     }
@@ -163,6 +171,13 @@ export class TouchpadComponent {
             if (this.#activeTouchId === null) {
                 const touch = e.changedTouches[0];
                 this.#activeTouchId = touch.identifier;
+
+                if (this.#tapToClick) {
+                    this.#touchStartTime = Date.now();
+                    this.#touchStartX = touch.clientX;
+                    this.#touchStartY = touch.clientY;
+                }
+
                 mousetouch(e, true);
             }
         });
@@ -187,6 +202,21 @@ export class TouchpadComponent {
                 touch.identifier === this.#activeTouchId
             );
             if (touches.length > 0) {
+                if (this.#tapToClick) {
+                    const touch = touches[0];
+                    const touchDuration = Date.now() - this.#touchStartTime;
+                    const dx = touch.clientX - this.#touchStartX;
+                    const dy = touch.clientY - this.#touchStartY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    const TAP_MAX_DURATION = 300; // ms
+                    const TAP_MAX_DISTANCE = 10; // px
+
+                    if (touchDuration < TAP_MAX_DURATION && distance < TAP_MAX_DISTANCE) {
+                        this.#simulateMouseClick();
+                    }
+                }
+
                 mousetouch(e, false);
             }
         });
@@ -213,6 +243,29 @@ export class TouchpadComponent {
         });
 
         s('canvas').dispatchEvent(mouseMoveEvent);
+    }
+
+    #simulateMouseClick() {
+        const canvas = s('canvas');
+
+        const mouseDownEvent = new MouseEvent('mousedown', {
+            button: 0,
+            buttons: 1,
+            bubbles: true,
+            cancelable: true
+        });
+
+        const mouseUpEvent = new MouseEvent('mouseup', {
+            button: 0,
+            buttons: 0,
+            bubbles: true,
+            cancelable: true
+        });
+
+        canvas.dispatchEvent(mouseDownEvent);
+        setTimeout(() => {
+            canvas.dispatchEvent(mouseUpEvent);
+        }, 50);
     }
 
     destroy() {
