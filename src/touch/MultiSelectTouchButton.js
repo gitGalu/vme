@@ -1,11 +1,12 @@
 import { QJ_LABEL_COLOR, QJ_IDLE_COLOR, QJ_ACTIVE_COLOR } from '../Constants.js';
 
 export class MultiSelectTouchButton {
-    constructor(parent, options, gridArea, id, elListener, initialIndex = 0, radius = '12px') {
+    constructor(parent, options, gridArea, id, elListener, initialIndex = 0, radius = '12px', showArrow = true) {
         this.options = options;
         this.elListener = elListener;
         this.isExpanded = false;
         this.selectedIndex = initialIndex;
+        this.showArrow = showArrow;
         this.#handleOutsideTouch = null;
         this.#handleMainTouchStart = null;
         this.#handleMainTouchEnd = null;
@@ -19,7 +20,7 @@ export class MultiSelectTouchButton {
             this.container.id = id;
         }
         
-        const initialLabel = this.#createButtonContent(options[initialIndex]);
+        const initialLabel = this.#createButtonContent(options[initialIndex], this.showArrow);
         this.mainButton = this.#createButtonElement(initialLabel, radius);
         this.container.appendChild(this.mainButton);
         
@@ -168,20 +169,20 @@ export class MultiSelectTouchButton {
                 index: this.selectedIndex,
                 label: this.options[this.selectedIndex]
             });
-            this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex]);
+            this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex], this.showArrow);
             this.#collapse();
         }
     }
     
     #expand() {
         if (this.isExpanded) return;
-        
+
         this.#createOptionElements(this.mainButton.style.borderRadius);
         this.isExpanded = true;
         this.optionsContainer.style.visibility = 'visible';
         this.mainButton.style.backgroundColor = QJ_ACTIVE_COLOR;
-        
-        this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex]).replace('►', '◄');
+
+        this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex], true).replace('►', '◄');
         
         this.optionElements.forEach((option, index) => {
             setTimeout(() => {
@@ -196,8 +197,8 @@ export class MultiSelectTouchButton {
         
         this.isExpanded = false;
         this.mainButton.style.backgroundColor = QJ_IDLE_COLOR;
-        
-        this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex]);
+
+        this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex], this.showArrow);
         
         this.optionElements.forEach((option, index) => {
             option.style.opacity = '0';

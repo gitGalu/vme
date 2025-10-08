@@ -49,7 +49,7 @@ export class UiManager {
         fastuiContainer.id = 'fastui';
         fastuiContainer.style.display = 'none';
 
-        new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">QUIT</span>', undefined, 'fastmenu', new ResetButtonListener(), FAST_BTN_RADIUS);
+        new MultiSelectTouchButton(fastuiContainer, ['QUIT', 'Confirm'], undefined, 'fastmenu', new QuitConfirmListener(), 0, FAST_BTN_RADIUS, false);
 
         if (!UiManager.#platform_manager.getSelectedPlatform().rewind_disabled) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
@@ -923,6 +923,18 @@ class ResetButtonListener extends TouchButtonListener {
 
     trigger(s) {
         if (s) {
+            location.reload();
+        }
+    }
+}
+
+class QuitConfirmListener extends TouchButtonListener {
+    constructor() {
+        super();
+    }
+
+    trigger(event) {
+        if (event.selected && event.index === 1 && event.label === 'Confirm') {
             location.reload();
         }
     }
