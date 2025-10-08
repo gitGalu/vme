@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.2] - 2025-10-08
+
+- Amiga: add Worms (1995) custom touch controller
+
 ## [0.20.1] - 2025-09-28
 
 - Amiga: add Pinball Illusions custom touch controller
