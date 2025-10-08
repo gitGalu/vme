@@ -32,26 +32,33 @@ export class QuickshotComponent {
     #hint;
     #showHint = true;
     #target = document;
+    #styleVariant;
 
     #onTouchStartBound;
     #onTouchMoveBound;
     #onTouchEndBound;
 
     constructor(parent, gridArea, id, platformManager, options = {}) {
+        const providedStyle = options?.style ?? 'transparent';
+        this.#styleVariant = typeof providedStyle === 'string' ? providedStyle.toLowerCase() : 'transparent';
+
         this.el = document.createElement('div');
         this.el.classList.add('quickshot-component');
+        this.el.dataset.interactiveElement = 'true'; // Mark as interactive for touchpad detection
         this.el.style.position = 'relative';
         this.el.style.width = '100%';
         this.el.style.height = '100%';
         this.el.style.display = 'flex';
         this.el.style.alignItems = 'center';
         this.el.style.justifyContent = 'center';
-        this.el.style.background = 'rgba(255, 255, 255, 0.05)';
         this.el.style.borderRadius = '12px';
         this.el.style.touchAction = 'none';
         this.el.style.pointerEvents = 'auto';
         this.el.style.userSelect = 'none';
         this.el.style.overflow = 'visible';
+
+        // Apply style variant
+        this.#applyStyleVariant();
 
         if (gridArea) {
             this.el.style.gridArea = gridArea;
@@ -61,10 +68,12 @@ export class QuickshotComponent {
         }
 
         this.#hint = document.createElement('div');
-        this.#hint.textContent = DEFAULT_HINT;
+        this.#hint.textContent = options?.label || DEFAULT_HINT;
         this.#hint.style.pointerEvents = 'none';
         this.#hint.style.color = 'rgba(255, 255, 255, 0.35)';
+        this.#hint.style.fontFamily = 'helvetica, Arial, sans-serif';
         this.#hint.style.fontSize = '11px';
+        this.#hint.style.fontWeight = 'bold';
         this.#hint.style.letterSpacing = '0.1em';
         this.#hint.style.textTransform = 'uppercase';
         this.#hint.style.transition = 'opacity 120ms ease';
@@ -89,6 +98,26 @@ export class QuickshotComponent {
         this.el.addEventListener('touchmove', this.#onTouchMoveBound, { passive: false });
         this.el.addEventListener('touchend', this.#onTouchEndBound, { passive: false });
         this.el.addEventListener('touchcancel', this.#onTouchEndBound, { passive: false });
+    }
+
+    #applyStyleVariant() {
+        const borderColor = 'rgba(255, 255, 255, 0.15)';
+
+        switch (this.#styleVariant) {
+            case 'filled':
+                this.el.style.background = 'rgba(136, 136, 136, 0.25)';
+                this.el.style.border = 'none';
+                break;
+            case 'outline':
+                this.el.style.background = 'transparent';
+                this.el.style.border = `2px solid ${borderColor}`;
+                break;
+            case 'transparent':
+            default:
+                this.el.style.background = 'transparent';
+                this.el.style.border = 'none';
+                break;
+        }
     }
 
     destroy() {

@@ -41,6 +41,7 @@ export class SingleTouchButton {
     #createContainer(label, gridArea, id, radius = '12px') {
         var div = document.createElement('div');
         div.classList.add('fast-button');
+        div.dataset.interactiveElement = 'true'; // Mark as interactive for touchpad detection
         div.innerHTML = label;
         if (gridArea != undefined) {
             div.style.gridArea = gridArea;

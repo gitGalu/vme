@@ -2131,7 +2131,7 @@ a {
 
 .custom-touch-controller__grid .fast-button {
   pointer-events: auto;
-  border-radius: 2vmin !important;
+  border-radius: 12px !important;
   font-family: helvetica, Arial !important;
 }
 

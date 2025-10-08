@@ -16,6 +16,9 @@ export class TouchpadComponent {
     #touchStartTime;
     #touchStartX;
     #touchStartY;
+    #anywhere;
+    #parent;
+    #touchTarget;
 
     constructor(parent, gridArea, id, platformManager, options = {}) {
         const providedStyle = options?.style ?? 'filled';
@@ -27,6 +30,9 @@ export class TouchpadComponent {
         } else {
             this.#labelText = DEFAULT_LABEL;
         }
+
+        this.#anywhere = options?.anywhere ?? false;
+        this.#parent = parent;
 
         this.el = this.#createContainer(gridArea, id);
         parent.appendChild(this.el);
@@ -42,6 +48,9 @@ export class TouchpadComponent {
         this.#touchStartTime = 0;
         this.#touchStartX = 0;
         this.#touchStartY = 0;
+
+        // Determine touch target: if "anywhere" mode, listen on parent container
+        this.#touchTarget = this.#anywhere ? parent : this.el;
 
         this.#initTouchHandlers();
     }
@@ -141,7 +150,51 @@ export class TouchpadComponent {
             div.textContent = visualLabel;
         }
 
+        // In "anywhere" mode, hide the touchpad visual element
+        if (this.#anywhere) {
+            div.style.display = 'none';
+            div.style.pointerEvents = 'none';
+        }
+
         return div;
+    }
+
+    #isTouchOnOtherElement(touch) {
+        if (!this.#anywhere) {
+            return false;
+        }
+
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!element) {
+            return false;
+        }
+
+        let current = element;
+        while (current && current !== this.#parent) {
+            if (current === this.#touchTarget || current === this.el) {
+                current = current.parentElement;
+                continue;
+            }
+
+            if (current.dataset && current.dataset.interactiveElement === 'true') {
+                return true;
+            }
+
+            const style = window.getComputedStyle(current);
+            const pointerEvents = style.pointerEvents;
+            if (pointerEvents === 'auto') {
+                if (current.classList.contains('quickshot-component') ||
+                    current.classList.contains('touchpad-component') ||
+                    current.classList.contains('cursor-keys-component') ||
+                    current.matches('[class*="touch-button"]')) {
+                    return true;
+                }
+            }
+
+            current = current.parentElement;
+        }
+
+        return false;
     }
 
     #initTouchHandlers() {
@@ -152,7 +205,7 @@ export class TouchpadComponent {
                 this.#activeTouchId = null;
             } else {
                 const touch = e.changedTouches[0];
-                const rect = this.el.getBoundingClientRect();
+                const rect = this.#anywhere ? this.#parent.getBoundingClientRect() : this.el.getBoundingClientRect();
                 const dx = (touch.clientX - rect.left) * this.#mouseSpeed;
                 const dy = (touch.clientY - rect.top) * this.#mouseSpeed;
 
@@ -164,7 +217,14 @@ export class TouchpadComponent {
             }
         };
 
-        this.el.addEventListener('touchstart', (e) => {
+        this.#touchTarget.addEventListener('touchstart', (e) => {
+            if (this.#anywhere) {
+                const touch = e.changedTouches[0];
+                if (this.#isTouchOnOtherElement(touch)) {
+                    return;
+                }
+            }
+
             e.preventDefault();
             e.stopPropagation();
 
@@ -182,7 +242,11 @@ export class TouchpadComponent {
             }
         });
 
-        this.el.addEventListener('touchmove', (e) => {
+        this.#touchTarget.addEventListener('touchmove', (e) => {
+            if (this.#activeTouchId === null) {
+                return;
+            }
+
             e.preventDefault();
             e.stopPropagation();
 
@@ -194,7 +258,11 @@ export class TouchpadComponent {
             }
         });
 
-        this.el.addEventListener('touchend', (e) => {
+        this.#touchTarget.addEventListener('touchend', (e) => {
+            if (this.#activeTouchId === null) {
+                return;
+            }
+
             e.preventDefault();
             e.stopPropagation();
 
@@ -221,7 +289,11 @@ export class TouchpadComponent {
             }
         });
 
-        this.el.addEventListener('touchcancel', (e) => {
+        this.#touchTarget.addEventListener('touchcancel', (e) => {
+            if (this.#activeTouchId === null) {
+                return;
+            }
+
             e.preventDefault();
             e.stopPropagation();
 

@@ -5,13 +5,21 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
     #key;
     #code;
     #keyCode;
+    #shiftKey;
+    #ctrlKey;
+    #altKey;
+    #metaKey;
 
-    constructor(key, code, keyCode, target = document) {
+    constructor(key, code, keyCode, target = document, modifiers = {}) {
         super();
         this.#key = key;
         this.#code = code;
         this.#keyCode = keyCode;
         this.#target = target;
+        this.#shiftKey = modifiers.shiftKey ?? false;
+        this.#ctrlKey = modifiers.ctrlKey ?? false;
+        this.#altKey = modifiers.altKey ?? false;
+        this.#metaKey = modifiers.metaKey ?? false;
         this.trigger = this.trigger.bind(this);
     }
 
@@ -37,6 +45,10 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
             code: this.#code,
             keyCode: this.#keyCode,
             charCode: this.#keyCode,
+            shiftKey: this.#shiftKey,
+            ctrlKey: this.#ctrlKey,
+            altKey: this.#altKey,
+            metaKey: this.#metaKey,
             bubbles: true,
             cancelable: true
         });
@@ -50,6 +62,10 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
             code: this.#code,
             keyCode: this.#keyCode,
             charCode: this.#keyCode,
+            shiftKey: this.#shiftKey,
+            ctrlKey: this.#ctrlKey,
+            altKey: this.#altKey,
+            metaKey: this.#metaKey,
             bubbles: true,
             cancelable: true
         });

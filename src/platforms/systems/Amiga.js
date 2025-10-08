@@ -115,13 +115,15 @@ const Amiga = {
     },
     focus_defaults: {
       'amiga-pinball-1': true,
-      'amiga-pinball-2': true
+      'amiga-pinball-2': true,
+      'preset-test': false
     },
     presets: [
       {
         "id": "amiga-pinball-1",
         "name": "Pinball 1",
         "description": "Pinball Dreams, Pinball Fantasies",
+        "gameFocus": true,
         "layout": {
           "landscape": {
             "columns": 50,
@@ -197,7 +199,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "27 / 1 / span 9 / span 8",
-              "portrait": "38 / 21 / span 5 / span 10"
+              "portrait": "38 / 1 / span 5 / span 19"
             },
             "label": "TILT"
           },
@@ -214,7 +216,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "3 / 5 / span 4 / span 4",
-              "portrait": "38 / 1 / span 2 / span 9"
+              "portrait": "26 / 11 / span 2 / span 9"
             },
             "label": "F1"
           },
@@ -231,7 +233,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "8 / 5 / span 4 / span 4",
-              "portrait": "38 / 11 / span 2 / span 9"
+              "portrait": "29 / 11 / span 2 / span 9"
             },
             "label": "F2"
           },
@@ -248,7 +250,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "13 / 5 / span 4 / span 4",
-              "portrait": "41 / 1 / span 2 / span 9"
+              "portrait": "32 / 11 / span 2 / span 9"
             },
             "label": "F3"
           },
@@ -265,7 +267,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "18 / 5 / span 4 / span 4",
-              "portrait": "41 / 11 / span 2 / span 9"
+              "portrait": "35 / 11 / span 2 / span 9"
             },
             "label": "F4"
           },
@@ -309,6 +311,7 @@ const Amiga = {
         "id": "amiga-pinball-2",
         "name": "Pinball 2",
         "description": "Pinball Illusions",
+        "gameFocus": true,
         "layout": {
           "landscape": {
             "columns": 50,
@@ -383,7 +386,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "26 / 1 / span 10 / span 4",
+              "landscape": "27 / 1 / span 9 / span 4",
               "portrait": "38 / 1 / span 5 / span 9"
             },
             "label": "TILT"
@@ -502,13 +505,483 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "26 / 5 / span 10 / span 4",
+              "landscape": "27 / 5 / span 9 / span 4",
               "portrait": "38 / 11 / span 5 / span 9"
             },
             "label": "TILT"
           }
         ]
+      },
+
+      {
+        "id": "preset-test",
+        "name": "Worms (1995)",
+        "description": "incl. Touchpad (tap to click)",
+        "gameFocus": false,
+        "layout": {
+          "landscape": {
+            "columns": 50,
+            "rows": 50
+          },
+          "portrait": {
+            "columns": 50,
+            "rows": 50
+          }
+        },
+        "elements": [
+          {
+            "id": "worms-pad",
+            "component": "TouchpadComponent",
+            "binding": {
+              "type": "joy"
+            },
+            "gridArea": {
+              "landscape": "27 / 16 / span 24 / span 21",
+              "portrait": "38 / 16 / span 13 / span 19"
+            },
+            "label": "worms-pad",
+            "options": {
+              "style": "tab",
+              "tapToClick": true,
+              "anywhere": true,
+              "label": ""
+            }
+          },
+          {
+            "id": "worms-mv",
+            "component": "QuickshotComponent",
+            "binding": {
+              "type": "joy"
+            },
+            "gridArea": {
+              "landscape": "27 / 1 / span 24 / span 11",
+              "portrait": "38 / 1 / span 13 / span 14"
+            },
+            "label": "worms-mv",
+            "options": {
+              "label": "MOVE/AIM",
+              "style": "outline",
+              "mode": "keyboard",
+              "keys": {
+                "up": {
+                  "key": "d",
+                  "code": "KeyD",
+                  "keyCode": "68"
+                },
+                "down": {
+                  "key": "x",
+                  "code": "KeyX",
+                  "keyCode": "88"
+
+                },
+                "left": {
+                  "key": "z",
+                  "code": "KeyZ",
+                  "keyCode": "90"
+                },
+                "right": {
+                  "key": "c",
+                  "code": "KeyC",
+                  "keyCode": "67"
+                }
+              }
+            }
+          },
+          {
+            "id": "worms-jump",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Enter",
+                "code": "Enter",
+                "keyCode": "13"
+              }
+            },
+            "gridArea": {
+              "landscape": "36 / 40 / span 15 / span 11",
+              "portrait": "43 / 36 / span 8 / span 15"
+            },
+            "label": "JUMP"
+          },
+          {
+            "id": "worms-p",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "p",
+                "code": "KeyP",
+                "keyCode": "80"
+              }
+            },
+            "gridArea": {
+              "landscape": "3 / 47 / span 4 / span 4",
+              "portrait": "26 / 42 / span 2 / span 9"
+            },
+            "label": "PAUSE"
+          },
+          {
+            "id": "worms-tab",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Tab",
+                "code": "Tab",
+                "keyCode": "9"
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 47 / span 4 / span 4",
+              "portrait": "29 / 42 / span 2 / span 9"
+            },
+            "label": "CENTER"
+          },
+          {
+            "id": "worms-tilde",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "`",
+                "code": "Backquote",
+                "keyCode": "192"
+              }
+            },
+            "gridArea": {
+              "landscape": "13 / 47 / span 4 / span 4",
+              "portrait": "32 / 42 / span 2 / span 9"
+            },
+            "label": "NAMES"
+          },
+          {
+            "id": "worms-fire",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "x",
+                "code": "Space",
+                "keyCode": "32"
+              }
+            },
+            "gridArea": {
+              "landscape": "27 / 40 / span 8 / span 11",
+              "portrait": "38 / 36 / span 4 / span 15"
+            },
+            "label": "FIRE"
+          },
+          {
+            "id": "worms-f1",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F2",
+                "code": "F2",
+                "keyCode": "113"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 3 / span 3 / span 2",
+              "portrait": "26 / 18 / span 2 / span 6"
+            },
+            "label": "F2"
+          },
+          {
+            "id": "worms-f2",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F1",
+                "code": "F1",
+                "keyCode": "112"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 1 / span 3 / span 2",
+              "portrait": "26 / 11 / span 2 / span 6"
+            },
+            "label": "F1"
+          },
+          {
+            "id": "worms-f3",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F3",
+                "code": "F3",
+                "keyCode": "114"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 5 / span 3 / span 2",
+              "portrait": "26 / 25 / span 2 / span 6"
+            },
+            "label": "F3"
+          },
+          {
+            "id": "worms-f4",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F4",
+                "code": "F4",
+                "keyCode": "115"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 7 / span 3 / span 2",
+              "portrait": "29 / 11 / span 2 / span 6"
+            },
+            "label": "F4"
+          },
+          {
+            "id": "worms-f5",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F5",
+                "code": "F5",
+                "keyCode": "116"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 9 / span 3 / span 2",
+              "portrait": "29 / 18 / span 2 / span 6"
+            },
+            "label": "F5"
+          },
+          {
+            "id": "worms-f6",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F6",
+                "code": "F6",
+                "keyCode": "117"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 41 / span 3 / span 2",
+              "portrait": "29 / 25 / span 2 / span 6"
+            },
+            "label": "F6"
+          },
+          {
+            "id": "worms-f7",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F7",
+                "code": "F7",
+                "keyCode": "118"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 43 / span 3 / span 2",
+              "portrait": "32 / 11 / span 2 / span 6"
+            },
+            "label": "F7"
+          },
+          {
+            "id": "worms-f8",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F8",
+                "code": "F8",
+                "keyCode": "119"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 45 / span 3 / span 2",
+              "portrait": "32 / 18 / span 2 / span 6"
+            },
+            "label": "F8"
+          },
+          {
+            "id": "worms-f9",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F9",
+                "code": "F9",
+                "keyCode": "120"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 47 / span 3 / span 2",
+              "portrait": "32 / 25 / span 2 / span 6"
+            },
+            "label": "F9"
+          },
+          {
+            "id": "worms-f10",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F10",
+                "code": "F10",
+                "keyCode": "121"
+              }
+            },
+            "gridArea": {
+              "landscape": "23 / 49 / span 3 / span 2",
+              "portrait": "35 / 11 / span 2 / span 6"
+            },
+            "label": "F10"
+          },
+          {
+            "id": "worms-right",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F14",
+                "code": "F14",
+                "keyCode": "125"
+              }
+            },
+            "gridArea": {
+              "landscape": "18 / 5 / span 4 / span 4",
+              "portrait": "35 / 18 / span 2 / span 13"
+            },
+            "label": "ARMS"
+          },
+          {
+            "id": "worms-1",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "1",
+                "code": "Digit1",
+                "keyCode": "49"
+              }
+            },
+            "gridArea": {
+              "landscape": "5 / 7 / span 3 / span 2",
+              "portrait": "24 / 15 / span 1 / span 3"
+            },
+            "label": "1"
+          },
+          {
+            "id": "worms-2",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "2",
+                "code": "Digit2",
+                "keyCode": "50"
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 5 / span 3 / span 2",
+              "portrait": "24 / 18 / span 1 / span 3"
+            },
+            "label": "2"
+          },
+          {
+            "id": "worms-3",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "3",
+                "code": "Digit3",
+                "keyCode": "51"
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 7 / span 3 / span 2",
+              "portrait": "24 / 21 / span 1 / span 3"
+            },
+            "label": "3"
+          },
+          {
+            "id": "worms-4",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "4",
+                "code": "Digit4",
+                "keyCode": "52"
+              }
+            },
+            "gridArea": {
+              "landscape": "11 / 5 / span 3 / span 2",
+              "portrait": "24 / 24 / span 1 / span 3"
+            },
+            "label": "4"
+          },
+          {
+            "id": "worms-5",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "5",
+                "code": "Digit5",
+                "keyCode": "53"
+              }
+            },
+            "gridArea": {
+              "landscape": "11 / 7 / span 3 / span 2",
+              "portrait": "24 / 27 / span 1 / span 3"
+            },
+            "label": "5"
+          },
+          {
+            "id": "worms-minus",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "-",
+                "code": "Minus",
+                "keyCode": "189"
+              }
+            },
+            "gridArea": {
+              "landscape": "14 / 5 / span 3 / span 2",
+              "portrait": "24 / 30 / span 1 / span 3"
+            },
+            "label": "LO"
+          },
+          {
+            "id": "worms-plus",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "=",
+                "code": "Equal",
+                "keyCode": "187",
+                "shiftKey": true
+              }
+            },
+            "gridArea": {
+              "landscape": "14 / 7 / span 3 / span 2",
+              "portrait": "24 / 33 / span 1 / span 3"
+            },
+            "label": "HI"
+          }
+        ]
       }
+
     ]
   },
   fire_buttons: 1,

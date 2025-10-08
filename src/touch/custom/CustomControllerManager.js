@@ -447,7 +447,13 @@ export class CustomControllerManager extends TouchControllerBase {
                 if (!binding.key) {
                     return new SingleTouchButtonJoyListener(nostalgist, 'b');
                 }
-                return new SingleTouchButtonKbListener(binding.key.key, binding.key.code, binding.key.keyCode, target ?? document);
+                const modifiers = {
+                    shiftKey: binding.key.shiftKey ?? false,
+                    ctrlKey: binding.key.ctrlKey ?? false,
+                    altKey: binding.key.altKey ?? false,
+                    metaKey: binding.key.metaKey ?? false
+                };
+                return new SingleTouchButtonKbListener(binding.key.key, binding.key.code, binding.key.keyCode, target ?? document, modifiers);
             default:
                 return new SingleTouchButtonJoyListener(nostalgist, 'b');
         }
@@ -600,12 +606,19 @@ export class CustomControllerManager extends TouchControllerBase {
         const rowSpan = parseInt(rowSpanMatch[1], 10);
         const colSpan = parseInt(colSpanMatch[1], 10);
 
-        if ((rowSpan === 2 && colSpan >= 3 && colSpan <= 9) ||
-            (rowSpan >= 4 && rowSpan <= 6 && colSpan >= 4 && colSpan <= 9)) {
+
+        if ((rowSpan === 5 || rowSpan === 6) && (colSpan === 5 || colSpan === 6 || colSpan === 10)) {
+            element.classList.add('custom-medium-button');
+        }
+
+        else if (colSpan >= 2 && colSpan <= 3) {
             element.classList.add('custom-small-button');
         }
-        else if ((rowSpan === 5 || rowSpan === 6) && (colSpan === 5 || colSpan === 6 || colSpan === 10)) {
-            element.classList.add('custom-medium-button');
+        else if (rowSpan >= 2 && rowSpan <= 3) {
+            element.classList.add('custom-small-button');
+        }
+        else if ((rowSpan >= 2 && rowSpan <= 6 && colSpan >= 2 && colSpan <= 9)) {
+            element.classList.add('custom-small-button');
         }
     }
 }

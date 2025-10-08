@@ -12,7 +12,8 @@ export class DualTouchButton {
 
         const container = document.createElement('div');
         container.classList.add('fast-button');
-        
+        container.dataset.interactiveElement = 'true'; // Mark as interactive for touchpad detection
+
         if (gridArea !== undefined) {
             container.style.gridArea = gridArea;
         }
