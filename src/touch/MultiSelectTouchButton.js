@@ -1,12 +1,17 @@
 import { QJ_LABEL_COLOR, QJ_IDLE_COLOR, QJ_ACTIVE_COLOR } from '../Constants.js';
 
 export class MultiSelectTouchButton {
-    constructor(parent, options, gridArea, id, elListener, initialIndex = 0, radius = '12px', showArrow = true) {
+    static #instances = [];
+
+    constructor(parent, options, gridArea, id, elListener, initialIndex = 0, radius = '12px', showArrow = true, shouldExpandCallback = null, fixedLabel = null, showSelectedInPopup = false) {
         this.options = options;
         this.elListener = elListener;
         this.isExpanded = false;
         this.selectedIndex = initialIndex;
         this.showArrow = showArrow;
+        this.shouldExpandCallback = shouldExpandCallback;
+        this.fixedLabel = fixedLabel;
+        this.showSelectedInPopup = showSelectedInPopup;
         this.#handleOutsideTouch = null;
         this.#handleMainTouchStart = null;
         this.#handleMainTouchEnd = null;
@@ -19,20 +24,23 @@ export class MultiSelectTouchButton {
         if (id) {
             this.container.id = id;
         }
-        
-        const initialLabel = this.#createButtonContent(options[initialIndex], this.showArrow);
+
+        const displayLabel = this.fixedLabel || options[initialIndex];
+        const initialLabel = this.#createButtonContent(displayLabel, this.showArrow);
         this.mainButton = this.#createButtonElement(initialLabel, radius);
         this.container.appendChild(this.mainButton);
-        
+
         this.optionsContainer = this.#createOptionsContainer(radius);
         this.container.appendChild(this.optionsContainer);
-        
+
         this.optionElements = [];
         this.#createOptionElements(radius);
-        
+
         parent.appendChild(this.container);
 
         this.#bindEvents();
+
+        MultiSelectTouchButton.#instances.push(this);
     }
 
     #handleOutsideTouch;
@@ -44,26 +52,31 @@ export class MultiSelectTouchButton {
         this.optionElements = [];
 
         this.options.forEach((label, index) => {
-            if (index !== this.selectedIndex) {
-                const option = this.#createOptionElement(label, radius);
+            const shouldInclude = this.showSelectedInPopup || index !== this.selectedIndex;
+
+            if (shouldInclude) {
+                const isSelected = index === this.selectedIndex;
+                const option = this.#createOptionElement(label, radius, isSelected);
                 option.style.transform = 'translateY(-20px)';
                 option.style.transition = 'opacity 0.15s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
 
-                option.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    option.style.backgroundColor = '#1a1a1a';
-                    option.style.color = '#888888aa';
-                });
-                
-                option.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    option.style.backgroundColor = '#000000';
-                    option.style.color = '#88888888';
-                    this.#selectOption(index);
-                });
-                
+                if (!isSelected) {
+                    option.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        option.style.backgroundColor = '#1a1a1a';
+                        option.style.color = '#888888aa';
+                    });
+
+                    option.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        option.style.backgroundColor = '#000000';
+                        option.style.color = QJ_LABEL_COLOR;
+                        this.#selectOption(index);
+                    });
+                }
+
                 this.optionsContainer.appendChild(option);
                 this.optionElements.push(option);
             }
@@ -97,7 +110,7 @@ export class MultiSelectTouchButton {
         return button;
     }
     
-    #createOptionElement(label, radius) {
+    #createOptionElement(label, radius, isSelected = false) {
         const option = document.createElement('div');
         option.classList.add('fast-button');
         option.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
@@ -105,16 +118,17 @@ export class MultiSelectTouchButton {
         option.style.borderRadius = radius;
         option.style.display = 'flex';
         option.style.alignItems = 'center';
-        option.style.color = '#88888888';
+        option.style.color = isSelected ? '#ffffffff' : QJ_LABEL_COLOR;
         option.style.border = 'solid 1px #88888888';
         option.style.fontWeight = 'bold';
         option.style.justifyContent = 'center';
-        option.style.pointerEvents = 'auto';
+        option.style.pointerEvents = isSelected ? 'none' : 'auto';
         option.style.padding = '12px 16px';
         option.style.whiteSpace = 'nowrap';
         option.style.height = '100%';
         option.style.boxSizing = 'border-box';
-        
+        option.style.textTransform = 'uppercase';
+
         return option;
     }
     
@@ -145,7 +159,14 @@ export class MultiSelectTouchButton {
             if (this.isExpanded) {
                 this.#collapse();
             } else {
-                this.#expand();
+                const shouldExpand = this.shouldExpandCallback ? this.shouldExpandCallback() : true;
+                if (shouldExpand) {
+                    this.#expand();
+                } else {
+                    if (this.elListener) {
+                        this.elListener.trigger(true);
+                    }
+                }
             }
         };
 
@@ -169,21 +190,37 @@ export class MultiSelectTouchButton {
                 index: this.selectedIndex,
                 label: this.options[this.selectedIndex]
             });
-            this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex], this.showArrow);
+            const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
+            this.mainButton.innerHTML = this.#createButtonContent(displayLabel, this.showArrow);
             this.#collapse();
+        }
+    }
+
+    setSelectedIndex(index) {
+        if (index >= 0 && index < this.options.length) {
+            this.selectedIndex = index;
+            const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
+            this.mainButton.innerHTML = this.#createButtonContent(displayLabel, this.showArrow);
         }
     }
     
     #expand() {
         if (this.isExpanded) return;
 
+        MultiSelectTouchButton.#instances.forEach(instance => {
+            if (instance !== this && instance.isExpanded) {
+                instance.#collapse();
+            }
+        });
+
         this.#createOptionElements(this.mainButton.style.borderRadius);
         this.isExpanded = true;
         this.optionsContainer.style.visibility = 'visible';
         this.mainButton.style.backgroundColor = QJ_ACTIVE_COLOR;
 
-        this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex], true).replace('►', '◄');
-        
+        const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
+        this.mainButton.innerHTML = this.#createButtonContent(displayLabel, true).replace('►', '◄');
+
         this.optionElements.forEach((option, index) => {
             setTimeout(() => {
                 option.style.opacity = '1';
@@ -191,20 +228,21 @@ export class MultiSelectTouchButton {
             }, index * 60);
         });
     }
-    
+
     #collapse() {
         if (!this.isExpanded) return;
-        
+
         this.isExpanded = false;
         this.mainButton.style.backgroundColor = QJ_IDLE_COLOR;
 
-        this.mainButton.innerHTML = this.#createButtonContent(this.options[this.selectedIndex], this.showArrow);
-        
+        const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
+        this.mainButton.innerHTML = this.#createButtonContent(displayLabel, this.showArrow);
+
         this.optionElements.forEach((option, index) => {
             option.style.opacity = '0';
             option.style.transform = 'translateY(-20px)';
         });
-        
+
         setTimeout(() => {
             this.optionsContainer.style.visibility = 'hidden';
         }, 200);
@@ -223,6 +261,11 @@ export class MultiSelectTouchButton {
 
         if (this.#handleOutsideTouch) {
             document.removeEventListener('touchstart', this.#handleOutsideTouch);
+        }
+
+        const index = MultiSelectTouchButton.#instances.indexOf(this);
+        if (index > -1) {
+            MultiSelectTouchButton.#instances.splice(index, 1);
         }
 
         this.container.remove();

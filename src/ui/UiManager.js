@@ -16,6 +16,21 @@ import { FileUtils } from '../utils/FileUtils.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { TOUCH_INPUT } from '../Constants.js';
 
+function getJoystickModeName(mode) {
+    switch (mode) {
+        case JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY:
+            return 'QuickJoy';
+        case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
+            return 'QuickShot';
+        case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD:
+            return 'Cursor Keys';
+        case JOYSTICK_TOUCH_MODE.HIDEAWAY:
+            return 'Auto Hide';
+        default:
+            return 'Joystick';
+    }
+}
+
 export class UiManager {
     static #platform_manager;
     static #kb_manager;
@@ -27,6 +42,7 @@ export class UiManager {
     static #ck;
     static #customControllerManager;
     static #keymapSelector;
+    static #joystickSelector;
     static #specialButton;
 
     static #currentInputMethod;
@@ -49,7 +65,7 @@ export class UiManager {
         fastuiContainer.id = 'fastui';
         fastuiContainer.style.display = 'none';
 
-        new MultiSelectTouchButton(fastuiContainer, ['QUIT', 'Confirm'], undefined, 'fastmenu', new QuitConfirmListener(), 0, FAST_BTN_RADIUS, false);
+        new MultiSelectTouchButton(fastuiContainer, ['QUIT', 'Confirm'], undefined, 'fastmenu', new QuitConfirmListener(), 0, FAST_BTN_RADIUS, false, null, 'QUIT');
 
         if (!UiManager.#platform_manager.getSelectedPlatform().rewind_disabled) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">REWIND</span>', undefined, 'fastrewind', new RewindButtonListener(UiManager.#platform_manager.getNostalgist()), FAST_BTN_RADIUS);
@@ -341,6 +357,22 @@ export class UiManager {
         } else {
             const touch_controllers = UiManager.#platform_manager.getSelectedPlatform().touch_controllers;
             if (touch_controllers.length > 1) {
+                const joystickOptions = touch_controllers.map(mode => getJoystickModeName(mode));
+
+                UiManager.#joystickSelector = new MultiSelectTouchButton(
+                    s("#fastui"),
+                    joystickOptions,
+                    undefined,
+                    'fastjoy',
+                    new JoystickSelectorListener(touch_controllers),
+                    UiManager.#currentControllerIndex,
+                    FAST_BTN_RADIUS,
+                    false, // No arrow
+                    () => UiManager.isInJoystickMode(),
+                    'JOY',
+                    true // Show all options
+                );
+            } else if (touch_controllers.length === 1) {
                 new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new InputSwitchListener(TOUCH_INPUT.JOYSTICK), FAST_BTN_RADIUS);
             }
 
@@ -637,6 +669,28 @@ export class UiManager {
         UiManager.#currentInputMethod = TOUCH_INPUT.JOYSTICK;
         UiManager.#currentJoyTouchMode = mode;
         UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK, true);
+    }
+
+    static selectJoystickByIndex(index, touch_controllers) {
+        const selectedMode = touch_controllers[index];
+        UiManager.#currentControllerIndex = index;
+        UiManager.#currentJoyTouchMode = selectedMode;
+
+        if (UiManager.#joystickSelector) {
+            UiManager.#joystickSelector.setSelectedIndex(index);
+        }
+
+        UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK, true);
+    }
+
+    static updateJoystickSelectorIndex() {
+        if (UiManager.#joystickSelector && UiManager.#currentInputMethod === TOUCH_INPUT.JOYSTICK) {
+            UiManager.#joystickSelector.setSelectedIndex(UiManager.#currentControllerIndex);
+        }
+    }
+
+    static isInJoystickMode() {
+        return UiManager.#currentInputMethod === TOUCH_INPUT.JOYSTICK;
     }
 
     static toggleInputMethod(inputMethod, skipPre = false) {
@@ -936,6 +990,25 @@ class QuitConfirmListener extends TouchButtonListener {
     trigger(event) {
         if (event.selected && event.index === 1 && event.label === 'Confirm') {
             location.reload();
+        }
+    }
+}
+
+class JoystickSelectorListener extends TouchButtonListener {
+    #touch_controllers;
+
+    constructor(touch_controllers) {
+        super();
+        this.#touch_controllers = touch_controllers;
+    }
+
+    trigger(event) {
+        if (event && event.selected && event.index !== undefined) {
+            UiManager.selectJoystickByIndex(event.index, this.#touch_controllers);
+        } else {
+            UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK);
+
+            UiManager.updateJoystickSelectorIndex();
         }
     }
 }
