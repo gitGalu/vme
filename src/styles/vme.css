@@ -2851,7 +2851,9 @@ canvas {
 }
 
 .dropdown-menu {
-  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background-color: rgba(0, 0, 0, 0.3);
   color: white;
   text-align: center;
   border: 1px solid #444;
@@ -2859,7 +2861,7 @@ canvas {
   margin-top: 16px;
   z-index: 3000;
   border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .menu-item {

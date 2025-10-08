@@ -405,6 +405,7 @@ export class UiManager {
     initControlsButton() {
         const controlsButton = document.getElementById('desktopUiControls');
         const controlsMenu = document.getElementById('controlsMenu');
+        const saveMenu = document.getElementById('saveMenu');
         const nostalgist = UiManager.#platform_manager.getNostalgist();
 
         const menuOptions = [];
@@ -471,24 +472,40 @@ export class UiManager {
                 const menuItem = document.createElement('div');
                 menuItem.textContent = option.name;
                 menuItem.className = 'menu-item';
-                menuItem.addEventListener('click', option.action);
+                menuItem.addEventListener('click', () => {
+                    option.action();
+                    controlsMenu.style.display = 'none';
+                });
                 controlsMenu.appendChild(menuItem);
             });
         }
 
         function toggleMenu() {
             if (controlsMenu.style.display === 'none' || controlsMenu.style.display === '') {
-                const rect = controlsButton.getBoundingClientRect();
-                controlsMenu.style.position = 'absolute';
-                controlsMenu.style.padding = '8px 16px';
-                controlsMenu.style.top = `${rect.bottom}px`;
-                controlsMenu.style.left = `${rect.left}px`;
+
+                if (saveMenu) {
+                    saveMenu.style.display = 'none';
+                }
+
                 controlsMenu.style.display = 'block';
+                controlsMenu.style.position = 'fixed';
                 controlsMenu.style.fontSize = '10pt';
+
+                const rect = controlsButton.getBoundingClientRect();
+                const menuRect = controlsMenu.getBoundingClientRect();
+
+                controlsMenu.style.top = `${rect.bottom}px`;
+                controlsMenu.style.left = `${rect.right - menuRect.width}px`;
             } else {
                 controlsMenu.style.display = 'none';
             }
         }
+
+        document.addEventListener('click', (event) => {
+            if (!controlsButton.contains(event.target) && !controlsMenu.contains(event.target)) {
+                controlsMenu.style.display = 'none';
+            }
+        });
 
         controlsButton.addEventListener('click', toggleMenu);
         createMenu();
@@ -497,6 +514,7 @@ export class UiManager {
     initSaveButton() {
         const saveButton = document.getElementById('desktopUiSave');
         const saveMenu = document.getElementById('saveMenu');
+        const controlsMenu = document.getElementById('controlsMenu');
 
         const menuOptions = [
             {
@@ -528,19 +546,24 @@ export class UiManager {
 
         function toggleMenu() {
             if (saveMenu.style.display === 'none' || saveMenu.style.display === '') {
-                const rect = saveButton.getBoundingClientRect();
-                saveMenu.style.position = 'absolute';
-                saveMenu.style.padding = '8px 16px';
-                saveMenu.style.top = `${rect.bottom}px`;
-                saveMenu.style.left = `${rect.left}px`;
+                if (controlsMenu) {
+                    controlsMenu.style.display = 'none';
+                }
+
                 saveMenu.style.display = 'block';
+                saveMenu.style.position = 'fixed';
                 saveMenu.style.fontSize = '10pt';
+
+                const rect = saveButton.getBoundingClientRect();
+                const menuRect = saveMenu.getBoundingClientRect();
+
+                saveMenu.style.top = `${rect.bottom}px`;
+                saveMenu.style.left = `${rect.right - menuRect.width}px`;
             } else {
                 saveMenu.style.display = 'none';
             }
         }
 
-        // Close menu when clicking outside
         document.addEventListener('click', (event) => {
             if (!saveButton.contains(event.target) && !saveMenu.contains(event.target)) {
                 saveMenu.style.display = 'none';
