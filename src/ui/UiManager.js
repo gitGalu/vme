@@ -76,7 +76,7 @@ export class UiManager {
         }
 
         if (!UiManager.#platform_manager.getSelectedPlatform().savestates_disabled) {
-            new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">SAVE</span>', undefined, 'fastsave', new SaveButtonListener(UiManager.#platform_manager), FAST_BTN_RADIUS);
+            new MultiSelectTouchButton(fastuiContainer, ['QUICKSAVE', 'SAVE'], undefined, 'fastsave', new SaveButtonListener(UiManager.#platform_manager), 0, FAST_BTN_RADIUS, false, null, 'SAVE', true);
         }
 
         if (UiManager.#platform_manager.getSelectedPlatform().keyboard) {
@@ -188,19 +188,7 @@ export class UiManager {
                 }
             });
 
-        addButtonEventListeners(s('#desktopUiSave'),
-            (pressed) => {
-                if (pressed) {
-                    let state = UiManager.#platform_manager.saveState();
-                    state.then((data) => {
-                        console.log(data);
-                    }).catch((error) => {
-                        console.error('Error resolving state:', error);
-                    });
-                } else {
-                    clearInterval(intervalId);
-                }
-            });
+        this.initSaveButton();
 
         addButtonEventListeners(s('#desktopUiRewind'),
             (pressed) => {
@@ -503,6 +491,63 @@ export class UiManager {
         }
 
         controlsButton.addEventListener('click', toggleMenu);
+        createMenu();
+    }
+
+    initSaveButton() {
+        const saveButton = document.getElementById('desktopUiSave');
+        const saveMenu = document.getElementById('saveMenu');
+
+        const menuOptions = [
+            {
+                name: 'Quicksave',
+                action: () => {
+                    saveMenu.style.display = 'none';
+                    UiManager.#platform_manager.saveState(true);
+                }
+            },
+            {
+                name: 'Save',
+                action: () => {
+                    saveMenu.style.display = 'none';
+                    UiManager.#platform_manager.saveState(false);
+                }
+            }
+        ];
+
+        function createMenu() {
+            saveMenu.innerHTML = '';
+            menuOptions.forEach(option => {
+                const menuItem = document.createElement('div');
+                menuItem.textContent = option.name;
+                menuItem.className = 'menu-item';
+                menuItem.addEventListener('click', option.action);
+                saveMenu.appendChild(menuItem);
+            });
+        }
+
+        function toggleMenu() {
+            if (saveMenu.style.display === 'none' || saveMenu.style.display === '') {
+                const rect = saveButton.getBoundingClientRect();
+                saveMenu.style.position = 'absolute';
+                saveMenu.style.padding = '8px 16px';
+                saveMenu.style.top = `${rect.bottom}px`;
+                saveMenu.style.left = `${rect.left}px`;
+                saveMenu.style.display = 'block';
+                saveMenu.style.fontSize = '10pt';
+            } else {
+                saveMenu.style.display = 'none';
+            }
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!saveButton.contains(event.target) && !saveMenu.contains(event.target)) {
+                saveMenu.style.display = 'none';
+            }
+        });
+
+        saveButton.addEventListener('click', toggleMenu);
         createMenu();
     }
 
@@ -948,9 +993,12 @@ class SaveButtonListener extends TouchButtonListener {
         this.#platform_manager = platform_manager;
     }
 
-    async trigger(s) {
-        if (s) {
-            this.#platform_manager.saveState();
+    async trigger(event) {
+        if (event && event.selected && event.index !== undefined) {
+            const isQuickSave = event.index === 0;
+            this.#platform_manager.saveState(isQuickSave);
+        } else if (event === true) {
+            this.#platform_manager.saveState(false);
         }
     }
 }

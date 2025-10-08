@@ -178,10 +178,12 @@ export class SaveBrowser {
 
         const timestamp = new Date(item.timestamp).toLocaleString();
         const timeDisplay = this.#isGameView ? `<div class="flicking-title flicking-title-time">${timestamp}</div>` : '';
+        const quicksaveLabel = (this.#isGameView && item.is_quicksave === true) ? `<div class="flicking-title flicking-title-time" style="color: #ff6b9d;">QUICKSAVE</div>` : '';
 
         return `
             <div class="flicking-panel" data-id="${item.id}" data-program-name="${item.program_name}" data-platform-id="${platform.platform_id}">
                 <img src="${url}" alt="${item.program_name}" loading="lazy" style="transform: rotate(${randomDegree}deg)">
+                ${quicksaveLabel}
                 <div class="flicking-title flicking-title-name">${item.caption} (${platform.short_name})</div>
                 ${timeDisplay}
             </div>

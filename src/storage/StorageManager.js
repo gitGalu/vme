@@ -39,6 +39,15 @@ export class StorageManager {
             collectionMeta: '++id, collection_unique_name, collection_title, collection_image',
             collectionItemData: '++id, collection_id, platform_id, title, credits, description, image, rom_name, rom_data_id, rom_url, launched'
         });
+
+        this.#db.version(5).stores({
+            files: "key, data",
+            saveMeta: '++id, platform_id, program_name, save_data_id, rom_data_id, timestamp, caption, is_quicksave',
+            saveData: '++id, save_data',
+            romData: '++id, rom_data, hash, data_type',
+            collectionMeta: '++id, collection_unique_name, collection_title, collection_image',
+            collectionItemData: '++id, collection_id, platform_id, title, credits, description, image, rom_name, rom_data_id, rom_url, launched'
+        });
     }
 
     async #computeHash(blob) {
@@ -188,7 +197,7 @@ export class StorageManager {
         });
     }
 
-    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption) {
+    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false) {
         const hash = await this.#computeHash(rom_data);
 
         const screenshotFix = await this.#fixScreenshot(platform_id, screenshot);
@@ -207,17 +216,52 @@ export class StorageManager {
                     romDataId = existing.id;
                 }
 
-                let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
+                if (isQuickSave) {
+                    const existingQuickSave = await this.#db.saveMeta
+                        .where('rom_data_id')
+                        .equals(romDataId)
+                        .filter(save => save.is_quicksave === true && save.platform_id === platform_id)
+                        .first();
 
-                await this.#db.saveMeta.add({
-                    platform_id: platform_id,
-                    program_name: program_name,
-                    screenshot: screenshotB64,
-                    rom_data_id: romDataId,
-                    save_data_id: saveDataId,
-                    timestamp: Date.now(),
-                    caption: (program_name !== caption) ? caption : undefined
-                });
+                    if (existingQuickSave) {
+                        await this.#db.saveData.delete(existingQuickSave.save_data_id);
+
+                        let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
+
+                        await this.#db.saveMeta.update(existingQuickSave.id, {
+                            screenshot: screenshotB64,
+                            save_data_id: saveDataId,
+                            timestamp: Date.now(),
+                            caption: (program_name !== caption) ? caption : undefined
+                        });
+                    } else {
+                        let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
+
+                        await this.#db.saveMeta.add({
+                            platform_id: platform_id,
+                            program_name: program_name,
+                            screenshot: screenshotB64,
+                            rom_data_id: romDataId,
+                            save_data_id: saveDataId,
+                            timestamp: Date.now(),
+                            caption: (program_name !== caption) ? caption : undefined,
+                            is_quicksave: true
+                        });
+                    }
+                } else {
+                    let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
+
+                    await this.#db.saveMeta.add({
+                        platform_id: platform_id,
+                        program_name: program_name,
+                        screenshot: screenshotB64,
+                        rom_data_id: romDataId,
+                        save_data_id: saveDataId,
+                        timestamp: Date.now(),
+                        caption: (program_name !== caption) ? caption : undefined,
+                        is_quicksave: false
+                    });
+                }
             });
 
         } catch (error) {

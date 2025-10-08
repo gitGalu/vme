@@ -877,7 +877,7 @@ export class PlatformManager {
         await this.loadRomFile(blob, program_name, caption);
     }
 
-    async saveState() {
+    async saveState(isQuickSave = false) {
         let state = await this.#nostalgist.saveState();
 
         const save_data = state.state;
@@ -888,8 +888,8 @@ export class PlatformManager {
         const caption = this.#caption;
         const rom_data = this.#current_rom;
 
-        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption).then(() => {
-            ToastManager.enqueueToast('State saved.');
+        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave).then(() => {
+            ToastManager.enqueueToast(isQuickSave ? 'Quicksave created.' : 'Savestate created.');
         });
     }
 }

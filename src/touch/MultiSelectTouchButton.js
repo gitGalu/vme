@@ -56,23 +56,25 @@ export class MultiSelectTouchButton {
 
             if (shouldInclude) {
                 const isSelected = index === this.selectedIndex;
-                const option = this.#createOptionElement(label, radius, isSelected);
+                const option = this.#createOptionElement(label, radius, isSelected, this.showSelectedInPopup);
                 option.style.transform = 'translateY(-20px)';
                 option.style.transition = 'opacity 0.15s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
 
-                if (!isSelected) {
+                const isClickable = this.showSelectedInPopup || !isSelected;
+
+                if (isClickable) {
                     option.addEventListener('touchstart', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         option.style.backgroundColor = '#1a1a1a';
-                        option.style.color = '#888888aa';
+                        option.style.color = isSelected ? '#ffffffaa' : '#888888aa';
                     });
 
                     option.addEventListener('touchend', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         option.style.backgroundColor = '#000000';
-                        option.style.color = QJ_LABEL_COLOR;
+                        option.style.color = isSelected ? '#ffffffff' : QJ_LABEL_COLOR;
                         this.#selectOption(index);
                     });
                 }
@@ -110,7 +112,7 @@ export class MultiSelectTouchButton {
         return button;
     }
     
-    #createOptionElement(label, radius, isSelected = false) {
+    #createOptionElement(label, radius, isSelected = false, allowClickSelected = false) {
         const option = document.createElement('div');
         option.classList.add('fast-button');
         option.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
@@ -122,7 +124,7 @@ export class MultiSelectTouchButton {
         option.style.border = 'solid 1px #88888888';
         option.style.fontWeight = 'bold';
         option.style.justifyContent = 'center';
-        option.style.pointerEvents = isSelected ? 'none' : 'auto';
+        option.style.pointerEvents = (isSelected && !allowClickSelected) ? 'none' : 'auto';
         option.style.padding = '12px 16px';
         option.style.whiteSpace = 'nowrap';
         option.style.height = '100%';
