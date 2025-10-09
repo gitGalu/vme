@@ -649,7 +649,7 @@ a {
   }
 
   #qjud1 {
-    grid-area: -22 / -11/ span 21 / span 15;
+    grid-area: -25 / -11 / span 24 / span 15;
   }
 
   #qjud2 {
@@ -657,7 +657,7 @@ a {
   }
 
   #qja {
-    grid-area: -17 / -22 / span 18 / span 11;
+    grid-area: -25 / -22 / span 24 / span 11;
   }
 
   #qjab {
@@ -754,7 +754,7 @@ a {
   }
 
   #qjud1 {
-    grid-area: -22 / -9/ span 21 / span 9;
+    grid-area: -25 / -9/ span 24 / span 9;
   }
 
   #qjud2 {
@@ -762,7 +762,7 @@ a {
   }
 
   #qja {
-    grid-area: -17 / -17 / span 17 / span 8;
+    grid-area: -25 / -17 / span 24 / span 8;
   }
 
   #qjab {
