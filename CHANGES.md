@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21] - 2025-10-09
+
+- touch: UX changes (popup options instead of cycling options, button size adjustments)
+
 ## [0.20.2] - 2025-10-08
 
 - Amiga: add Worms (1995) custom touch controller
