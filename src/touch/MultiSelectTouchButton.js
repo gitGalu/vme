@@ -3,7 +3,7 @@ import { QJ_LABEL_COLOR, QJ_IDLE_COLOR, QJ_ACTIVE_COLOR } from '../Constants.js'
 export class MultiSelectTouchButton {
     static #instances = [];
 
-    constructor(parent, options, gridArea, id, elListener, initialIndex = 0, radius = '12px', showArrow = true, shouldExpandCallback = null, fixedLabel = null, showSelectedInPopup = false) {
+    constructor(parent, options, gridArea, id, elListener, initialIndex = 0, radius = '12px', showArrow = true, shouldExpandCallback = null, fixedLabel = null, showSelectedInPopup = false, highlightSelectedInPopup = true) {
         this.options = options;
         this.elListener = elListener;
         this.isExpanded = false;
@@ -12,6 +12,7 @@ export class MultiSelectTouchButton {
         this.shouldExpandCallback = shouldExpandCallback;
         this.fixedLabel = fixedLabel;
         this.showSelectedInPopup = showSelectedInPopup;
+        this.highlightSelectedInPopup = highlightSelectedInPopup;
         this.#handleOutsideTouch = null;
         this.#handleMainTouchStart = null;
         this.#handleMainTouchEnd = null;
@@ -56,7 +57,8 @@ export class MultiSelectTouchButton {
 
             if (shouldInclude) {
                 const isSelected = index === this.selectedIndex;
-                const option = this.#createOptionElement(label, radius, isSelected, this.showSelectedInPopup);
+                const shouldHighlight = isSelected && this.highlightSelectedInPopup;
+                const option = this.#createOptionElement(label, radius, shouldHighlight, this.showSelectedInPopup);
                 option.style.transform = 'translateY(-20px)';
                 option.style.transition = 'opacity 0.15s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
 
@@ -67,14 +69,14 @@ export class MultiSelectTouchButton {
                         e.preventDefault();
                         e.stopPropagation();
                         option.style.backgroundColor = '#1a1a1a';
-                        option.style.color = isSelected ? '#ffffffaa' : '#888888aa';
+                        option.style.color = shouldHighlight ? '#ffffffaa' : '#888888aa';
                     });
 
                     option.addEventListener('touchend', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         option.style.backgroundColor = '#000000';
-                        option.style.color = isSelected ? '#ffffffff' : QJ_LABEL_COLOR;
+                        option.style.color = shouldHighlight ? '#ffffffff' : QJ_LABEL_COLOR;
                         this.#selectOption(index);
                     });
                 }

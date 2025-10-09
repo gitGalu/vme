@@ -76,7 +76,7 @@ export class UiManager {
         }
 
         if (!UiManager.#platform_manager.getSelectedPlatform().savestates_disabled) {
-            new MultiSelectTouchButton(fastuiContainer, ['QUICKSAVE', 'SAVE'], undefined, 'fastsave', new SaveButtonListener(UiManager.#platform_manager), 0, FAST_BTN_RADIUS, false, null, 'SAVE', true);
+            new MultiSelectTouchButton(fastuiContainer, ['QUICKSAVE', 'SAVE'], undefined, 'fastsave', new SaveButtonListener(UiManager.#platform_manager), 0, FAST_BTN_RADIUS, false, null, 'SAVE', true, false);
         }
 
         if (UiManager.#platform_manager.getSelectedPlatform().keyboard) {
