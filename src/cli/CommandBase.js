@@ -74,6 +74,16 @@ export class CommandBase {
             span.append(item.label);
             p.append(span);
             p.addEventListener('click', id => {
+                const settingsElement = document.getElementById('settings');
+                if (settingsElement) {
+                    settingsElement.style.pointerEvents = 'none';
+                }
+
+                const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+                menuButtons.forEach(btn => {
+                    btn.style.pointerEvents = 'none';
+                });
+
                 this.process_selection(item);
             });
             container.append(p);

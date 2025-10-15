@@ -446,13 +446,34 @@ export class CollectionBrowser {
 
         StorageManager.storeValue(BOOT_TO, BOOT_TO_COLLECTION_BROWSER);
 
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            const buttonIds = ['collectionBrowserUiBack', 'collectionBrowserUiLoad', 'collectionBrowserUiRestore'];
+            gamepadManager.initBrowserNavigation(this.#flicking, buttonIds, () => {
+                StorageManager.clearValue(BOOT_TO);
+                StorageManager.clearValue(COLLECTION_BROWSER_COLLECTION_INDEX);
+                StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
+                this.close();
+                this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            });
+        }
+
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.COLLECTION_BROWSER);
     }
 
-    close() {
+    close(skipPlatformUpdate = false) {
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            gamepadManager.clearBrowserNavigation();
+        }
+
         document.removeEventListener("keydown", this.#kb_event_bound);
         this.#destroy();
         this.#cli.reset();
+
+        if (gamepadManager) {
+            gamepadManager.restoreFocusToButton('menu-item-compilations');
+        }
     }
 
     async #restoreSelected() {
@@ -480,9 +501,15 @@ export class CollectionBrowser {
                     const state = await this.#db.getSaveData(saveIntId);
                     const item = filteredItems[0];
                     const rom = await this.#db.getRomData(item.rom_data_id);
+
+                    document.getElementById('collectionBrowserUi').style.display = "none";
+                    const flickingElement = document.querySelector('#collection-flicking');
+                    if (flickingElement) {
+                        flickingElement.style.opacity = "0";
+                    }
+
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, state.save_data);
-                    this.close();
+                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, state.save_data, () => this.close(true));
                 } else {
                     throw new Error("Cannot load selected program.");
                 }
@@ -496,7 +523,7 @@ export class CollectionBrowser {
             const activePanel = this.#flicking.currentPanel;
             if (activePanel != null) {
                 this.#addLaunchVisualFeedback(activePanel.element);
-                
+
                 const id = activePanel.element.getAttribute('data-id');
                 const intId = parseInt(id, 10);
 
@@ -504,13 +531,19 @@ export class CollectionBrowser {
                 StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
 
                 const filteredItems = this.#items.filter(item => item.id == intId);
-                
+
                 if (filteredItems.length > 0) {
                     const item = filteredItems[0];
                     const rom = await this.#db.getRomData(item.rom_data_id);
+
+                    document.getElementById('collectionBrowserUi').style.display = "none";
+                    const flickingElement = document.querySelector('#collection-flicking');
+                    if (flickingElement) {
+                        flickingElement.style.opacity = "0";
+                    }
+
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title);
-                    this.close();
+                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, null, () => this.close(true));
                 } else {
                     throw new Error("Cannot load selected program.");
                 }
@@ -580,6 +613,12 @@ export class CollectionBrowser {
     }
 
     async #handleKeyboard(event) {
+        if (event.key === "Escape" || event.key === "Backspace") {
+            this.close();
+            this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            return;
+        }
+
         if (!this.#flicking || this.#flicking.animating || !this.#uiReady) {
             return;
         }
@@ -590,9 +629,6 @@ export class CollectionBrowser {
             this.#flicking.prev().catch(() => { });
         } else if (event.key === "Enter") {
             this.#loadSelected();
-        } else if (event.key === "Escape") {
-            this.close();
-            this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
         }
     }
 

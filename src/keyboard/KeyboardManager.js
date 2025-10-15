@@ -23,6 +23,7 @@ export class KeyboardManager {
     audioBuffers = {};
 
     #keyboardConfig;
+    #gamepadManager = null;
 
     #handleCliInputBound;
     #handleEmulationInputBound;
@@ -427,10 +428,42 @@ export class KeyboardManager {
             const keyValue = target.getAttribute('data-value');
             const keyCode = target.getAttribute('data-code');
             this.playSound(keyCode);
+
+            if (keyValue === 'enter') {
+                const listContainer = document.getElementById('cors_results');
+                const items = listContainer ? listContainer.querySelectorAll('.corsrow') : [];
+
+                if (items.length > 0) {
+                    this.#switchToListSelectionMode(items);
+                    return;
+                }
+            }
+
             if (!this.#cli.is_loading()) {
                 this.#cli.process_input(keyValue);
             }
         }
+    }
+
+    #switchToListSelectionMode(items) {
+        this.hideTouchKeyboard();
+
+        if (this.#gamepadManager) {
+            this.#gamepadManager.keyboardHasFocus = false;
+            this.#gamepadManager.cliHasFocus = false;
+
+            const allKeys = document.querySelectorAll('.key');
+            allKeys.forEach(key => key.classList.remove('keyboard-gamepad-focused'));
+
+            this.#gamepadManager.listItems = Array.from(items);
+            this.#gamepadManager.currentListIndex = 0;
+            this.#gamepadManager.listHasFocus = true;
+            this.#gamepadManager.updateListFocus();
+        }
+    }
+
+    setGamepadManager(gamepadManager) {
+        this.#gamepadManager = gamepadManager;
     }
 
     #handleEmulationSpecial(e) {

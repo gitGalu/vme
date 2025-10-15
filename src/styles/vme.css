@@ -184,7 +184,8 @@ body.fade-in-visible {
   transition: opacity 0.25s ease-in;
 }
 
-body, html {
+body,
+html {
   height: 100%;
 }
 
@@ -540,9 +541,23 @@ a {
   background-color: var(--color1);
 }
 
+/* iPad only */
+@media (min-width: 1024px) and (orientation: landscape) {
+  #settings {
+    font-size: calc(var(--fontsize) * 1.25);
+  }
+}
+
 @media (orientation: portrait) {
   #settings {
     font-size: var(--portrait-fontsize);
+  }
+
+  /* iPad only? */
+  @media (min-width: 1024px) {
+    #settings {
+      font-size: calc(var(--portrait-fontsize) * 1.25);
+    }
   }
 
   #quickjoys {
@@ -897,11 +912,22 @@ a {
   font-family: Helvetica, Arial, sans-serif !important;
 }
 
-#lmb, #rmb, #cursorb1, #cursorb1, #mb1, #mb31, #mb32, #mb33 {
+#lmb,
+#rmb,
+#cursorb1,
+#cursorb1,
+#mb1,
+#mb31,
+#mb32,
+#mb33 {
   pointer-events: all;
 }
 
-#quickjoys, #quickshots, #cursorkeys, #fastbuttons, #fastui {
+#quickjoys,
+#quickshots,
+#cursorkeys,
+#fastbuttons,
+#fastui {
   pointer-events: none;
   font-family: Helvetica, Arial, sans-serif !important;
 }
@@ -929,12 +955,12 @@ a {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 99999;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1.5em;
   pointer-events: none;
   transform: translateY(100%);
   transition: transform 0.2s ease-out;
+  z-index: 10000;
 }
 
 #keyboardContainer.visible {
@@ -969,7 +995,7 @@ a {
   }
 }
 
-@media (orientation: landscape) and (min-width: 1024px) and (min-height: 768px) {
+@media (orientation: landscape) and (min-width: 1024px) {
   #keyboard.keyboardQwerty {
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -1801,7 +1827,9 @@ a {
 }
 
 @keyframes fade {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
 
@@ -1811,7 +1839,9 @@ a {
 }
 
 @keyframes blink {
-  from, to {
+
+  from,
+  to {
     background-color: var(--color1);
   }
 
@@ -1825,7 +1855,8 @@ a {
     color: var(--color0);
   }
 
-  0%, 100% {
+  0%,
+  100% {
     color: var(--color1);
   }
 }
@@ -1836,7 +1867,8 @@ a {
     background-color: var(--color1);
   }
 
-  0%, 100% {
+  0%,
+  100% {
     background-color: var(--color3);
     color: var(--color2);
   }
@@ -1910,8 +1942,8 @@ a {
 
 @media (hover: hover) {
   .clabel:hover:not(.disabled) {
-  background-color: var(--color3);
-  color: var(--color2);
+    background-color: var(--color3);
+    color: var(--color2);
   }
 }
 
@@ -1925,7 +1957,8 @@ a {
   color: var(--color2);
 }
 
-.joystick-base, .cursor-base {
+.joystick-base,
+.cursor-base {
   position: absolute;
   border-radius: 50%;
   background-color: #88888822;
@@ -1938,7 +1971,8 @@ a {
   height: 100px;
 }
 
-.joystick-thumb, .cursor-thumb {
+.joystick-thumb,
+.cursor-thumb {
   position: absolute;
   border-radius: 50%;
   background-color: #000;
@@ -2059,7 +2093,9 @@ a {
 }
 
 @keyframes flipAnimation {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotateX(0) rotateY(0);
   }
 
@@ -2076,7 +2112,11 @@ a {
   }
 }
 
-#fastui, #quickshots, #quickjoys, #mousepads, #cursorkeys {
+#fastui,
+#quickshots,
+#quickjoys,
+#mousepads,
+#cursorkeys {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-top: env(safe-area-inset-top);
@@ -2148,6 +2188,7 @@ a {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -2157,6 +2198,7 @@ a {
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
@@ -2167,6 +2209,7 @@ a {
     opacity: 0;
     transform: translateY(16px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -2178,6 +2221,7 @@ a {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   to {
     opacity: 0;
     transform: translateY(12px) scale(0.96);
@@ -2296,6 +2340,7 @@ a {
   font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
   font-size: 80%;
   color: white;
+  pointer-events: none;
 }
 
 .clickable-area.disabled {
@@ -2338,6 +2383,7 @@ a {
 
 #desktopUi.visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 #desktopUiBack {
@@ -2473,7 +2519,8 @@ a {
   }
 }
 
-.flicking-title, .panel-buttons {
+.flicking-title,
+.panel-buttons {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.5s, visibility 0.5s;
@@ -2511,7 +2558,8 @@ a {
   display: inline-block;
 }
 
-#flicking-background, #collection-flicking-background {
+#flicking-background,
+#collection-flicking-background {
   position: fixed;
   top: 0;
   left: 0;
@@ -2526,6 +2574,22 @@ a {
   backface-visibility: hidden;
   perspective: 1000;
   transition: opacity 1s ease;
+}
+
+#flicking-background.zoom-out,
+#collection-flicking-background.zoom-out {
+  animation: backgroundZoomOut 3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+@keyframes backgroundZoomOut {
+  from {
+    transform: translate3d(0, 0, 0) scale(12);
+    filter: brightness(20%);
+  }
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: brightness(5%);
+  }
 }
 
 #flicking-background {
@@ -2626,7 +2690,8 @@ a {
   filter: brightness(0) invert(1);
 }
 
-#platformFilterContainer, #kbModeContainer {
+#platformFilterContainer,
+#kbModeContainer {
   display: flex;
   align-items: left;
   flex: auto;
@@ -2652,7 +2717,8 @@ a {
   background-size: 10px;
 }
 
-.minimal-combobox:hover, .minimal-combobox:focus {
+.minimal-combobox:hover,
+.minimal-combobox:focus {
   border-color: lightgray;
 }
 
@@ -2678,6 +2744,90 @@ a {
 
 .minimal-combobox::-ms-expand {
   display: none;
+}
+
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.custom-dropdown-selected {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: transparent;
+  border: 1px solid #555;
+  padding: 8px 32px 8px 16px;
+  font-size: 14px;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  color: lightgray;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  outline: none;
+  background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"%3E%3Cpath fill="%23D3D3D3" d="M2 0L0 2h4L2 0zM2 5L0 3h4l-2 2z"/%3E%3C/svg%3E');
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px;
+  width: 100%;
+  user-select: none;
+}
+
+.custom-dropdown-selected:hover {
+  border-color: lightgray;
+}
+
+.custom-dropdown.open .custom-dropdown-selected {
+  border-color: lightgray;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.custom-dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  backdrop-filter: blur(16px);
+  border: 1px solid lightgray;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+  z-index: 1000;
+}
+
+.custom-dropdown.open .custom-dropdown-options {
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 1;
+}
+
+.custom-dropdown-option {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  color: lightgray;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.custom-dropdown-option:hover,
+.custom-dropdown-option.focused {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.custom-dropdown-option.selected {
+  background-color: rgba(100, 180, 255, 0.7);
+}
+
+.custom-dropdown-option.selected:hover,
+.custom-dropdown-option.selected.focused {
+  background-color: rgba(100, 180, 255, 0.5);
 }
 
 
@@ -2868,6 +3018,8 @@ canvas {
   padding: 12px;
   cursor: pointer;
   border: 1px solid transparent;
+  position: relative;
+  z-index: 10;
 }
 
 .menu-item:hover {
@@ -3102,13 +3254,293 @@ canvas {
 
 /* wiki */
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font: inherit;
   margin: inherit;
   line-height: inherit;
   margin-top: 1em;
 }
 
-cite, i {
+cite,
+i {
   font-style: normal;
+}
+
+#gamepad-message-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100000;
+  pointer-events: none;
+  padding: 16px 26px;
+  background: #1e90ff;
+  border-radius: 0px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+#gamepad-message-container.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#gamepad-message-container.hide {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@media (min-width: 1024px) {
+  #gamepad-message-container {
+    padding: 24px 40px;
+    font-size: 28px;
+    border-radius: 8px;
+    border-width: 2px;
+    top: 40px;
+    right: 40px;
+  }
+}
+
+@media (orientation: portrait) {
+  #gamepad-message-container {
+    top: 40px;
+    right: 40px;
+  }
+}
+
+@media (orientation: landscape) {
+  #gamepad-message-container {
+    top: 40px;
+    right: 40px;
+  }
+}
+
+.gamepad-focus-outline {
+  position: fixed;
+  pointer-events: none;
+  z-index: 101;
+  opacity: 0;
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease-in-out;
+  border-radius: 8px;
+
+  background: linear-gradient(135deg,
+      rgba(100, 180, 255, 0.25) 0%,
+      rgba(80, 160, 255, 0.15) 50%,
+      rgba(60, 140, 235, 0.25) 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.gamepad-focus-outline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 50%);
+  border-radius: inherit;
+}
+
+.gamepad-focus-outline.visible {
+  opacity: 1;
+}
+
+.gamepad-focus-outline.no-transition {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.clabel.gamepad-focused {
+  position: relative;
+}
+
+.clabel {
+  position: relative;
+  z-index: 99999;
+}
+
+.key {
+  position: relative;
+  z-index: 99999;
+}
+
+.clickable-area {
+  position: relative;
+}
+
+body.gamepad-browser-active .flicking-panel.active {
+  position: relative;
+}
+
+body.gamepad-browser-active .flicking-panel::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  right: -16px;
+  bottom: -16px;
+  pointer-events: none;
+  border-radius: 14px;
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+  z-index: -1;
+  background: linear-gradient(135deg,
+      rgba(100, 180, 255, 0.2) 0%,
+      rgba(80, 160, 255, 0.1) 50%,
+      rgba(60, 140, 235, 0.2) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%),
+    linear-gradient(135deg,
+      rgba(100, 180, 255, 0.2) 0%,
+      rgba(80, 160, 255, 0.1) 50%,
+      rgba(60, 140, 235, 0.2) 100%);
+}
+
+body.gamepad-browser-active .flicking-panel::after {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  right: -16px;
+  bottom: -16px;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 50%);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+  z-index: 1;
+}
+
+body.gamepad-browser-active .flicking-panel.active::before,
+body.gamepad-browser-active .flicking-panel.active::after {
+  opacity: 1;
+}
+
+#browserLoadingOverlay,
+#collectionBrowserLoadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999999999999999999;
+  background: transparent;
+  pointer-events: none;
+}
+
+#browserLoadingOverlay.show,
+#collectionBrowserLoadingOverlay.show {
+  display: flex;
+  pointer-events: auto;
+}
+
+#browserLoadingContent,
+#collectionBrowserLoadingContent {
+  text-align: center;
+  padding: 40px;
+  color: #ffffff;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+#browserLoadingMessage,
+#collectionBrowserLoadingMessage {
+  font-size: 28px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#browserLoadingMessage .blinking2,
+#collectionBrowserLoadingMessage .blinking2 {
+  display: inline-block;
+  animation: blink-text 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-text {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+#browserLoadingControls,
+#collectionBrowserLoadingControls {
+  margin-top: 30px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #cccccc;
+  text-align: left;
+  display: inline-block;
+}
+
+#browserLoadingControls table,
+#collectionBrowserLoadingControls table {
+  border-collapse: collapse;
+  margin: 0 auto;
+}
+
+#browserLoadingControls tr,
+#collectionBrowserLoadingControls tr {
+  line-height: 1.8;
+}
+
+#browserLoadingControls td:first-child,
+#collectionBrowserLoadingControls td:first-child {
+  text-align: right;
+  padding-right: 15px;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+#browserLoadingControls td:last-child,
+#collectionBrowserLoadingControls td:last-child {
+  text-align: left;
+  color: #aaaaaa;
+}
+
+@media (max-width: 768px) {
+  #browserLoadingMessage,
+  #collectionBrowserLoadingMessage {
+    font-size: 20px;
+  }
+
+  #browserLoadingControls,
+  #collectionBrowserLoadingControls {
+    font-size: 14px;
+  }
 }

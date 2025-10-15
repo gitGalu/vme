@@ -28,6 +28,7 @@ import { isMobile } from 'react-device-detect';
 import { JOYSTICK_TOUCH_MODE, BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 import { ButtonManager } from './ButtonManager.js';
 import { Debug } from './Debug.js';
+import { GamepadManager } from './gamepad/GamepadManager.js';
 
 export class VME {
     #cli;
@@ -40,6 +41,7 @@ export class VME {
 
     #save_browser;
     #collection_browser;
+    #gamepad;
 
     static whitespace = "&nbsp;";
 
@@ -88,6 +90,11 @@ export class VME {
         this.#ui = new UiManager(this.#pl, this.#kb);
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);
         this.#collection_browser = new CollectionBrowser(this, this.#pl, this.#db, this.#cli);
+        this.#gamepad = new GamepadManager();
+
+        this.#gamepad.setManagers(this.#kb, this.#cli);
+
+        this.#kb.setGamepadManager(this.#gamepad);
 
         this.#kb.clicks_on();
 
@@ -141,8 +148,24 @@ export class VME {
         window.addEventListener('resize', () => EnvironmentManager.resizeCanvas(this.#pl.getNostalgist()));
         window.addEventListener('resize', () => EnvironmentManager.detectDevice());
         window.addEventListener('orientationchange', () => EnvironmentManager.detectDevice());
-        window.addEventListener('gamepaddisconnected', () => EnvironmentManager.detectDevice());
-        window.addEventListener('gamepadconnected', () => EnvironmentManager.detectDevice());
+        window.addEventListener('gamepaddisconnected', () => {
+            EnvironmentManager.detectDevice();
+            this.#updateGamepadHelpMessage();
+        });
+        window.addEventListener('gamepadconnected', () => {
+            EnvironmentManager.detectDevice();
+            this.#updateGamepadHelpMessage();
+
+            if (document.getElementById('settings').style.display !== 'none') {
+                setTimeout(() => {
+                    this.#gamepad.initMenuNavigation();
+                }, 50);
+            }
+        });
+    }
+
+    #updateGamepadHelpMessage() {
+        this.#pl.updateGamepadStatus();
     }
 
     #guard() {
@@ -202,6 +225,26 @@ export class VME {
                 this.#kb.clicks_on();
                 this.#kb.updateMode(mode);
                 document.body.classList.remove('black');
+
+                const settingsElement = document.getElementById('settings');
+                if (settingsElement) {
+                    settingsElement.style.pointerEvents = 'auto';
+                }
+
+                const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+                menuButtons.forEach(btn => {
+                    btn.style.pointerEvents = 'auto';
+                });
+
+                if (this.#gamepad) {
+                    this.#gamepad.setGuiNavigationEnabled(true);
+                }
+
+                if (this.hasGamepad()) {
+                    setTimeout(() => {
+                        this.#gamepad.initMenuNavigation();
+                    }, 50);
+                }
                 break;
             case VME.CURRENT_SCREEN.EMULATION:
                 this.#cli.off();
@@ -225,6 +268,8 @@ export class VME {
                 this.#kb.clicks_off();
                 this.#kb.updateMode(mode);
                 document.body.classList.add('black');
+
+                this.#gamepad.clearMenuFocus();
                 break;
             case VME.CURRENT_SCREEN.SAVE_BROWSER:
                 this.#cli.off();
@@ -234,6 +279,8 @@ export class VME {
                 hide('#collection-browser');
                 show('#save-browser', 'flex');
                 document.body.classList.add('black');
+
+                this.#gamepad.clearMenuFocus();
                 break;
             case VME.CURRENT_SCREEN.COLLECTION_BROWSER:
                 this.#cli.off();
@@ -246,9 +293,29 @@ export class VME {
                 hide('#quickshot');
                 show('#collection-browser', 'flex');
                 document.body.classList.add('black');
+
+                this.#gamepad.clearMenuFocus();
                 break;
         }
     }
 
+    hasGamepad() {
+        if (this.#gamepad && this.#gamepad.hasGamepad()) {
+            return true;
+        }
+
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    getGamepadManager() {
+        return this.#gamepad;
+    }
 
 }

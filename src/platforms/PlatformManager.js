@@ -228,6 +228,24 @@ export class PlatformManager {
         try {
             this.#prepareNostalgist(romName, caption);
 
+            const gamepadManager = this.#vme.getGamepadManager();
+            if (gamepadManager) {
+                gamepadManager.setGuiNavigationEnabled(false);
+            }
+            self.#cli.set_loading(true);
+            self.#cli.off();
+            self.#keyboard_manager.clicks_off();
+
+            const settingsElement = document.getElementById('settings');
+            if (settingsElement) {
+                settingsElement.style.pointerEvents = 'none';
+            }
+
+            const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+            menuButtons.forEach(btn => {
+                btn.style.pointerEvents = 'none';
+            });
+
             self.#cli.print_progress('Loading ... Please wait.');
 
             const downloadFile = async (url, text, useProxy) => {
@@ -296,13 +314,16 @@ export class PlatformManager {
 
             self.#cli.clear();
             self.#cli.print("Loading complete.");
-            self.#cli.print("<span class='blinking2'>Press anything to start.</span>");
+            self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
 
             hide('#cors_interface');
             hide('#header');
             hide('#menu-wrap');
             hide('#menu-spacer');
             hide('#toggle-keyboard');
+
+            // Close onscreen keyboard if visible - user must use physical keyboard or mouse
+            self.#keyboard_manager.hideTouchKeyboard();
 
             if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
                 if (typeof self.#selected_platform.keyboard_controller_info === 'function') {
@@ -314,11 +335,13 @@ export class PlatformManager {
             }
 
             const launch = () => {
+                // Remove all launch listeners
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
                 self.startEmulation(romBlob, caption, romName, wasmArrayBuffer);
             };
 
+            // Only allow keyboard or mouse to proceed - gamepad does not count as user gesture for AudioContext
             document.body.addEventListener('click', launch, { once: true });
             document.body.addEventListener('keydown', launch, { once: true });
 
@@ -355,12 +378,142 @@ export class PlatformManager {
         return this.loadRom(filename, caption, false, romName);
     }
 
-    async loadRomFile(blob, romName, caption) {
+    async loadRomFile(blob, romName, caption, fromBrowser = false, browserType = null, closeCallback = null) {
         this.#prepareNostalgist(romName, caption);
-        this.startEmulation(blob, caption, romName);
+
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            gamepadManager.setGuiNavigationEnabled(false);
+        }
+        this.#cli.set_loading(true);
+        this.#cli.off();
+        this.#keyboard_manager.clicks_off();
+
+        const settingsElement = document.getElementById('settings');
+        if (settingsElement) {
+            settingsElement.style.pointerEvents = 'none';
+        }
+
+        const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+        menuButtons.forEach(btn => {
+            btn.style.pointerEvents = 'none';
+        });
+
+        const self = this;
+
+        if (fromBrowser && browserType) {
+            s("html").style.background = "#000000";
+            s("body").style.background = "#000000";
+
+            const hasGamepad = Array.from(navigator.getGamepads()).some(gp => gp?.connected);
+
+            if (hasGamepad) {
+                const overlayId = browserType === 'save' ? 'browserLoadingOverlay' : 'collectionBrowserLoadingOverlay';
+                const messageId = browserType === 'save' ? 'browserLoadingMessage' : 'collectionBrowserLoadingMessage';
+                const controlsId = browserType === 'save' ? 'browserLoadingControls' : 'collectionBrowserLoadingControls';
+                const backgroundId = browserType === 'save' ? 'flicking-background' : 'collection-flicking-background';
+
+                const overlay = document.getElementById(overlayId);
+                const messageEl = document.getElementById(messageId);
+                const controlsEl = document.getElementById(controlsId);
+                const backgroundEl = document.getElementById(backgroundId);
+
+                if (overlay && messageEl && controlsEl) {
+
+                    if (backgroundEl) {
+                        backgroundEl.classList.add('zoom-out');
+                    }
+
+                    messageEl.innerHTML = 'Loading complete.<br><span class="blinking2">Press any key or click to start.</span>';
+
+                    if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
+                        let controlsMap = self.#selected_platform.keyboard_controller_info;
+                        if (typeof controlsMap === 'function') {
+                            const key = FileUtils.getFilenameWithoutExtension(romName);
+                            controlsMap = controlsMap(key);
+                        }
+
+                        controlsEl.innerHTML = '<div style="margin-top: 20px; font-size: 14px; color: #ffffff;">Keyboard controls:</div>' +
+                            self.#getControls(controlsMap);
+                    } else {
+                        controlsEl.innerHTML = '';
+                    }
+
+                    overlay.style.display = 'flex';
+
+                    self.#keyboard_manager.hideTouchKeyboard();
+
+                    const launch = () => {
+                        document.body.removeEventListener('click', launch);
+                        document.body.removeEventListener('keydown', launch);
+
+                        if (gamepadManager) {
+                            gamepadManager.setGuiNavigationEnabled(false);
+                        }
+
+                        if (backgroundEl) {
+                            backgroundEl.classList.remove('zoom-out');
+                        }
+
+                        overlay.style.display = 'none';
+
+                        if (closeCallback) {
+                            closeCallback();
+                        }
+
+                        self.startEmulation(blob, caption, romName);
+                    };
+
+                    document.body.addEventListener('click', launch, { once: true });
+                    document.body.addEventListener('keydown', launch, { once: true });
+                }
+            } else {
+                if (closeCallback) {
+                    closeCallback();
+                }
+                self.startEmulation(blob, caption, romName);
+            }
+        } else {
+            self.#vme.toggleScreen(100);
+
+            self.#cli.clear();
+            self.#cli.print("Loading complete.");
+            self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
+
+            hide('#cors_interface');
+            hide('#header');
+            hide('#menu-wrap');
+            hide('#menu-spacer');
+            hide('#toggle-keyboard');
+
+            self.#keyboard_manager.hideTouchKeyboard();
+
+            if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
+                if (typeof self.#selected_platform.keyboard_controller_info === 'function') {
+                    const key = FileUtils.getFilenameWithoutExtension(romName);
+                    self.#printControls(self.#selected_platform.keyboard_controller_info(key));
+                } else {
+                    self.#printControls(self.#selected_platform.keyboard_controller_info);
+                }
+            }
+
+            const launch = () => {
+                document.body.removeEventListener('click', launch);
+                document.body.removeEventListener('keydown', launch);
+                self.startEmulation(blob, caption, romName);
+            };
+
+            document.body.addEventListener('click', launch, { once: true });
+            document.body.addEventListener('keydown', launch, { once: true });
+        }
     }
 
-    async loadRomFromCollection(platform_id, blob, program_name, caption, state) {
+    async loadRomFromCollection(platform_id, blob, program_name, caption, state, closeCallback = null) {
+        if (closeCallback) {
+            s("html").style.background = "#000000";
+            s("body").style.background = "#000000";
+        }
+
         if (platform_id == "md") platform_id = "smd"; //temp fix
         let platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
         this.#storage_manager.checkFiles(platform)
@@ -369,7 +522,7 @@ export class PlatformManager {
                 let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
                 this.setSelectedPlatform(selected);
                 this.#state = state;
-                this.loadRomFile(blob, program_name, caption);
+                this.loadRomFile(blob, program_name, caption, true, 'collection', closeCallback);
             });
     }
 
@@ -393,6 +546,11 @@ export class PlatformManager {
 
         if (this.getSelectedPlatform().touch_keyboard_reconfig != undefined) {
             this.#keyboard_manager.updateConfig(this.getSelectedPlatform().touch_keyboard_reconfig);
+        }
+
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            gamepadManager.setGuiNavigationEnabled(false);
         }
 
         try {
@@ -497,6 +655,14 @@ export class PlatformManager {
         this.#print_platform_status();
     }
 
+    updateGamepadStatus() {
+        const gamepadMsgEl = document.getElementById('gamepad-help-msg');
+        if (gamepadMsgEl) {
+            const hasGamepad = this.#vme.hasGamepad();
+            gamepadMsgEl.textContent = hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.';
+        }
+    }
+
     #printPlatformStatus(platformName, reqs, soft) {
         this.#cli.print(platformName);
         this.#cli.print("&nbsp;[" + (reqs ? "x" : " ") + "] Ready");
@@ -550,10 +716,15 @@ export class PlatformManager {
                     this.#cli.print("<span class='blinking2'>DEBUG MODE enabled.</span>");
                     this.#cli.print('&nbsp;');
                 }
+                const hasGamepad = this.#vme.hasGamepad();
+
                 if (this.#selected_platform.message) {
                     this.#cli.print("<span class='blinking2'>" + this.#selected_platform.message + "</span>");
                     this.#cli.print('&nbsp;');
-                    this.#cli.print('Type HELP for info.');
+                    this.#cli.print('<span id="gamepad-help-msg">' + (hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.') + '</span>');
+                    if (hasGamepad) {
+                        this.#printGamePadWarning();
+                    }
                 } else if (!deps_satisfied) {
                     this.#cli.print('Please import the missing file(s).');
                     this.#cli.print('&nbsp;');
@@ -561,7 +732,10 @@ export class PlatformManager {
                 } else {
                     this.#cli.print(softFile.items.length + ' files available.');
                     this.#cli.print('&nbsp;');
-                    this.#cli.print('Type HELP for info.');
+                    this.#cli.print('<span id="gamepad-help-msg">' + (hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.') + '</span>');
+                    if (hasGamepad) {
+                        this.#printGamePadWarning();
+                    }
                 }
             })
             .catch(error => {
@@ -574,13 +748,20 @@ export class PlatformManager {
             });
     }
 
-    #setBgColor(color) {
-        s("#settings").style.background = color;
-        s("body").style.background = color;
-        s("html").style.background = color;
+    #printGamePadWarning() {
+        this.#cli.print('Gamepad UI is a temporary work-in-progress setup.');
+        this.#cli.print('Use front gamepad buttons to interact with the UI.');
     }
 
-    theme(theme) {
+    #setBgColor(color, skipHtmlBody = false) {
+        s("#settings").style.background = color;
+        if (!skipHtmlBody) {
+            s("body").style.background = color;
+            s("html").style.background = color;
+        }
+    }
+
+    theme(theme, skipBackground = false) {
         s("html").style.display = "block";
         document.documentElement.style.setProperty("--transform", "none");
         document.documentElement.style.setProperty("--color2", "");
@@ -598,7 +779,7 @@ export class PlatformManager {
         Object.keys(theme).forEach((prop) => {
             document.documentElement.style.setProperty(prop, theme[prop]);
         });
-        this.#setBgColor(theme["--color0"], false);
+        this.#setBgColor(theme["--color0"], skipBackground);
     }
 
     importFile(key, file) {
@@ -865,16 +1046,23 @@ export class PlatformManager {
         return typeof fileName === 'string' && fileName.toLowerCase().endsWith('.zip');
     }
 
-    async loadState(platform_id, state, blob, program_name, caption) {
+    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null) {
+        if (closeCallback) {
+            s("html").style.background = "#000000";
+            s("body").style.background = "#000000";
+        }
+
         if (platform_id == "md") platform_id = "smd"; //temp fix
 
         if (platform_id != this.#selected_platform.platform_id) {
             let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
             this.setSelectedPlatform(selected);
-            this.updatePlatform();
+            if (!closeCallback) {
+                this.updatePlatform();
+            }
         }
         this.#state = state;
-        await this.loadRomFile(blob, program_name, caption);
+        await this.loadRomFile(blob, program_name, caption, true, 'save', closeCallback);
     }
 
     async saveState(isQuickSave = false) {

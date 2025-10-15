@@ -3,6 +3,7 @@ import { VME } from './VME.js';
 import Flicking from "@egjs/flicking";
 import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
+import { CustomDropdown } from './components/CustomDropdown.js';
 
 export class SaveBrowser {
     #vme;
@@ -28,6 +29,7 @@ export class SaveBrowser {
     #isGameView = false;
     #uiReady = false;
     #lastGamePosition = null;
+    #platformDropdown = null;
 
     #urlsToRevoke = new Set();
     #isDestroying = false;
@@ -47,7 +49,7 @@ export class SaveBrowser {
 
         this.#backButton = s('#saveBrowserUiBack');
         this.#backButton.classList.remove('disabled');
-        
+
         this.#backHandler = (pressed) => {
             if (pressed) {
                 if (this.#isGameView) {
@@ -59,8 +61,25 @@ export class SaveBrowser {
             }
         };
 
-        const platformFilter = document.getElementById('platformFilterContainer');
-        platformFilter.classList.add('none');
+
+        const platformFilter = document.getElementById('platformFilter');
+        if (platformFilter) {
+            platformFilter.remove();
+        }
+
+        const platformFilterContainer = document.getElementById('platformFilterContainer');
+        platformFilterContainer.classList.add('none');
+        const dropdownContainer = document.createElement('div');
+        dropdownContainer.id = 'platformDropdownContainer';
+        platformFilterContainer.appendChild(dropdownContainer);
+
+        this.#platformDropdown = new CustomDropdown('platformDropdownContainer', [
+            { value: 'all', text: 'All' }
+        ], 'all');
+
+        this.#platformDropdown.onChange((e) => {
+            this.#filterChangeHandler(e);
+        });
 
         this.#uiReady = false;
     }
@@ -191,21 +210,15 @@ export class SaveBrowser {
     }
 
     #addFilterItem(platform_id, platform_name) {
-        const platformFilter = document.getElementById('platformFilter');
+        if (!this.#platformDropdown) return;
+
         const platformFilterContainer = document.getElementById('platformFilterContainer');
 
-        const options = Array.from(platformFilter.options);
-        const optionExists = options.some(option => option.value === platform_id);
+        this.#platformDropdown.addOption(platform_id, platform_name);
 
-        if (!optionExists) {
-            const newOption = document.createElement('option');
-            newOption.value = platform_id;
-            newOption.text = platform_name;
-            platformFilter.add(newOption);
-
-            if (platformFilter.options.length > 1) {
-                platformFilterContainer.style.display = '';
-            }
+        const currentOptions = this.#platformDropdown.options || [];
+        if (currentOptions.length > 1) {
+            platformFilterContainer.style.display = '';
         }
     }
 
@@ -320,9 +333,8 @@ export class SaveBrowser {
 
     open() {
         this.#currentPlatformFilter = "all";
-        const filterElement = document.getElementById('platformFilter');
-        if (filterElement) {
-            filterElement.value = "all";
+        if (this.#platformDropdown) {
+            this.#platformDropdown.setValue("all");
         }
     
         let div = document.querySelector('#save-browser');
@@ -356,12 +368,7 @@ export class SaveBrowser {
         }, 10);
     
         this.#showGameList();
-    
-        const platformFilter = document.getElementById('platformFilter');
-        platformFilter.removeEventListener('change', this.#filter_change_handler_bound);
-        platformFilter.addEventListener('change', this.#filter_change_handler_bound);
-        this.#eventListeners.push({ element: platformFilter, handler: this.#filter_change_handler_bound, type: 'change' });
-    
+
         document.addEventListener("keydown", this.#kb_event_bound);
     
         const deleteButton = s('#saveBrowserUiDelete');
@@ -395,15 +402,40 @@ export class SaveBrowser {
         };
         addButtonEventListeners(openButton, openHandler);
         this.#buttonElements.add(openButton);
-    
+
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            const buttonIds = ['saveBrowserUiBack', 'platformDropdownContainer', 'saveBrowserUiDelete', 'saveBrowserUiLoad', 'saveBrowserUiOpen'];
+            gamepadManager.initBrowserNavigation(this.#flicking, buttonIds, () => {
+                if (this.#isGameView) {
+                    this.#showGameList(this.#lastGamePosition);
+                } else {
+                    this.close();
+                    this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+                }
+            }, this.#platformDropdown);
+        }
+
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
     }
 
-    close() {
+    close(skipPlatformUpdate = false) {
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            gamepadManager.clearBrowserNavigation();
+        }
+
         this.#destroy();
         document.removeEventListener("keydown", this.#kb_event_bound);
         this.#cli.reset();
-        this.#platform_manager.updatePlatform();
+
+        if (!skipPlatformUpdate) {
+            this.#platform_manager.updatePlatform();
+        }
+
+        if (gamepadManager) {
+            gamepadManager.restoreFocusToButton('menu-item-savestates');
+        }
     }
 
     #filterChangeHandler(event) {
@@ -454,16 +486,20 @@ export class SaveBrowser {
             const activePanel = this.#flicking.currentPanel;
             if (activePanel != null) {
                 const id = activePanel.element.getAttribute('data-id');
-                document.getElementById('flicking-background').classList.remove('show');
+
                 document.getElementById('saveBrowserUi').style.display = "none";
+                const flickingElement = document.querySelector('#flicking');
+                if (flickingElement) {
+                    flickingElement.style.opacity = "0";
+                }
+
                 const intId = parseInt(id, 10);
-                this.close();
                 this.#db.getSaveData(intId)
                     .then((data) => {
                         if (data.caption == undefined) {
                             data.caption = data.program_name;
                         }
-                        this.#platform_manager.loadState(data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption);
+                        this.#platform_manager.loadState(data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption, () => this.close(true));
                     });
             }
         }
@@ -485,6 +521,11 @@ export class SaveBrowser {
             }
         });
         this.#eventListeners = [];
+
+        if (this.#platformDropdown) {
+            this.#platformDropdown.setOptions([{ value: 'all', text: 'All' }]);
+            this.#platformDropdown.setValue('all');
+        }
 
         if (this.#flicking) {
             this.#flicking.off("changed");
@@ -744,9 +785,8 @@ export class SaveBrowser {
     
                     if (platformFilterContainer) {
                         platformFilterContainer.style.display = '';
-                        const filterElement = document.getElementById('platformFilter');
-                        if (filterElement) {
-                            filterElement.value = this.#currentPlatformFilter;
+                        if (this.#platformDropdown) {
+                            this.#platformDropdown.setValue(this.#currentPlatformFilter);
                         }
                     }
     

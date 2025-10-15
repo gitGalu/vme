@@ -69,14 +69,14 @@ export class MultiSelectTouchButton {
                         e.preventDefault();
                         e.stopPropagation();
                         option.style.backgroundColor = '#1a1a1a';
-                        option.style.color = shouldHighlight ? '#ffffffaa' : '#888888aa';
+                        option.style.color = '#aaaaaa';
                     });
 
                     option.addEventListener('touchend', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        option.style.backgroundColor = '#000000';
-                        option.style.color = shouldHighlight ? '#ffffffff' : QJ_LABEL_COLOR;
+                        option.style.backgroundColor = isSelected ? '#2a2a2a' : '#000000';
+                        option.style.color = '#cccccc';
                         this.#selectOption(index);
                     });
                 }
@@ -118,12 +118,12 @@ export class MultiSelectTouchButton {
         const option = document.createElement('div');
         option.classList.add('fast-button');
         option.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
-        option.style.backgroundColor = '#000000';
+        option.style.backgroundColor = isSelected ? '#2a2a2a' : '#000000';
         option.style.borderRadius = radius;
         option.style.display = 'flex';
         option.style.alignItems = 'center';
-        option.style.color = isSelected ? '#ffffffff' : QJ_LABEL_COLOR;
-        option.style.border = 'solid 1px #88888888';
+        option.style.color = '#cccccc';
+        option.style.border = isSelected ? 'solid 2px #cccccc' : 'solid 1px #cccccc';
         option.style.fontWeight = 'bold';
         option.style.justifyContent = 'center';
         option.style.pointerEvents = (isSelected && !allowClickSelected) ? 'none' : 'auto';
@@ -132,6 +132,7 @@ export class MultiSelectTouchButton {
         option.style.height = '100%';
         option.style.boxSizing = 'border-box';
         option.style.textTransform = 'uppercase';
+        option.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.4)';
 
         return option;
     }

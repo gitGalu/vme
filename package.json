@@ -1,6 +1,6 @@
 {
   "name": "VM/E",
-  "version": "0.21",
+  "version": "0.30",
   "description": "Virtual Machine / Emulator - web frontend for Libretro-based emulation",
   "scripts": {
     "dev": "vite --port 8080 --host",
@@ -13,6 +13,7 @@
   "license": "GPL-3.0-only",
   "devDependencies": {
     "gh-pages": "^6.1.1",
+    "pngjs": "^7.0.0",
     "rollup-plugin-obfuscator": "^1.1.0",
     "vite": "^7.1.6",
     "vite-plugin-pwa": "^1.0.3",

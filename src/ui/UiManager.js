@@ -15,6 +15,7 @@ import { CustomControllerManager } from '../touch/custom/CustomControllerManager
 import { FileUtils } from '../utils/FileUtils.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { TOUCH_INPUT } from '../Constants.js';
+import { CustomDropdown } from '../components/CustomDropdown.js';
 
 function getJoystickModeName(mode) {
     switch (mode) {
@@ -50,8 +51,8 @@ export class UiManager {
     static #currentControllerIndex = 0;
     static #currentJoyTouchMode;
 
-    #eventListeners = [];
     #kb_mode_change_handler_bound;
+    #kbModeDropdown = null;
 
     constructor(platform_manager, kb_manager) {
         UiManager.#platform_manager = platform_manager;
@@ -123,6 +124,20 @@ export class UiManager {
             timeout = setTimeout(function() {
                 desktopUi.classList.remove('visible');
             }, 3000);
+
+            // Listen for mouse movement near the top of the screen to show the UI
+            document.body.addEventListener('mousemove', function (e) {
+                // Show desktop UI when mouse is within 100px of the top
+                if (e.clientY < 100) {
+                    desktopUi.classList.add('visible');
+                    clearTimeout(timeout);
+
+                    // Set new timeout to hide it
+                    timeout = setTimeout(function () {
+                        desktopUi.classList.remove('visible');
+                    }, 3000);
+                }
+            });
 
             desktopUi.addEventListener('mousemove', function () {
                 desktopUi.classList.add('visible');
@@ -203,41 +218,43 @@ export class UiManager {
             });
 
         const kbModeSelection = document.getElementById('kbModeContainer');
-        if (UiManager.#platform_manager.getSelectedPlatform().keyboard != undefined) {
-            kbModeSelection.style.display = 'flex';
-            kbModeSelection.classList.add('none');
-            kbModeSelection.removeEventListener('change', this.#kb_mode_change_handler_bound)
-            kbModeSelection.addEventListener('change', this.#kb_mode_change_handler_bound);
-            this.#eventListeners.push({ element: kbModeSelection, handler: this.#kb_mode_change_handler_bound });
-        } else {
-            const select = document.getElementById('kbMode');
-            const valueToRemove = 'focusmode';
+        const kbModeSelect = document.getElementById('kbMode');
 
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === valueToRemove) {
-                    select.remove(i);
-                    break;
-                }
-            }
+        if (kbModeSelect) {
+            kbModeSelect.remove();
         }
 
-        if (UiManager.#platform_manager.getSelectedPlatform().touch_controllers.length && UiManager.#platform_manager.getSelectedPlatform().touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
-            const select = document.getElementById('kbMode');
-            const valueToRemove = 'retropad';
+        const kbModeDropdownContainer = document.createElement('div');
+        kbModeDropdownContainer.id = 'kbModeDropdownContainer';
+        kbModeSelection.appendChild(kbModeDropdownContainer);
 
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === valueToRemove) {
-                    select.remove(i);
-                    break;
-                }
-            }
+        let options = [];
+        const hasKeyboardSupport = UiManager.#platform_manager.getSelectedPlatform().keyboard != undefined;
+        const isCursorKeysOnly = UiManager.#platform_manager.getSelectedPlatform().touch_controllers.length &&
+                                 UiManager.#platform_manager.getSelectedPlatform().touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD;
 
-            select.disabled = true;
-
+        if (isCursorKeysOnly) {
+            options = [{ value: 'focusmode', text: 'Full keyboard passthrough' }];
             GameFocusManager.getInstance().enable();
+        } else if (hasKeyboardSupport) {
+            options = [
+                { value: 'retropad', text: 'Keyboard as joystick' },
+                { value: 'focusmode', text: 'Full keyboard passthrough' }
+            ];
+        } else {
+            options = [{ value: 'retropad', text: 'Keyboard as joystick' }];
+        }
+
+        this.#kbModeDropdown = new CustomDropdown('kbModeDropdownContainer', options, options[0].value);
+
+        if (hasKeyboardSupport || !isCursorKeysOnly) {
+            kbModeSelection.style.display = 'flex';
+            kbModeSelection.classList.add('none');
         }
 
         this.#addKeyboardControlsPopover();
+
+        this.#kbModeDropdown.onChange(this.#kb_mode_change_handler_bound);
 
         addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
@@ -261,12 +278,11 @@ export class UiManager {
 
         document.body.appendChild(popover);
 
-        function isRetropadSelected() {
-            const kbModeSelect = document.getElementById('kbMode');
-            return kbModeSelect && kbModeSelect.value === 'retropad';
-        }
+        const isRetropadSelected = () => {
+            return this.#kbModeDropdown && this.#kbModeDropdown.getValue() === 'retropad';
+        };
 
-        function showPopover(e) {
+        const showPopover = (e) => {
             if (!isRetropadSelected()) return;
 
             const popover = document.getElementById('kbModePopover');
@@ -288,21 +304,22 @@ export class UiManager {
             }
 
             popover.style.display = 'block';
-        }
+        };
 
-        function hidePopover() {
+        const hidePopover = () => {
             const popover = document.getElementById('kbModePopover');
             popover.style.display = 'none';
-        }
+        };
 
-        kbMode.addEventListener('mousemove', showPopover);
-        kbMode.addEventListener('mouseleave', hidePopover);
-
-        document.getElementById('kbMode').addEventListener('change', function () {
-            if (!isRetropadSelected()) {
-                hidePopover();
+        if (this.#kbModeDropdown) {
+            const dropdownElement = this.#kbModeDropdown.getElement();
+            if (dropdownElement) {
+                dropdownElement.addEventListener('mousemove', showPopover);
+                dropdownElement.addEventListener('mouseleave', hidePopover);
             }
-        });
+
+            this._hidePopover = hidePopover;
+        }
     }
 
     #kbModeChangeHandler(event) {
@@ -311,6 +328,10 @@ export class UiManager {
             GameFocusManager.getInstance().disable();
         } else if ("focusmode" == mode) {
             GameFocusManager.getInstance().enable();
+        }
+
+        if (this._hidePopover && mode !== 'retropad') {
+            this._hidePopover();
         }
     }
 
