@@ -145,9 +145,24 @@ export class VME {
     }
 
     #addListeners() {
-        window.addEventListener('resize', () => EnvironmentManager.resizeCanvas(this.#pl.getNostalgist()));
-        window.addEventListener('resize', () => EnvironmentManager.detectDevice());
-        window.addEventListener('orientationchange', () => EnvironmentManager.detectDevice());
+        window.addEventListener('resize', () => {
+            EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
+            EnvironmentManager.detectDevice();
+        });
+
+        window.addEventListener('orientationchange', () => {
+            EnvironmentManager.detectDevice();
+            setTimeout(() => {
+                EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
+            }, 100);
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            setTimeout(() => {
+                EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
+            }, 100);
+        });
+
         window.addEventListener('gamepaddisconnected', () => {
             EnvironmentManager.detectDevice();
             this.#updateGamepadHelpMessage();
