@@ -264,9 +264,28 @@ export class UiManager {
         this.initControlsButton();
 
         if (UiManager.#platform_manager.getSelectedPlatform().mouse_controllers || "lightgun" == this.#getOverridenControllerType()) {
-            s('#canvas').addEventListener('click', () => {
-                s('#canvas').requestPointerLock();
-            });
+            const emuscreen = document.getElementById('emuscreen');
+            if (emuscreen) {
+                const canvasObserver = new MutationObserver((mutations) => {
+                    const canvas = emuscreen.querySelector('canvas');
+                    if (canvas) {
+                        canvas.addEventListener('click', () => {
+                            canvas.requestPointerLock();
+                        });
+                        canvasObserver.disconnect();
+                    }
+                });
+
+                canvasObserver.observe(emuscreen, { childList: true, subtree: true });
+
+                const existingCanvas = emuscreen.querySelector('canvas');
+                if (existingCanvas) {
+                    existingCanvas.addEventListener('click', () => {
+                        existingCanvas.requestPointerLock();
+                    });
+                    canvasObserver.disconnect();
+                }
+            }
         }
     }
 
@@ -284,6 +303,8 @@ export class UiManager {
 
         const showPopover = (e) => {
             if (!isRetropadSelected()) return;
+
+            if (this.#kbModeDropdown && this.#kbModeDropdown.isDropdownOpen()) return;
 
             const popover = document.getElementById('kbModePopover');
 
@@ -311,15 +332,13 @@ export class UiManager {
             popover.style.display = 'none';
         };
 
-        if (this.#kbModeDropdown) {
-            const dropdownElement = this.#kbModeDropdown.getElement();
-            if (dropdownElement) {
-                dropdownElement.addEventListener('mousemove', showPopover);
-                dropdownElement.addEventListener('mouseleave', hidePopover);
-            }
-
-            this._hidePopover = hidePopover;
+        const container = document.getElementById('kbModeDropdownContainer');
+        if (container) {
+            container.addEventListener('mousemove', showPopover);
+            container.addEventListener('mouseleave', hidePopover);
         }
+
+        this._hidePopover = hidePopover;
     }
 
     #kbModeChangeHandler(event) {
