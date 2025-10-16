@@ -1,10 +1,8 @@
 import PlatformBase from '../PlatformBase.js';
-import { StorageManager } from '../../storage/StorageManager.js';
 import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../../Constants.js';
 
 const Amiga = {
   ...PlatformBase,
-  not_ready: true,
   platform_id: 'amiga',
   core: 'puae',
   bios: ['kick1x', 'kick2x', 'kick3x'],
