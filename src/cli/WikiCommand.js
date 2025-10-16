@@ -77,6 +77,17 @@ export class WikiCommand extends CommandBase {
                 td.id = 'wiki';
                 td.innerHTML = results;
                 table.append(td);
+
+                const settingsElement = document.getElementById('settings');
+                if (settingsElement) {
+                    settingsElement.style.pointerEvents = 'auto';
+                }
+
+                const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+                menuButtons.forEach(btn => {
+                    btn.style.pointerEvents = 'auto';
+                });
+
                 return;
             });
     }

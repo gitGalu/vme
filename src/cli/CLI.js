@@ -56,6 +56,16 @@ export class CLI {
             this.#hideCursor();
         } else {
             this.#showCursor();
+
+            const settingsElement = document.getElementById('settings');
+            if (settingsElement) {
+                settingsElement.style.pointerEvents = 'auto';
+            }
+
+            const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+            menuButtons.forEach(btn => {
+                btn.style.pointerEvents = 'auto';
+            });
         }
     }
 
@@ -158,13 +168,27 @@ export class CLI {
             if (this.#currentIndex == -1) CLI.#corsQuery.textContent = '';
             if (this.#default_clear_handler instanceof Function) this.#default_clear_handler();
         } else if (value == 'escape') {
+            const wasInArticleMode = this.#articleMode;
             this.#articleMode = false;
+
             if (this.#currentIndex >= 0) {
                 this.#currentIndex = -1;
                 this.set_selection_mode(false);
             } else if (this.#currentIndex == -1) {
                 this.process_input('clear');
                 this.set_selection_mode(false);
+            }
+
+            if (wasInArticleMode) {
+                const settingsElement = document.getElementById('settings');
+                if (settingsElement) {
+                    settingsElement.style.pointerEvents = 'auto';
+                }
+
+                const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+                menuButtons.forEach(btn => {
+                    btn.style.pointerEvents = 'auto';
+                });
             }
         } else if (value == 'enter') {
             if (this.#articleMode) return;
