@@ -325,6 +325,22 @@ export class GamepadManager {
             }
         }
 
+        const xButton = gamepad.buttons[2] && gamepad.buttons[2].pressed;
+
+        if (xButton && !this.lastXButtonState) {
+            if (this.keyboardHasFocus) {
+                const backspaceKey = document.getElementById('keyBackspace');
+                if (backspaceKey && this.cli && !this.cli.is_loading()) {
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    backspaceKey.dispatchEvent(clickEvent);
+                }
+            }
+        }
+
         if (aButton && !this.lastAButtonState) {
             if (this.listHasFocus) {
                 this.activateListItem();
@@ -338,6 +354,7 @@ export class GamepadManager {
         this.lastAButtonState = aButton;
         this.lastBButtonState = bButton;
         this.lastYButtonState = yButton;
+        this.lastXButtonState = xButton;
 
         if (this.menuButtons.length === 0) {
             return;
@@ -572,17 +589,56 @@ export class GamepadManager {
             return style.visibility === 'visible' && style.display !== 'none';
         });
 
-        // Build keyboard grid based on QWERTY layout
-        // Row 0: Q W E R T Y U I O P
-        // Row 1: A S D F G H J K L
-        // Row 2: Shift Z X C V B N M Backspace
-        // Row 3: Toggle Space Enter
-        this.keyboardGrid = [
-            ['keyQ', 'keyW', 'keyE', 'keyR', 'keyT', 'keyY', 'keyU', 'keyI', 'keyO', 'keyP'],
-            ['keyA', 'keyS', 'keyD', 'keyF', 'keyG', 'keyH', 'keyJ', 'keyK', 'keyL'],
-            ['keyShift', 'keyZ', 'keyX', 'keyC', 'keyV', 'keyB', 'keyN', 'keyM', 'keyBackspace'],
-            ['keyToggle', 'keySpace', 'keyEnter']
-        ];
+        // layer detection
+        const hasOnlyLayerA = this.keyboardKeys.some(key =>
+            key.classList.contains('layerA') &&
+            !key.classList.contains('layerB') &&
+            !key.classList.contains('layerC')
+        );
+        const hasLayerB = this.keyboardKeys.some(key =>
+            key.classList.contains('layerB') &&
+            !key.classList.contains('layerA') &&
+            !key.classList.contains('layerC')
+        );
+        const hasLayerC = this.keyboardKeys.some(key =>
+            key.classList.contains('layerC') &&
+            !key.classList.contains('layerA') &&
+            !key.classList.contains('layerB')
+        );
+
+        if (hasOnlyLayerA) {
+            this.keyboardGrid = [
+                ['keyQ', 'keyW', 'keyE', 'keyR', 'keyT', 'keyY', 'keyU', 'keyI', 'keyO', 'keyP'],
+                ['keyA', 'keyS', 'keyD', 'keyF', 'keyG', 'keyH', 'keyJ', 'keyK', 'keyL'],
+                ['keyShift', 'keyZ', 'keyX', 'keyC', 'keyV', 'keyB', 'keyN', 'keyM', 'keyBackspace'],
+                ['keyToggle', 'keySpace', 'keyEnter']
+            ];
+        } else if (hasLayerB) {
+            this.keyboardGrid = [
+                ['key0', 'key1', 'key2', 'key3', 'key4', 'key5', 'key6', 'key7', 'key8', 'key9'],
+                ['keyMinus', 'keySlash', 'keyColon', 'keySemicolon', 'keyBracketLeft', 'keyBracketRight', 'keyDollar', 'keyAmpersand', 'keyAt', 'keyQuote'],
+                ['keyShift', 'keyPeriod', 'keyComma', 'keyQuestion', 'keyExclamation', 'keyApostrophe', 'keyBackspace'],
+                ['keyToggle', 'keySpace', 'keyEnter']
+            ];
+        } else if (hasLayerC) {
+            this.keyboardGrid = [
+                ['key1', 'key2', 'key3', 'key4', 'key5', 'key6', 'key7', 'key8', 'key9', 'key0'],
+                ['keyMinus', 'keySlash', 'keyColon', 'keySemicolon', 'keyLeftParen', 'keyRightParen', 'keyDollar', 'keyAmpersand', 'keyAt', 'keyQuote'],
+                ['keyShift', 'keyPeriod', 'keyComma', 'keyQuestion', 'keyExclamation', 'keyApostrophe', 'keyBackspace'],
+                ['keyToggle', 'keySpace', 'keyEnter']
+            ];
+        } else {
+            this.keyboardGrid = [
+                ['keyQ', 'keyW', 'keyE', 'keyR', 'keyT', 'keyY', 'keyU', 'keyI', 'keyO', 'keyP'],
+                ['keyA', 'keyS', 'keyD', 'keyF', 'keyG', 'keyH', 'keyJ', 'keyK', 'keyL'],
+                ['keyShift', 'keyZ', 'keyX', 'keyC', 'keyV', 'keyB', 'keyN', 'keyM', 'keyBackspace'],
+                ['keyToggle', 'keySpace', 'keyEnter']
+            ];
+        }
+
+        this.keyboardGrid = this.keyboardGrid.map(row =>
+            row.filter(keyId => document.getElementById(keyId) !== null)
+        ).filter(row => row.length > 0);
 
         if (this.currentKeyboardRow >= this.keyboardGrid.length) {
             this.currentKeyboardRow = 0;
@@ -613,16 +669,52 @@ export class GamepadManager {
         if (!this.keyboardHasFocus) return;
 
         if (deltaRow !== 0) {
-            this.currentKeyboardRow += deltaRow;
-            if (this.currentKeyboardRow < 0) {
-                this.currentKeyboardRow = this.keyboardGrid.length - 1;
-            } else if (this.currentKeyboardRow >= this.keyboardGrid.length) {
-                this.currentKeyboardRow = 0;
-            }
+            const currentKeyId = this.keyboardGrid[this.currentKeyboardRow][this.currentKeyboardCol];
+            const currentKey = document.getElementById(currentKeyId);
 
-            const maxCol = this.keyboardGrid[this.currentKeyboardRow].length - 1;
-            if (this.currentKeyboardCol > maxCol) {
-                this.currentKeyboardCol = maxCol;
+            if (currentKey) {
+                const currentRect = currentKey.getBoundingClientRect();
+                const currentCenter = currentRect.left + currentRect.width / 2;
+
+                this.currentKeyboardRow += deltaRow;
+                if (this.currentKeyboardRow < 0) {
+                    this.currentKeyboardRow = this.keyboardGrid.length - 1;
+                } else if (this.currentKeyboardRow >= this.keyboardGrid.length) {
+                    this.currentKeyboardRow = 0;
+                }
+
+                const newRow = this.keyboardGrid[this.currentKeyboardRow];
+                let closestIndex = 0;
+                let closestDistance = Infinity;
+
+                for (let i = 0; i < newRow.length; i++) {
+                    const keyId = newRow[i];
+                    const keyElement = document.getElementById(keyId);
+                    if (keyElement) {
+                        const keyRect = keyElement.getBoundingClientRect();
+                        const keyCenter = keyRect.left + keyRect.width / 2;
+                        const distance = Math.abs(keyCenter - currentCenter);
+
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestIndex = i;
+                        }
+                    }
+                }
+
+                this.currentKeyboardCol = closestIndex;
+            } else {
+                this.currentKeyboardRow += deltaRow;
+                if (this.currentKeyboardRow < 0) {
+                    this.currentKeyboardRow = this.keyboardGrid.length - 1;
+                } else if (this.currentKeyboardRow >= this.keyboardGrid.length) {
+                    this.currentKeyboardRow = 0;
+                }
+
+                const maxCol = this.keyboardGrid[this.currentKeyboardRow].length - 1;
+                if (this.currentKeyboardCol > maxCol) {
+                    this.currentKeyboardCol = maxCol;
+                }
             }
         }
 
@@ -653,6 +745,13 @@ export class GamepadManager {
                     view: window
                 });
                 currentKey.dispatchEvent(clickEvent);
+
+                // If toggle or shift key was pressed, rebuild the grid after a short delay
+                if (currentKeyId === 'keyToggle' || currentKeyId === 'keyShift') {
+                    setTimeout(() => {
+                        this.initKeyboardNavigation();
+                    }, 100);
+                }
             }
         }
     }
@@ -961,6 +1060,7 @@ export class GamepadManager {
 
         if (!enabled) {
             this.clearMenuFocus();
+            this.hideFocusOutline();
         }
     }
 

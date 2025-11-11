@@ -1071,6 +1071,18 @@ a {
   padding-left: 16px;
 }
 
+#kbCtrlArrow {
+  display: none;
+}
+
+#kbCtrlClear {
+  padding-left: 32px;
+}
+
+#kbCtrlCross {
+  padding-right: 32px;
+}
+
 .kbCtrlSmall {
   font-size: 0.55em;
   line-height: 1.1em;
@@ -3328,7 +3340,7 @@ i {
 .gamepad-focus-outline {
   position: fixed;
   pointer-events: none;
-  z-index: 101;
+  z-index: 10001;
   opacity: 0;
   transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     top 0.25s cubic-bezier(0.4, 0, 0.2, 1),

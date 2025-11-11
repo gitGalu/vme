@@ -46,6 +46,7 @@ export class KeyboardManager {
     constructor(cli, config = {}) {
         this.#cli = cli;
         this.keysDown = {};
+        this.customEscLabel = null;
         this.#keyboardConfig = this.#processConfig(config);
         this.audioFiles = {
             'gui_type1': Kb1Sound,
@@ -518,8 +519,11 @@ export class KeyboardManager {
     }
 
     keydownHandler(e) {
-        if (EnvironmentManager.isDesktop()) {
-            s("div#keyboardContainer").style.display = "none";
+        const keyboardContainer = s("div#keyboardContainer");
+        const isKeyboardVisible = keyboardContainer && keyboardContainer.classList.contains('visible');
+
+        if (isKeyboardVisible) {
+            this.hideTouchKeyboard();
         }
 
         if (!this.keysDown[e.code]) {
@@ -533,10 +537,16 @@ export class KeyboardManager {
     }
 
     updateMode(mode) {
+        const kbCtrlClear = document.querySelector('#kbCtrlClear');
+
         switch (mode) {
             case VME.CURRENT_SCREEN.MENU:
                 this.#mute = false;
+                this.customEscLabel = null; 
                 document.querySelector('#keyboard').addEventListener('click', this.#handleCliInputBound);
+                if (kbCtrlClear) {
+                    kbCtrlClear.textContent = 'Clear';
+                }
                 break;
             case VME.CURRENT_SCREEN.EMULATION:
                 this.#mute = true;
@@ -547,7 +557,20 @@ export class KeyboardManager {
                 document.querySelector('#kbCtrlClear').addEventListener('touchstart', this.#handleEmulationSpecialBound);
                 document.querySelector('#kbCtrlClear').addEventListener('touchend', this.#handleEmulationSpecialBound);
 
+                if (kbCtrlClear) {
+                    // Use custom label if set, otherwise default to 'Esc'
+                    kbCtrlClear.textContent = this.customEscLabel || 'Esc';
+                }
                 break;
+        }
+    }
+
+    setEscButtonLabel(label) {
+        this.customEscLabel = label;
+        const kbCtrlClear = document.querySelector('#kbCtrlClear');
+        if (kbCtrlClear && this.#mute) {
+            // Only update if we're in emulation mode
+            kbCtrlClear.textContent = label || 'Esc';
         }
     }
 
@@ -594,5 +617,15 @@ export class KeyboardManager {
 
         const btn = document.querySelector('#toggle-keyboard');
         btn.style.visibility = "visible";
+
+        if (this.#gamepadManager && this.#gamepadManager.hasGamepad()) {
+            this.#gamepadManager.keyboardHasFocus = false;
+            this.#gamepadManager.cliHasFocus = false;
+
+            const allKeys = document.querySelectorAll('.key');
+            allKeys.forEach(key => key.classList.remove('keyboard-gamepad-focused'));
+
+            this.#gamepadManager.updateFocus();
+        }
     }
 }
