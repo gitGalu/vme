@@ -5,7 +5,7 @@ const MAME = {
     ...PlatformBase,
     platform_id: 'mame',
     core: 'mame2003_plus',
-    platform_name: 'MAME',
+    platform_name: 'Arcade',
     short_name: 'MAME',
     theme: {
         '--color0': '#222222',
