@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30] - 2025-11-11
+
+- add gamepad support in CLI/menus (work in progress)
+- UX adjustments in touchscreen and desktop mode
+
 ## [0.21] - 2025-10-09
 
 - touch: UX changes (popup options instead of cycling options, button size adjustments)
