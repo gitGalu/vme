@@ -749,7 +749,7 @@ export class PlatformManager {
     }
 
     #printGamePadWarning() {
-        this.#cli.print('Gamepad UI is a temporary work-in-progress setup.');
+        this.#cli.print('Gamepad UI is work-in-progress.');
         this.#cli.print('Use front gamepad buttons to interact with the UI.');
     }
 
