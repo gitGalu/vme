@@ -38,9 +38,12 @@ export class CheckFixCommand extends CommandBase {
         let hasRemainingIssues = true;
         let repairStarted = false;
 
+        let lastIssuesSnapshot = null;
+
         while (hasRemainingIssues && passCount < this.#MAX_REPAIR_PASSES) {
             passCount++;
             const issues = await this.#checkDatabaseConsistency(db);
+            lastIssuesSnapshot = issues;
             hasRemainingIssues = Object.values(issues).some(arr => arr.length > 0);
 
             if (!hasRemainingIssues) {
@@ -60,12 +63,19 @@ export class CheckFixCommand extends CommandBase {
             const fixed = await this.#fixDatabaseIssues(db, issues);
             if (!fixed) {
                 this.cli.print("Error: Repair failed.");
+                console.error("[CHKFIX] Repair transaction failed while attempting to resolve issues:", issues);
                 return false;
             }
         }
 
         if (hasRemainingIssues) {
             this.cli.print("Error: Unable to fix all issues.");
+            if (lastIssuesSnapshot) {
+                console.error("[CHKFIX] Remaining unresolved issues after attempted repairs:", lastIssuesSnapshot);
+                if (lastIssuesSnapshot.invalidScreenshots?.length) {
+                    console.error("[CHKFIX] Unresolved invalid screenshots detail:", lastIssuesSnapshot.invalidScreenshots);
+                }
+            }
             return false;
         }
 
@@ -85,7 +95,7 @@ export class CheckFixCommand extends CommandBase {
 
         try {
             const data = await this.#fetchDatabaseData(db);
-            await this.#checkScreenshots(data.saveMeta, data.collectionItems, issues);
+            await this.#checkScreenshots(data, issues);
             await this.#checkSaveDataConsistency(data, issues, db);
             await this.#checkRomDataConsistency(data, issues, db);
             await this.#checkCollectionConsistency(data, issues);
@@ -108,19 +118,32 @@ export class CheckFixCommand extends CommandBase {
         };
     }
 
-    async #checkScreenshots(saveMeta, collectionItems, issues) {
-        const checkImage = async (imageData, id, type) => {
+    async #checkScreenshots(data, issues) {
+        const collectionTitleById = new Map(
+            (data.collectionMeta || []).map(meta => [meta.id, meta.collection_title])
+        );
+
+        const checkImage = async (imageData, buildDetail) => {
             if (!imageData) return;
 
-            try {
-                if (!imageData.startsWith('data:image/')) {
-                    issues.invalidScreenshots.push({
-                        [type]: id,
-                        reason: 'Invalid image data format'
-                    });
-                    return;
-                }
+            if (typeof imageData !== 'string') {
+                const detail = buildDetail('Unsupported image data type');
+                issues.invalidScreenshots.push(detail);
+                console.warn("[CHKFIX] Invalid screenshot detected:", detail);
+                return;
+            }
 
+            const isDataUrl = imageData.startsWith('data:');
+            const isBlobUrl = imageData.startsWith('blob:');
+
+            if (!isDataUrl && !isBlobUrl) {
+                const detail = buildDetail('Unsupported image URL scheme');
+                issues.invalidScreenshots.push(detail);
+                console.warn("[CHKFIX] Invalid screenshot detected:", detail);
+                return;
+            }
+
+            try {
                 await new Promise((resolve, reject) => {
                     const img = new Image();
                     img.onload = resolve;
@@ -128,19 +151,39 @@ export class CheckFixCommand extends CommandBase {
                     img.src = imageData;
                 });
             } catch (error) {
-                issues.invalidScreenshots.push({
-                    [type]: id,
-                    reason: 'Corrupted image data'
-                });
+                const detail = buildDetail('Corrupted or unreadable image data');
+                issues.invalidScreenshots.push(detail);
+                console.warn("[CHKFIX] Invalid screenshot detected:", detail, error);
             }
         };
 
-        for (const meta of saveMeta) {
-            await checkImage(meta.screenshot, meta.id, 'saveMetaId');
+        for (const meta of data.saveMeta) {
+            await checkImage(meta.screenshot, (reason) => ({
+                type: 'saveMeta',
+                saveMetaId: meta.id,
+                platformId: meta.platform_id,
+                programName: meta.program_name,
+                romDataId: meta.rom_data_id,
+                caption: meta.caption,
+                isQuicksave: Boolean(meta.is_quicksave),
+                timestamp: meta.timestamp ?? null,
+                reason
+            }));
         }
 
-        for (const item of collectionItems) {
-            await checkImage(item.image, item.id, 'collectionItemId');
+        for (const item of data.collectionItems) {
+            await checkImage(item.image, (reason) => ({
+                type: 'collectionItem',
+                collectionItemId: item.id,
+                collectionId: item.collection_id,
+                collectionTitle: collectionTitleById.get(item.collection_id) || null,
+                platformId: item.platform_id,
+                title: item.title,
+                romName: item.rom_name,
+                romDataId: item.rom_data_id,
+                romUrl: item.rom_url || null,
+                reason
+            }));
         }
     }
 
@@ -210,6 +253,7 @@ export class CheckFixCommand extends CommandBase {
             await db.transaction('rw',
                 [db.saveMeta, db.saveData, db.romData, db.collectionMeta, db.collectionItemData],
                 async () => {
+                    this.#logIssuesPendingFix(issues);
                     await this.#fixMissingData(db, issues);
                     await this.#fixOrphanedData(db, issues);
                     await this.#fixInconsistentDataTypes(db, issues);
@@ -217,25 +261,39 @@ export class CheckFixCommand extends CommandBase {
             );
             return true;
         } catch (error) {
-            this.cli.print("Error fixing data issues:", error);
+            console.error("Error fixing data issues:", error);
             return false;
+        }
+    }
+
+    #logIssuesPendingFix(issues) {
+        const nonEmptyIssues = Object.entries(issues)
+            .filter(([, value]) => Array.isArray(value) && value.length > 0)
+            .map(([key, value]) => ({ key, count: value.length }));
+
+        if (nonEmptyIssues.length > 0) {
+            console.log("[CHKFIX] Issues identified for repair:", nonEmptyIssues);
+        }
+
+        if (issues.invalidScreenshots.length > 0) {
+            console.warn("[CHKFIX] Invalid screenshots queued for inspection:", issues.invalidScreenshots);
         }
     }
 
     async #fixOrphanedData(db, issues) {
         if (issues.orphanedSaveData.length > 0) {
             await db.saveData.where('id').anyOf(issues.orphanedSaveData).delete();
-            console.log(`Deleted ${issues.orphanedSaveData.length} orphaned save data records`);
+            console.log("[CHKFIX] Deleted orphaned save data records:", issues.orphanedSaveData);
         }
 
         if (issues.orphanedRomData.length > 0) {
             await db.romData.where('id').anyOf(issues.orphanedRomData).delete();
-            console.log(`Deleted ${issues.orphanedRomData.length} orphaned ROM data records`);
+            console.log("[CHKFIX] Deleted orphaned ROM data records:", issues.orphanedRomData);
         }
 
         if (issues.orphanedCollectionItems.length > 0) {
             await db.collectionItemData.where('id').anyOf(issues.orphanedCollectionItems).delete();
-            console.log(`Deleted ${issues.orphanedCollectionItems.length} orphaned collection items`);
+            console.log("[CHKFIX] Deleted orphaned collection items:", issues.orphanedCollectionItems);
         }
     }
 
@@ -244,13 +302,14 @@ export class CheckFixCommand extends CommandBase {
             const saveMetaIds = issues.missingSaveData.map(issue => issue.saveMetaId);
             await db.saveMeta.where('id').anyOf(saveMetaIds).delete();
             this.cli.print(`Deleted ${saveMetaIds.length} save meta records with missing save data`);
+            console.log("[CHKFIX] Deleted save meta records referencing missing save data:", issues.missingSaveData);
         }
 
         if (issues.missingRomData.length > 0) {
             const romIds = issues.missingRomData;
             await db.saveMeta.where('rom_data_id').anyOf(romIds).delete();
             await db.collectionItemData.where('rom_data_id').anyOf(romIds).delete();
-            console.log(`Cleaned up references to ${romIds.length} missing ROM data records`);
+            console.log("[CHKFIX] Removed references to missing ROM data records:", romIds);
         }
     }
 
@@ -261,7 +320,7 @@ export class CheckFixCommand extends CommandBase {
                     rom.data_type = 'blob';
                 });
             }));
-            console.log(`Fixed ${issues.inconsistentDataTypes.length} inconsistent data type records`);
+            console.log("[CHKFIX] Normalized ROM data_type to 'blob' for:", issues.inconsistentDataTypes);
         }
     }
 }
