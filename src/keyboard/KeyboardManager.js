@@ -558,8 +558,10 @@ export class KeyboardManager {
                 document.querySelector('#kbCtrlClear').addEventListener('touchend', this.#handleEmulationSpecialBound);
 
                 if (kbCtrlClear) {
-                    // Use custom label if set, otherwise default to 'Esc'
-                    kbCtrlClear.textContent = this.customEscLabel || 'Esc';
+                    // This preserves platform-specific customizations - TODO
+                    if (kbCtrlClear.textContent === 'Esc' || kbCtrlClear.textContent === 'Clear') {
+                        kbCtrlClear.textContent = this.customEscLabel || 'Esc';
+                    }
                 }
                 break;
         }
