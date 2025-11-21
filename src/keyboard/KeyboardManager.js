@@ -434,7 +434,7 @@ export class KeyboardManager {
                 const listContainer = document.getElementById('cors_results');
                 const items = listContainer ? listContainer.querySelectorAll('.corsrow') : [];
 
-                if (items.length > 0) {
+                if (items.length > 0 && this.#gamepadManager && this.#gamepadManager.hasGamepad()) {
                     this.#switchToListSelectionMode(items);
                     return;
                 }
