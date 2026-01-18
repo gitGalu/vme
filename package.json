@@ -1,9 +1,10 @@
 {
   "name": "VM/E",
-  "version": "0.31",
+  "version": "0.32",
   "description": "Virtual Machine / Emulator - web frontend for Libretro-based emulation",
   "scripts": {
     "dev": "vite --port 8080 --host",
+    "dev:https": "VITE_HTTPS=1 vite --port 8080 --host",
     "build": "vite build  --emptyOutDir",
     "preview": "vite preview --port 8080 --host",
     "deploy": "npm run build && gh-pages -d dist"
@@ -27,7 +28,7 @@
     "driver.js": "^1.3.1",
     "install": "^0.13.0",
     "jszip": "^3.10.1",
-    "nostalgist": "^0.15.1",
+    "nostalgist": "^0.19.2",
     "npm": "^10.8.1",
     "react-device-detect": "^2.2.3"
   }
