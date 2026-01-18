@@ -392,8 +392,16 @@ canvas {
   backface-visibility: hidden;
 }
 
-#canvas {
-  height: 50%;
+@media (orientation: portrait) {
+  canvas {
+    height: 50% !important;
+  }
+}
+
+@media (orientation: landscape) {
+  canvas {
+    height: 100% !important;
+  }
 }
 
 html,
