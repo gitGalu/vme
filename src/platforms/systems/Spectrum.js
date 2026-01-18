@@ -16,11 +16,34 @@ const Spectrum = {
         '--font': 'ZXSpectrum',
         '--cursorwidth': '1em',
     },
-    savestates_disabled: true,
+    savestates_disabled: false,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     guessConfig: (fileName) => {
         const tagRules = {
-
+            "(16K)": {
+                fuse_machine: "Spectrum 16K"
+            },
+            "[AY]": {
+                fuse_machine: "Spectrum 128K"
+            },
+            "(+2)": {
+                fuse_machine: "Spectrum +2"
+            },
+            "(+2A-+3)": {
+                fuse_machine: "Spectrum +2A"
+            },
+            "(+3)": {
+                fuse_machine: "Spectrum +3"
+            },
+            "[128K]": {
+                fuse_machine: "Spectrum 128K"
+            },
+            "(128K)": {
+                fuse_machine: "Spectrum 128K"
+            },
+            "(48K-128K)": {
+                fuse_machine: "Spectrum 128K"
+            }
         };
 
         const defaultOptions = {
@@ -94,5 +117,3 @@ const Spectrum = {
 };
 
 export default Spectrum;
-
-
