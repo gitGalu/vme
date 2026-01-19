@@ -24,7 +24,7 @@ export class AboutCommand extends CommandBase {
     #print_info(usage, quota) {
         this.cli.print("&nbsp;")
         this.cli.print("Environment");
-        this.cli.print("------------");
+        this.cli.print("-----------");
 
         let mobile = EnvironmentManager.isSmartphone();
         let tablet = EnvironmentManager.isTablet();
@@ -40,7 +40,7 @@ export class AboutCommand extends CommandBase {
 
         this.cli.print("&nbsp;");
         this.cli.print("Emulated systems");
-        this.cli.print("---------------");
+        this.cli.print("----------------");
         this.#pm.checkDependencies();
 
         this.cli.redraw();
@@ -48,7 +48,7 @@ export class AboutCommand extends CommandBase {
 
     #print() {
         this.cli.print('Virtual Machine / Emulator');
-        this.cli.print('<div id="flip-image-outer"><div id="flip-image-container"></div></div>');
+        this.cli.print("&nbsp;");
         this.cli.print('Developed by Michal Galinski');
         this.cli.print("&nbsp;");
         this.cli.print('Built using Nostalgist.js and Libretro.');
@@ -57,6 +57,7 @@ export class AboutCommand extends CommandBase {
         this.cli.print("&nbsp;");
         this.cli.print('<a href="https://github.com/gitGalu/vme/blob/main/CHANGES.md">View Changelog</a>');
         this.cli.print("&nbsp;")
+        this.cli.print('<div id="flip-image-outer"><div id="flip-image-container"></div></div>');
         this.#print_info();
     }
 }
