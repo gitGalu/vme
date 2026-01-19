@@ -43,16 +43,16 @@ export class BootCommand extends CommandBase {
     async #boot(platform) {
         switch (platform.platform_id) {
             case "atari800":
-                this.#load('/assets/boot/empty', '[BASIC].atr');
+                this.#load('/vme/assets/boot/empty', '[BASIC].atr');
                 break;
             case "spectrum":
-                this.#load('/assets/boot/zx.tzx', 'zx.tzx');
+                this.#load('/vme/assets/boot/zx.tzx', 'zx.tzx');
                 break;
             case "c64":
             case "c128":
             case "c264":
             case "vic20":
-                this.#load('/assets/boot/empty', 'empty.d64');
+                this.#load('/vme/assets/boot/empty', 'empty.d64');
                 break;
         }
     }
