@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.40] - 2026-01-19
+
+- fixed image scaling in the emulator display output
+- update all cores (except virtualxt) and nostalgist.js to most recent versions
+- ZX Spectrum: add Spectrum 128K, Spectrum +2/+2A/+3 support (incl. AY sound chip)
+- ZX Spectrum: add savestates support
+- C128: fix aspect ratio
+- fix screen corruption on screen resize or rotate (hopefully)
+- fix NMB command not working
+
 ## [0.30] - 2025-11-11
 
 - add gamepad support in CLI/menus (work in progress)
