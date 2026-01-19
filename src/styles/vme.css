@@ -2376,7 +2376,7 @@ a {
   cursor: pointer;
   color: lightgray;
   transition: color 0.3s ease;
-  font-size: 14pt;
+  font-size: 12pt;
 }
 
 .clickable-area:last-child {
