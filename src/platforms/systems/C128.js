@@ -64,8 +64,7 @@ const C128 = {
                 "code": 'F1'
             }
         }
-    },
-    message: ["C128 support is under development and mostly broken or non-functional."]
+    }
 };
 
 export default C128;
