@@ -288,7 +288,6 @@ export class CursorKeysComponent {
         base.style.borderRadius = '50%';
         base.style.background = 'rgba(255, 255, 255, 0.07)';
         base.style.pointerEvents = 'none';
-        base.style.boxShadow = '0 0 12px rgba(0, 0, 0, 0.35) inset';
         this.el.appendChild(base);
         this.#joystickBase = base;
 
@@ -299,7 +298,6 @@ export class CursorKeysComponent {
         thumb.style.height = `${thumbSize}px`;
         thumb.style.borderRadius = '50%';
         thumb.style.background = 'rgba(255, 255, 255, 0.25)';
-        thumb.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.45)';
         thumb.style.pointerEvents = 'none';
         thumb.style.left = `${centerX - thumbHalf}px`;
         thumb.style.top = `${centerY - thumbHalf}px`;
