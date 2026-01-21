@@ -180,6 +180,9 @@ export class CustomDropdown {
         this.selectedValue = value;
         this.updateDisplay();
         this.close();
+        if (this.dropdown) {
+            this.dropdown.blur();
+        }
 
         if (this.changeCallback && oldValue !== value) {
             this.changeCallback({ target: { value } });

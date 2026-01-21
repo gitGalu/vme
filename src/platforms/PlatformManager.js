@@ -136,8 +136,8 @@ export class PlatformManager {
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
 
-                // input_game_focus_toggle: 'nul',
-                // input_auto_game_focus: '1',
+                input_game_focus_toggle: 'nul',
+                input_auto_game_focus: '0',
 
                 video_adaptive_vsync: true,
                 video_vsync: true,

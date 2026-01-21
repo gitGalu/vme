@@ -53,6 +53,7 @@ export class UiManager {
 
     #kb_mode_change_handler_bound;
     #kbModeDropdown = null;
+    #focusSyncUnsub = null;
 
     constructor(platform_manager, kb_manager) {
         UiManager.#platform_manager = platform_manager;
@@ -233,9 +234,11 @@ export class UiManager {
         const isCursorKeysOnly = UiManager.#platform_manager.getSelectedPlatform().touch_controllers.length &&
                                  UiManager.#platform_manager.getSelectedPlatform().touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD;
 
+        const focusManager = GameFocusManager.getInstance();
+
         if (isCursorKeysOnly) {
             options = [{ value: 'focusmode', text: 'Full keyboard passthrough' }];
-            GameFocusManager.getInstance().enable();
+            focusManager.enable();
         } else if (hasKeyboardSupport) {
             options = [
                 { value: 'retropad', text: 'Keyboard as joystick' },
@@ -245,7 +248,12 @@ export class UiManager {
             options = [{ value: 'retropad', text: 'Keyboard as joystick' }];
         }
 
-        this.#kbModeDropdown = new CustomDropdown('kbModeDropdownContainer', options, options[0].value);
+        const desiredValue = focusManager.isEnabled() ? 'focusmode' : 'retropad';
+        const initialValue = options.some(option => option.value === desiredValue)
+            ? desiredValue
+            : options[0]?.value;
+
+        this.#kbModeDropdown = new CustomDropdown('kbModeDropdownContainer', options, initialValue);
 
         if (hasKeyboardSupport || !isCursorKeysOnly) {
             kbModeSelection.style.display = 'flex';
@@ -255,6 +263,17 @@ export class UiManager {
         this.#addKeyboardControlsPopover();
 
         this.#kbModeDropdown.onChange(this.#kb_mode_change_handler_bound);
+        if (this.#focusSyncUnsub) {
+            this.#focusSyncUnsub();
+        }
+        this.#focusSyncUnsub = focusManager.onChange((isEnabled) => {
+            if (!this.#kbModeDropdown) return;
+            const value = isEnabled ? 'focusmode' : 'retropad';
+            this.#kbModeDropdown.setValue(value);
+            if (this._hidePopover && value !== 'retropad') {
+                this._hidePopover();
+            }
+        });
 
         addButtonEventListeners(s('#desktopUiBack'),
             (pressed) => {
@@ -351,6 +370,15 @@ export class UiManager {
 
         if (this._hidePopover && mode !== 'retropad') {
             this._hidePopover();
+        }
+
+        this.#focusEmulationCanvas();
+    }
+
+    #focusEmulationCanvas() {
+        const canvas = document.querySelector('#emuscreen canvas');
+        if (canvas && typeof canvas.focus === 'function') {
+            canvas.focus();
         }
     }
 
