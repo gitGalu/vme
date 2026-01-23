@@ -476,6 +476,13 @@ export class CollectionBrowser {
         }
     }
 
+    clearCache() {
+        if (Array.isArray(this.#items)) {
+            this.#items.length = 0;
+        }
+        this.#items = undefined;
+    }
+
     async #restoreSelected() {
         if (this.#selected && !this.#launched && this.#uiReady) {
             const activePanel = this.#flicking.currentPanel;

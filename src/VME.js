@@ -333,4 +333,10 @@ export class VME {
         return this.#gamepad;
     }
 
+    clearCollectionCache() {
+        if (this.#collection_browser) {
+            this.#collection_browser.clearCache();
+        }
+    }
+
 }

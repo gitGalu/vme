@@ -533,13 +533,14 @@ export class PlatformManager {
 
         let self = this;
 
+        this.#clearSoftwareDirCache();
+        this.#vme.clearCollectionCache();
+
         this.#current_rom = blob;
 
         let storageManager = this.#storage_manager;
         let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
-
-        this.#model = {};
 
         let errored = false;
         self.#program_name = romName;
@@ -634,6 +635,13 @@ export class PlatformManager {
 
     get_software_dir() {
         return this.#model;
+    }
+
+    #clearSoftwareDirCache() {
+        if (this.#model && Array.isArray(this.#model.items)) {
+            this.#model.items.length = 0;
+        }
+        this.#model = undefined;
     }
 
     setSelectedPlatform(platform) {
