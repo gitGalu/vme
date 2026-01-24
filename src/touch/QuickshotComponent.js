@@ -29,6 +29,7 @@ export class QuickshotComponent {
     #maxRadius = 0;
     #deadZoneRadius = 0;
     #baseCenter = { x: 0, y: 0 };
+    #boundsRect = null;
     #hint;
     #showHint = true;
     #target = document;
@@ -135,6 +136,7 @@ export class QuickshotComponent {
             this.#updateDirections([]);
             this.#removeJoystickElements();
             this.#activeTouchId = null;
+            this.#boundsRect = null;
             this.#setHintVisible(true);
         }
     }
@@ -149,6 +151,7 @@ export class QuickshotComponent {
             return;
         }
 
+        this.#boundsRect = this.el.getBoundingClientRect();
         const touch = Array.from(event.changedTouches).find((t) => this.#containsTouch(t));
         if (!touch) {
             return;
@@ -165,6 +168,9 @@ export class QuickshotComponent {
         }
         event.preventDefault();
 
+        if (!this.#boundsRect) {
+            this.#boundsRect = this.el.getBoundingClientRect();
+        }
         const touch = Array.from(event.touches).find((t) => t.identifier === this.#activeTouchId);
         if (!touch) {
             return;
@@ -188,17 +194,18 @@ export class QuickshotComponent {
         this.#updateDirections([]);
         this.#removeJoystickElements();
         this.#activeTouchId = null;
+        this.#boundsRect = null;
         this.#setHintVisible(true);
     }
 
     #containsTouch(touch) {
-        const rect = this.el.getBoundingClientRect();
+        const rect = this.#boundsRect || this.el.getBoundingClientRect();
         return touch.clientX >= rect.left && touch.clientX <= rect.right &&
             touch.clientY >= rect.top && touch.clientY <= rect.bottom;
     }
 
     #getLocalPoint(touch) {
-        const rect = this.el.getBoundingClientRect();
+        const rect = this.#boundsRect || this.el.getBoundingClientRect();
         return {
             x: touch.clientX - rect.left,
             y: touch.clientY - rect.top

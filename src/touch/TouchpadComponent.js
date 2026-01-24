@@ -19,6 +19,7 @@ export class TouchpadComponent {
     #anywhere;
     #parent;
     #touchTarget;
+    #activeRect;
 
     constructor(parent, gridArea, id, platformManager, options = {}) {
         const providedStyle = options?.style ?? 'filled';
@@ -48,6 +49,7 @@ export class TouchpadComponent {
         this.#touchStartTime = 0;
         this.#touchStartX = 0;
         this.#touchStartY = 0;
+        this.#activeRect = null;
 
         // Determine touch target: if "anywhere" mode, listen on parent container
         this.#touchTarget = this.#anywhere ? parent : this.el;
@@ -203,9 +205,13 @@ export class TouchpadComponent {
                 this.#lx = -1;
                 this.#ly = -1;
                 this.#activeTouchId = null;
+                this.#activeRect = null;
             } else {
                 const touch = e.changedTouches[0];
-                const rect = this.#anywhere ? this.#parent.getBoundingClientRect() : this.el.getBoundingClientRect();
+                if (!this.#activeRect) {
+                    this.#activeRect = this.#anywhere ? this.#parent.getBoundingClientRect() : this.el.getBoundingClientRect();
+                }
+                const rect = this.#activeRect;
                 const dx = (touch.clientX - rect.left) * this.#mouseSpeed;
                 const dy = (touch.clientY - rect.top) * this.#mouseSpeed;
 
@@ -231,6 +237,7 @@ export class TouchpadComponent {
             if (this.#activeTouchId === null) {
                 const touch = e.changedTouches[0];
                 this.#activeTouchId = touch.identifier;
+                this.#activeRect = this.#anywhere ? this.#parent.getBoundingClientRect() : this.el.getBoundingClientRect();
 
                 if (this.#tapToClick) {
                     this.#touchStartTime = Date.now();

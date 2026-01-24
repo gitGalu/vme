@@ -10,6 +10,7 @@ export class TripleTouchButton {
         this.state = 0;
         this.isHorizontal = isHorizontal;
         this.elListener = elListener;
+        this._rect = null;
 
         const container = document.createElement('div');
         container.classList.add('fast-button');
@@ -83,6 +84,7 @@ export class TripleTouchButton {
     handleTouchStart(e) {
         e.preventDefault();
         e.stopPropagation();
+        this._rect = this.container.getBoundingClientRect();
         Array.from(e.changedTouches).forEach(touch => {
             const position = this.getTouchPosition(touch);
             this.touchIdentifiers.set(touch.identifier, position);
@@ -93,6 +95,9 @@ export class TripleTouchButton {
     handleTouchMove(e) {
         e.preventDefault();
         e.stopPropagation();
+        if (!this._rect) {
+            this._rect = this.container.getBoundingClientRect();
+        }
         Array.from(e.changedTouches).forEach(touch => {
             if (this.touchIdentifiers.has(touch.identifier)) {
                 const position = this.getTouchPosition(touch);
@@ -108,6 +113,9 @@ export class TripleTouchButton {
         Array.from(e.changedTouches).forEach(touch => {
             this.touchIdentifiers.delete(touch.identifier);
         });
+        if (this.touchIdentifiers.size === 0) {
+            this._rect = null;
+        }
         this.updateState();
     }
 
@@ -118,7 +126,7 @@ export class TripleTouchButton {
     }
 
     getTouchPosition(touch) {
-        const rect = this.container.getBoundingClientRect();
+        const rect = this._rect || this.container.getBoundingClientRect();
         if (this.isHorizontal) {
             const width = rect.width;
             const x = touch.clientX - rect.left;
