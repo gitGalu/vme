@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.41] - 2026-01-24
+
+- fixes for keyboard input and image scaling across multiple platforms
+
 ## [0.40] - 2026-01-19
 
 - fixed image scaling in the emulator display output
