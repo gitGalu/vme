@@ -17,6 +17,8 @@ const A800 = {
         '--cursorwidth': '1em'
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+    force_scale: true,
+    video_smooth: false,
     guessBIOS: (fileName) => {
         let defaultBios = ['ATARIXL.ROM', 'ATARIBAS.ROM'];
 

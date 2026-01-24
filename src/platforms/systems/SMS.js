@@ -13,6 +13,7 @@ const SMS = {
         '--font': 'Emulogic',
         '--cursorwidth': '1em'
     },
+    force_scale: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
         "Arrow Keys": "Control Pad",

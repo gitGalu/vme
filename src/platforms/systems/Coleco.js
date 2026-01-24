@@ -27,6 +27,7 @@ const Coleco = {
 
         FS.writeFile('/home/web_user/retroarch/userdata/system/colecovision.rom', await new Uint8Array(bios));
     },
+    force_scale: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
         "Arrow Keys": "Directions",

@@ -16,6 +16,8 @@ const A2600 = {
         '--cursorwidth': '1.5em',
         '--transform': 'uppercase'
     },
+    force_scale: true,
+    video_smooth: false,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
         "Arrow Keys": "Directions",

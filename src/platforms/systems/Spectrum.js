@@ -17,6 +17,7 @@ const Spectrum = {
         '--cursorwidth': '1em',
     },
     savestates_disabled: false,
+    force_scale: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     guessConfig: (fileName) => {
         const tagRules = {

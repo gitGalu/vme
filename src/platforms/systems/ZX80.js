@@ -16,6 +16,7 @@ const ZX80 = {
         '--cursorwidth': '1em',
         '--transform': 'uppercase',
     },
+    force_scale: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,

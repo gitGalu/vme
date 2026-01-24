@@ -15,6 +15,8 @@ const C264 = {
         '--font': 'Petme64',
         '--cursorwidth': '1em',
     },
+    force_scale: true,
+    video_smooth: false,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {
         "Arrow Keys": "Joystick Directions",
@@ -26,7 +28,7 @@ const C264 = {
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
-        keyboard_controller_mapping: {
+    keyboard_controller_mapping: {
         input_player1_x: 'nul',
         input_player1_y: 'nul',
         input_player1_c: 'nul',
