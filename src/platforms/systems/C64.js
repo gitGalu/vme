@@ -47,6 +47,27 @@ const C64 = {
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
+    keyboard_controller_mapping: {
+        input_player1_x: 'nul',
+        input_player1_y: 'nul',
+        input_player1_c: 'nul',
+        input_player1_b: 'z', //fire
+        input_player1_a: 'nul',
+        input_player1_l: 'nul',
+        input_player1_r: 'nul',
+        input_player1_select: 'nul',
+        input_player1_start: 'nul',
+        input_player1_l2: 'nul',
+        input_player1_r2: 'nul',
+        input_player1_gun_start: 'nul',
+        input_player1_gun_start_btn: 'nul',
+        input_player1_gun_start_axis: 'nul',
+        input_player1_gun_start_mbtn: 'nul',
+        input_player1_gun_select: 'nul',
+        input_player1_gun_select_btn: 'nul',
+        input_player1_gun_select_axis: 'nul',
+        input_player1_gun_select_mbtn: 'nul'
+    },
     touch_controller_mapping: {
         input_player1_up: 'F13',
         input_player1_left: 'F14',
@@ -59,7 +80,17 @@ const C64 = {
         input_player1_start: 'nul',
         input_player1_select: 'nul',
         input_player1_l: 'nul',
-        input_player1_r: 'nul'
+        input_player1_r: 'nul',
+        input_player1_gun_start: 'nul',
+        input_player1_gun_start_btn: 'nul',
+        input_player1_gun_start_axis: 'nul',
+        input_player1_gun_start_mbtn: 'nul',
+        input_player1_gun_select: 'nul',
+        input_player1_gun_select_btn: 'nul',
+        input_player1_gun_select_axis: 'nul',
+        input_player1_gun_select_mbtn: 'nul',
+        input_player1_l2: 'nul',
+        input_player1_r2: 'nul'
     },
     joyport_toggle: true,
     fire_buttons: 1,

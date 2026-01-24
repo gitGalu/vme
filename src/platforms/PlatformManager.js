@@ -104,20 +104,6 @@ export class PlatformManager {
                 input_player1_a: 'nul',
                 input_player1_c: 'nul'
             }
-        } else if (this.#selected_platform == SelectedPlatforms.Amiga) {
-            retroarchConfigOverrides = {
-                input_player1_x: 'nul',
-                input_player1_y: 'nul',
-                input_player1_c: 'nul',
-                input_player1_b: 'z', //fire
-                input_player1_a: 'nul',
-                input_player1_l: 'nul',
-                input_player1_r: 'nul',
-                input_player1_select: 'nul',
-                input_player1_start: 'nul',
-                input_player1_l2: 'nul',
-                input_player1_r2: 'nul'
-            }
         } else if (this.#selected_platform.keyboard_controller_mapping != undefined) {
             retroarchConfigOverrides = this.#selected_platform.keyboard_controller_mapping;
         }
