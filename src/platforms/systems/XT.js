@@ -27,7 +27,7 @@ const XT = {
     rewind_disabled: true,
     ffd_disabled: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
-    force_scale: true,
+    force_scale: false,
     video_smooth: false,
     dependencies: [
     ],
