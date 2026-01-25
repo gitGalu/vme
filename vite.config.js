@@ -10,6 +10,9 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
 const version = packageJson.version;
 
 const useHttps = process.env.VITE_HTTPS === '1' || process.env.VITE_HTTPS === 'true';
+const base = process.env.VITE_BASE || '/vme/';
+const pwaStartUrl = process.env.VITE_PWA_START_URL || 'https://gitgalu.github.io/vme/?source=pwa';
+const pwaScope = process.env.VITE_PWA_SCOPE || '';
 
 const LAN_HOST = process.env.VITE_LAN_HOST || '192.168.50.41';
 
@@ -17,7 +20,7 @@ const CERT_KEY = path.resolve('certs/dev-key.pem');
 const CERT_CERT = path.resolve('certs/dev-cert.pem');
 
 export default defineConfig({
-  base: '/vme/',
+  base,
   root: 'src',
   minify: 'terser',
   terserOptions: {
@@ -63,7 +66,8 @@ export default defineConfig({
       manifest: {
         name: 'VM/E',
         short_name: 'VM/E',
-        start_url: 'https://gitgalu.github.io/vme/?source=pwa',
+        start_url: pwaStartUrl,
+        ...(pwaScope ? { scope: pwaScope } : {}),
         display: 'fullscreen',
         theme_color: '#000000',
         background_color: '#000000',
@@ -95,9 +99,9 @@ export default defineConfig({
 
     https: useHttps
       ? {
-          key: fs.readFileSync(CERT_KEY),
-          cert: fs.readFileSync(CERT_CERT),
-        }
+        key: fs.readFileSync(CERT_KEY),
+        cert: fs.readFileSync(CERT_CERT),
+      }
       : false,
 
     hmr: {
