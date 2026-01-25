@@ -187,9 +187,11 @@ export class VME {
         const params = new URLSearchParams(window.location.search);
         const isPwa = params.get('source') === 'pwa';
 
-        if (isMobile && !((window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || isPwa)) {
-            return true;
+        if (import.meta.env.DEV) {
+            return false;
         }
+
+        return isMobile && !((window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || isPwa);
     }
 
     emulationStarted() {
