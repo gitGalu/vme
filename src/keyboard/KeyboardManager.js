@@ -370,7 +370,11 @@ export class KeyboardManager {
             this.hideTouchKeyboard();
         });
 
-        document.querySelector('#keyShift').addEventListener('click', (e) => {
+        const handleShiftToggle = (e) => {
+            if (e.type === 'touchstart') {
+                e.preventDefault();
+            }
+            e.stopPropagation();
             if (this.#layer == KeyboardManager.Layer.A) {
                 //todo caps
             } else if (this.#layer == KeyboardManager.Layer.B) {
@@ -386,9 +390,17 @@ export class KeyboardManager {
                 this.#visibility('.layerC', false);
                 this.#visibility('.layerB', true);
             }
-        });
+        };
 
-        document.querySelector('#keyToggle').addEventListener('click', (e) => {
+        const shiftKey = document.querySelector('#keyShift');
+        shiftKey.addEventListener('click', handleShiftToggle);
+        shiftKey.addEventListener('touchstart', handleShiftToggle, { passive: false });
+
+        const handleLayerToggle = (e) => {
+            if (e.type === 'touchstart') {
+                e.preventDefault();
+            }
+            e.stopPropagation();
             if (this.#layer == KeyboardManager.Layer.A) {
                 document.querySelector('#keyShift').innerHTML = 'MORE';
                 this.#layer = KeyboardManager.Layer.B;
@@ -406,7 +418,11 @@ export class KeyboardManager {
             }
 
             this.#refresh();
-        });
+        };
+
+        const toggleKey = document.querySelector('#keyToggle');
+        toggleKey.addEventListener('click', handleLayerToggle);
+        toggleKey.addEventListener('touchstart', handleLayerToggle, { passive: false });
 
         document.querySelectorAll('.key').forEach(function (el) {
             el.addEventListener(
