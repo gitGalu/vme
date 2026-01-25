@@ -11,17 +11,45 @@ export class SingleTouchButton {
         this.elListener = elListener;
         var self = this;
 
-        div.addEventListener('touchstart', function (e) {
-            self.touch(e, true);
-        });
+        div.addEventListener(
+            'touchstart',
+            function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                self.touch(e, true);
+            },
+            { passive: false }
+        );
 
-        div.addEventListener('touchmove', function (e) {
-            self.touch(e, true);
-        });
+        div.addEventListener(
+            'touchmove',
+            function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                self.touch(e, true);
+            },
+            { passive: false }
+        );
 
-        div.addEventListener('touchend', function (e) {
-            self.touch(e, false);
-        });
+        div.addEventListener(
+            'touchend',
+            function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                self.touch(e, false);
+            },
+            { passive: false }
+        );
+
+        div.addEventListener(
+            'touchcancel',
+            function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                self.touch(e, false);
+            },
+            { passive: false }
+        );
     }
 
     touch(e, pressed) {
@@ -57,6 +85,7 @@ export class SingleTouchButton {
         div.style.fontWeight = 'bold';
         div.style.justifyContent = 'center';
         div.style.pointerEvents = 'auto';
+        div.style.touchAction = 'none';
         return div;
     }
 
