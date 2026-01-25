@@ -59,7 +59,7 @@ export default defineConfig({
   plugins: [
     viteStaticCopy({
       targets: [
-        { src: 'libretro/**', dest: 'libretro' },
+        { src: 'libretro/*', dest: 'libretro' },
         { src: 'assets/shaders/*', dest: 'assets/shaders' },
         { src: 'assets/boot/*', dest: 'assets/boot' },
         { src: 'assets/images/vme-512.png', dest: '.' },
