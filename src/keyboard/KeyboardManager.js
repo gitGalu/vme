@@ -409,6 +409,35 @@ export class KeyboardManager {
         });
 
         document.querySelectorAll('.key').forEach(function (el) {
+            el.addEventListener(
+                'touchstart',
+                function (e) {
+                    e.preventDefault();
+                    el.classList.add('active');
+                },
+                { passive: false }
+            );
+
+            el.addEventListener(
+                'touchend',
+                function (e) {
+                    e.preventDefault();
+                    el.classList.remove('active');
+                },
+                { passive: false }
+            );
+
+            el.addEventListener(
+                'touchcancel',
+                function (e) {
+                    e.preventDefault();
+                    el.classList.remove('active');
+                },
+                { passive: false }
+            );
+        });
+
+        document.querySelectorAll('.kbCtrl').forEach(function (el) {
             el.addEventListener('touchstart', function () {
                 el.classList.add('active');
             });
@@ -424,6 +453,10 @@ export class KeyboardManager {
     }
 
     #handleCliInput(e) {
+        if (e.type === 'touchstart') {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         const target = e.target;
         if (target.classList.contains('key')) {
             const keyValue = target.getAttribute('data-value');
@@ -470,6 +503,9 @@ export class KeyboardManager {
     #handleEmulationSpecial(e) {
         const type = e.type;
 
+        e.preventDefault();
+        e.stopPropagation();
+
         if (type == "touchstart") {
             this.#simulateKeyEvent('Escape', 'Escape', 'keydown');
         } else if (type == "touchend") {
@@ -479,6 +515,8 @@ export class KeyboardManager {
 
     #handleEmulationInput(e) {
         const type = e.type;
+        e.preventDefault();
+        e.stopPropagation();
         const target = e.target;
         const key = target.getAttribute('data-value');
         const code = target.getAttribute('data-code');
@@ -543,6 +581,8 @@ export class KeyboardManager {
             case VME.CURRENT_SCREEN.MENU:
                 this.#mute = false;
                 this.customEscLabel = null; 
+                document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound);
+                document.querySelector('#keyboard').addEventListener('touchstart', this.#handleCliInputBound, { passive: false });
                 document.querySelector('#keyboard').addEventListener('click', this.#handleCliInputBound);
                 if (kbCtrlClear) {
                     kbCtrlClear.textContent = 'Clear';
@@ -551,11 +591,12 @@ export class KeyboardManager {
             case VME.CURRENT_SCREEN.EMULATION:
                 this.#mute = true;
                 document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound);
-                document.querySelector('#keyboard').addEventListener('touchstart', this.#handleEmulationInputBound);
-                document.querySelector('#keyboard').addEventListener('touchend', this.#handleEmulationInputBound);
+                document.querySelector('#keyboard').removeEventListener('touchstart', this.#handleCliInputBound);
+                document.querySelector('#keyboard').addEventListener('touchstart', this.#handleEmulationInputBound, { passive: false });
+                document.querySelector('#keyboard').addEventListener('touchend', this.#handleEmulationInputBound, { passive: false });
 
-                document.querySelector('#kbCtrlClear').addEventListener('touchstart', this.#handleEmulationSpecialBound);
-                document.querySelector('#kbCtrlClear').addEventListener('touchend', this.#handleEmulationSpecialBound);
+                document.querySelector('#kbCtrlClear').addEventListener('touchstart', this.#handleEmulationSpecialBound, { passive: false });
+                document.querySelector('#kbCtrlClear').addEventListener('touchend', this.#handleEmulationSpecialBound, { passive: false });
 
                 if (kbCtrlClear) {
                     // This preserves platform-specific customizations - TODO

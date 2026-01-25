@@ -1075,6 +1075,11 @@ a {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 1.0);
 }
 
+.key.active {
+  background-color: #ddd;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1.0);
+}
+
 .kbCtrl {
   display: inline-block;
   vertical-align: middle;
@@ -1083,6 +1088,12 @@ a {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
   padding-right: 16px;
   padding-left: 16px;
+}
+
+.kbCtrl:active,
+.kbCtrl.active {
+  color: #ddd;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1.0);
 }
 
 #kbCtrlArrow {
