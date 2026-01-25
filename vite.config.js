@@ -22,6 +22,11 @@ const CERT_CERT = path.resolve('certs/dev-cert.pem');
 export default defineConfig({
   base,
   root: 'src',
+  resolve: {
+    alias: {
+      nostalgist: path.resolve(__dirname, 'nostalgist.js'),
+    },
+  },
   minify: 'terser',
   terserOptions: {
     compress: {

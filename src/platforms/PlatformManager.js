@@ -26,6 +26,7 @@ import Intv from './systems/Intv.js';
 import MAME from './systems/MAME.js';
 import XT from './systems/XT.js';
 import PICO8 from './systems/PICO8.js';
+import DOS from './systems/DOS.js';
 import JSZip from 'jszip';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -38,7 +39,7 @@ import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS
 }
 
 export class PlatformManager {
@@ -71,6 +72,11 @@ export class PlatformManager {
         this.#selected_platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id) || SelectedPlatforms.NES;
         this.updatePlatform();
         this.#cli.set_default_handler(() => { this.updatePlatform() });
+    }
+
+    #getLibretroUrl(core, extension) {
+        const filename = `${core}_libretro.${extension}`;
+        return new URL(`./libretro/${filename}`, window.location.href).href;
     }
 
     async #prepareNostalgist(romName, caption) {
@@ -121,7 +127,7 @@ export class PlatformManager {
                 savestate_thumbnail_enable: true,
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
-
+                
                 input_game_focus_toggle: 'nul',
                 input_auto_game_focus: '0',
 
@@ -527,6 +533,25 @@ export class PlatformManager {
         let storageManager = this.#storage_manager;
         let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
+        const coreJsUrl = this.#getLibretroUrl(core, 'js');
+        const coreWasmUrl = this.#getLibretroUrl(core, 'wasm');
+        const platformEmscriptenModule = this.#selected_platform.emscripten_module;
+        const defaultLocateFile = (path) => {
+            if (path.endsWith('.wasm')) {
+                return coreWasmUrl;
+            }
+            if (path.endsWith('.js')) {
+                return coreJsUrl;
+            }
+            return path;
+        };
+        const emscriptenModule = this.#selected_platform.uses_pthreads
+            ? {
+                mainScriptUrlOrBlob: coreJsUrl,
+                locateFile: defaultLocateFile,
+                ...(platformEmscriptenModule || {})
+            }
+            : platformEmscriptenModule;
 
         let errored = false;
         self.#program_name = romName;
@@ -570,13 +595,13 @@ export class PlatformManager {
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
                 resolveCoreJs(file) {
-                    return `./libretro/${core}_libretro.js`
+                    return coreJsUrl;
                 },
                 resolveCoreWasm(file) {
                     if (wasmArrayBuffer) {
                         return wasmArrayBuffer;
                     }
-                    return `./libretro/${core}_libretro.wasm`
+                    return coreWasmUrl;
                 },
                 resolveRom(file) {
                     if (Debug.isEnabled()) {
@@ -587,7 +612,8 @@ export class PlatformManager {
                 resolveShader(file) {
                     if (StorageManager.getValue("SHADER") == "0") { return []; }
                     return self.#selected_platform.shader;
-                }
+                },
+                emscriptenModule: emscriptenModule
             });
         }
         catch (error) {

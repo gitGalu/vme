@@ -233,19 +233,24 @@ export class UiManager {
         const hasKeyboardSupport = UiManager.#platform_manager.getSelectedPlatform().keyboard != undefined;
         const isCursorKeysOnly = UiManager.#platform_manager.getSelectedPlatform().touch_controllers.length &&
                                  UiManager.#platform_manager.getSelectedPlatform().touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD;
+        const platform = UiManager.#platform_manager.getSelectedPlatform();
+        const keyboardModeLabels = platform.keyboard_mode_labels || platform.keyboard?.mode_labels || {};
+        const getKbModeLabel = (mode, fallback) => {
+            return keyboardModeLabels[mode] || fallback;
+        };
 
         const focusManager = GameFocusManager.getInstance();
 
         if (isCursorKeysOnly) {
-            options = [{ value: 'focusmode', text: 'Full keyboard passthrough' }];
+            options = [{ value: 'focusmode', text: getKbModeLabel('focusmode', 'Full keyboard passthrough') }];
             focusManager.enable();
         } else if (hasKeyboardSupport) {
             options = [
-                { value: 'retropad', text: 'Keyboard as joystick' },
-                { value: 'focusmode', text: 'Full keyboard passthrough' }
+                { value: 'retropad', text: getKbModeLabel('retropad', 'Keyboard as joystick') },
+                { value: 'focusmode', text: getKbModeLabel('focusmode', 'Full keyboard passthrough') }
             ];
         } else {
-            options = [{ value: 'retropad', text: 'Keyboard as joystick' }];
+            options = [{ value: 'retropad', text: getKbModeLabel('retropad', 'Keyboard as joystick') }];
         }
 
         const desiredValue = focusManager.isEnabled() ? 'focusmode' : 'retropad';
