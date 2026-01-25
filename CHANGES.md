@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.50] - 2026-01-25
 
 - add PC/DOS (Pentium + SB16 + SVGA) emulation (uses dosbox_pure core) - w.i.p., does not work on GitHub-hosted version
+- performance fixes for touch input
 
 ## [0.41] - 2026-01-24
 
