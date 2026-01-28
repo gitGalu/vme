@@ -297,6 +297,8 @@ export class CLI {
         this.clear();
         this.#lines.push("CLI commands:");
         this.commands.forEach((command) => {
+            if (command.get_help()[0] == undefined) return;
+
             this.#lines.push("&nbsp;");
             this.#lines.push("<p style='margin-left: 1ch;'>" + command.get_help()[0].toUpperCase() + "</p>");
 
