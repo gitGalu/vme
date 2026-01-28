@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.55] - 2026-01-28
+
+- add Atari ST/TT/STE/Falcon030 emulation (uses hatarib core) - w.i.p.
+- fix Atari 800 core crashing
+- CLI: updates to SYS command 
+- CLI: updates to L command
+
 ## [0.50] - 2026-01-25
 
 - add PC/DOS (Pentium + SB16 + SVGA) emulation (uses dosbox_pure core) - w.i.p., does not work on GitHub-hosted version
