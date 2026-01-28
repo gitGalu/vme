@@ -103,6 +103,10 @@ virtualxt https://github.com/virtualxt/virtualxt/
 
 retro8 https://github.com/libretro/retro8
 
+dosbox_pure https://github.com/schellingb/dosbox-pure
+
+hatariB https://github.com/bbbradsmith/hatariB
+
 ### Assets used
 
 https://www.kreativekorp.com/software/fonts/c64/
