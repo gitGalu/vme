@@ -7,7 +7,7 @@ const DOS = {
     platform_id: 'dos',
     core: 'dosbox_pure',
     uses_pthreads: true,
-    platform_name: 'PC/DOS (Pentium + SB + SVGA)',
+    platform_name: 'DOS PC (Pentium + SB + SVGA)',
     short_name: 'DOS',
     theme: {
         '--color0': '#0000AA',
@@ -22,6 +22,9 @@ const DOS = {
     },
     guessConfig: (fileName) => {
         return {
+            dosbox_pure_memory_size: "16",
+            dosbox_pure_voodoo: "off",
+            dosbox_pure_savestate: "off"
         }
     },
     savestates_disabled: true,
