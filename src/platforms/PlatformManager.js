@@ -27,6 +27,7 @@ import MAME from './systems/MAME.js';
 import XT from './systems/XT.js';
 import PICO8 from './systems/PICO8.js';
 import DOS from './systems/DOS.js';
+import ST from './systems/ST.js';
 import JSZip from 'jszip';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -39,7 +40,7 @@ import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST
 }
 
 export class PlatformManager {
@@ -127,7 +128,7 @@ export class PlatformManager {
                 savestate_thumbnail_enable: true,
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
-                
+
                 input_game_focus_toggle: 'nul',
                 input_auto_game_focus: '0',
 
@@ -216,9 +217,12 @@ export class PlatformManager {
 
         let self = this;
         let progressMessage;
+        let coreConfigOverrides = null;
+        const originalRomSource = romSource;
+        const originalRomName = romName;
+        const originalCaption = caption;
 
         try {
-            this.#prepareNostalgist(romName, caption);
 
             const gamepadManager = this.#vme.getGamepadManager();
             if (gamepadManager) {
@@ -238,6 +242,7 @@ export class PlatformManager {
                 btn.style.pointerEvents = 'none';
             });
 
+            self.#cli.clear();
             self.#cli.print_progress('Loading ... Please wait.');
 
             const downloadFile = async (url, text, useProxy) => {
@@ -295,13 +300,61 @@ export class PlatformManager {
                 caption = firstFileName;
                 const firstFile = zipContent.files[firstFileName];
                 romBlob = await firstFile.async('blob');
+            } else if (self.#isZipFile(romName) && this.#selected_platform.loader === 'gemzip') {
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(romBlob);
+
+                if (Object.keys(zipContent.files).length === 0) {
+                    throw new Error('No files found in the zip archive.');
+                }
+
+                const firstFileName = Object.keys(zipContent.files)[0];
+                // normalize + take last path segment (JSZip keys can include folders)
+                const base = firstFileName.split("/").pop();
+                const lower = base.toLowerCase();
+
+                const isDisk = lower.endsWith(".stx") || lower.endsWith(".st") || lower.endsWith(".msa") || lower.endsWith(".dim");
+
+                if (isDisk) { 
+                    romName = firstFileName;
+                    caption = firstFileName;
+                    const firstFile = zipContent.files[firstFileName];
+                    romBlob = await firstFile.async('blob');
+                } else {
+                    const folderName = "gemtest";
+                    this.#selected_platform._gemdosZipContent = zipContent;
+                    this.#selected_platform._gemdosFolderName = folderName;
+                    coreConfigOverrides = {
+                        hatarib_hardtype: "0",
+                        hatarib_hardimg: `hatarib/${folderName}`,
+                        hatarib_hardboot: "1"
+                    };
+                    const bootUrl = new URL("../assets/boot/st.zip", import.meta.url);
+                    const bootResp = await fetch(bootUrl);
+                    romBlob = await bootResp.blob();
+                    romName = "st.zip";
+                    caption = romName;
+                }
+            }
+
+            this.#prepareNostalgist(romName, caption);
+            if (coreConfigOverrides) {
+                const baseCoreConfig = (typeof this.#selected_platform.guessConfig === 'function')
+                    ? this.#selected_platform.guessConfig(romName)
+                    : {};
+                Nostalgist.configure({
+                    retroarchCoreConfig: {
+                        ...baseCoreConfig,
+                        ...coreConfigOverrides
+                    }
+                });
             }
 
             const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...", false);
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
 
             if (!isLocal) {
-                self.#storeLastProgramInfo(romSource, caption, romName);
+                self.#storeLastProgramInfo(originalRomSource, originalCaption, originalRomName);
             }
 
             self.#cli.clear();

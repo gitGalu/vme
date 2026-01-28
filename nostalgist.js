@@ -1662,6 +1662,7 @@ const coreInfoMap = {
   gw: { corename: "GW" },
   handy: { corename: "Handy", savestate: true },
   hatari: { corename: "Hatari", savestate: true },
+  hatarib: { corename: "HatariB", savestate: true },
   hbmame: { corename: "HBMAME (Git)" },
   higan_sfc: { corename: "nSide (Super Famicom Accuracy)", savestate: true },
   higan_sfc_balanced: { corename: "nSide (Super Famicom Balanced)", savestate: true },

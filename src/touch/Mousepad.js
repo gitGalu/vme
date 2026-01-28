@@ -115,7 +115,7 @@ export class Mousepad {
             }
         });
 
-        if (platform_id == "amiga") {
+        if (platform_id == "amiga" || platform_id == "st") {
             new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchButtonKbListener('F13', 'F13', '124', s('canvas')));
             new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchButtonKbListener('F14', 'F14', '125', s('canvas')));
         } else if (platform_id == "mame") {
