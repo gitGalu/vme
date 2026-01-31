@@ -237,9 +237,21 @@ const ST = {
     ]
   },
   additional_buttons: {
+    1: {
+      "label": "RETURN",
+      "key": {
+        "key": 'enter',
+        "code": 'Enter',
+      }
+    },
+    2: {
+      "label": "SPACE",
+      "key": {
+        "key": 'space',
+        "code": 'Space',
+      }
+    }
   },
-  rewind_granularity: 25,
-  fastforward_ratio: 10,
   message: ["ST/TT/STE/Falcon support is under development and mostly broken or non-functional."]
 };
 
