@@ -259,6 +259,12 @@ export class UiManager {
             : options[0]?.value;
 
         this.#kbModeDropdown = new CustomDropdown('kbModeDropdownContainer', options, initialValue);
+        if (initialValue === 'focusmode') {
+            focusManager.enable();
+        } else if (initialValue === 'retropad') {
+            focusManager.disable();
+        }
+        window.__VME_KB_MODE = initialValue;
 
         if (hasKeyboardSupport || !isCursorKeysOnly) {
             kbModeSelection.style.display = 'flex';
@@ -275,6 +281,7 @@ export class UiManager {
             if (!this.#kbModeDropdown) return;
             const value = isEnabled ? 'focusmode' : 'retropad';
             this.#kbModeDropdown.setValue(value);
+            window.__VME_KB_MODE = value;
             if (this._hidePopover && value !== 'retropad') {
                 this._hidePopover();
             }
@@ -367,6 +374,7 @@ export class UiManager {
 
     #kbModeChangeHandler(event) {
         const mode = event.target.value;
+        window.__VME_KB_MODE = mode;
         if ("retropad" == mode) {
             GameFocusManager.getInstance().disable();
         } else if ("focusmode" == mode) {

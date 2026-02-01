@@ -81,10 +81,12 @@ const A800 = {
             "[STEREO]": {
             },
             ".CAS": {
-                atari800_cassboot: "enabled"
+                atari800_cassboot: "enabled",
+                // atari800_sioaccel: "disabled"
             }
         };
         const defaultOptions = {
+            atari800_f10: 'disabled',
             atari800_ntscpal: 'PAL',
             atari800_resolution: '336x240',
             atari800_system: '800XL (64K)'
@@ -149,7 +151,42 @@ const A800 = {
         input_player1_left: 'F14',
         input_player1_down: 'F15',
         input_player1_right: 'F11',
-        input_player1_b: 'kp_minus'
+        input_player1_b: 'kp_minus',
+        input_player1_a: 'kp_minus'
+    },
+    keyboard_joystick_mapping: {
+        ArrowUp: { key: 'F13', code: 'F13', keyCode: 124 },
+        ArrowLeft: { key: 'F14', code: 'F14', keyCode: 125 },
+        ArrowDown: { key: 'F15', code: 'F15', keyCode: 126 },
+        ArrowRight: { key: 'F11', code: 'F11', keyCode: 122 },
+        KeyZ: { key: '-', code: 'NumpadSubtract', keyCode: 109 }
+    },
+    gamepad_filter: {
+        coalesceButtons: [0, 1],
+        coalesceTarget: 0,
+        disableButtons: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16]
+    },
+    gamepad_controller_mapping: {
+        input_player1_b_btn: '0', //0
+        input_player1_a_btn: 'nul',
+        input_player1_x_btn: 'nul',
+        input_player1_y_btn: 'nul',
+        input_player1_c_btn: 'nul',
+        input_player1_l_btn: 'nul',
+        input_player1_r_btn: 'nul',
+        input_player1_select_btn: 'nul',
+        input_player1_start_btn: 'nul',
+        input_menu_toggle_btn: 'nul',
+        input_menu_toggle: 'nul'
+    },
+    keyboard_controller_mapping: {
+        input_player1_up: 'F13',
+        input_player1_left: 'F14',
+        input_player1_down: 'F15',
+        input_player1_right: 'F11',
+        input_player1_b: 'kp_minus',
+        input_player1_a: 'nul'
+
     },
     fire_buttons: 1,
     keyboard: {

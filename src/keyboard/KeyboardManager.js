@@ -12,6 +12,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { VME } from '../VME.js';
 import { UiManager } from '../ui/UiManager.js';
+import GameFocusManager from './GameFocusManager.js';
 
 export class KeyboardManager {
     #mode;
@@ -28,6 +29,9 @@ export class KeyboardManager {
     #handleCliInputBound;
     #handleEmulationInputBound;
     #handleEmulationSpecialBound;
+    #keyguardKeydownBound;
+    #keyguardKeyupBound;
+    #keyguardKeypressBound;
 
     #layers = [".layerA", ".layerB", ".layerC"];
 
@@ -64,6 +68,9 @@ export class KeyboardManager {
         this.#mode = KeyboardManager.Mode.QWERTY;
         this.keydownHandlerBound = this.keydownHandler.bind(this);
         this.keyupHandlerBound = this.keyupHandler.bind(this);
+        this.#keyguardKeydownBound = this.#keyguardHandler.bind(this);
+        this.#keyguardKeyupBound = this.#keyguardHandler.bind(this);
+        this.#keyguardKeypressBound = this.#keyguardHandler.bind(this);
 
         this.#handleCliInputBound = this.#handleCliInput.bind(this);
         this.#handleEmulationInputBound = this.#handleEmulationInput.bind(this);
@@ -71,6 +78,9 @@ export class KeyboardManager {
 
         this.#initTouchKeyboard();
         this.#initHiddenInputs();
+        window.addEventListener('keydown', this.#keyguardKeydownBound, true);
+        window.addEventListener('keyup', this.#keyguardKeyupBound, true);
+        window.addEventListener('keypress', this.#keyguardKeypressBound, true);
 
         const elements = document.querySelectorAll('.kbCtrl');
     }
@@ -278,13 +288,13 @@ export class KeyboardManager {
     }
 
     clicks_on() {
-        document.addEventListener('keydown', this.keydownHandlerBound);
-        document.addEventListener('keyup', this.keyupHandlerBound);
+        document.addEventListener('keydown', this.keydownHandlerBound, true);
+        document.addEventListener('keyup', this.keyupHandlerBound, true);
     }
 
     clicks_off() {
-        document.removeEventListener('keydown', this.keydownHandlerBound);
-        document.removeEventListener('keyup', this.keyupHandlerBound);
+        document.removeEventListener('keydown', this.keydownHandlerBound, true);
+        document.removeEventListener('keyup', this.keyupHandlerBound, true);
     }
 
     initAudioContext() {
@@ -570,6 +580,28 @@ export class KeyboardManager {
         document.querySelectorAll(layer).forEach(function (el) {
             el.style.visibility = visible ? 'visible' : 'hidden';
         });
+    }
+
+    #keyguardHandler(e) {
+        try {
+            if (!this.#mute) return;
+            if (e.isTrusted === false) return;
+            const kbMode = (window.__VME_KB_MODE)
+                ? window.__VME_KB_MODE
+                : (GameFocusManager.getInstance().isEnabled() ? 'focusmode' : 'retropad');
+            if (kbMode !== 'retropad') return;
+            const map = window.__VME_KB_JOY_MAP;
+            const code = e.code || e.key;
+            if (!map || !code) return;
+            const mapped = map[code];
+            if (!mapped) return;
+            if (e.type === 'keydown' || e.type === 'keyup') {
+                this.#simulateKeyEvent(mapped.key, mapped.code, e.type, { keyCode: mapped.keyCode, which: mapped.keyCode });
+            }
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        } catch (err) {
+        }
     }
 
     keydownHandler(e) {

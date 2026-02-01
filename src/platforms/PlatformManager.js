@@ -59,6 +59,9 @@ export class PlatformManager {
 
     #state;
     #current_rom;
+    #original_get_gamepads;
+    #gamepad_filter;
+    #handleGamepadConnectionBound;
 
     static VME_CFG_CURRENT_PLATFORM = 'VME_CFG.CURRENT_PLATFORM';
     static SOFTWARE_DIR_KEY = '.software';
@@ -69,15 +72,142 @@ export class PlatformManager {
         this.#storage_manager = storage_manager;
         this.#network_manager = network_manager;
         this.#keyboard_manager = keyboard_manager;
+        this.#handleGamepadConnectionBound = this.#handleGamepadConnection.bind(this);
         let platform_id = localStorage.getItem(PlatformManager.VME_CFG_CURRENT_PLATFORM);
         this.#selected_platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id) || SelectedPlatforms.NES;
         this.updatePlatform();
         this.#cli.set_default_handler(() => { this.updatePlatform() });
+        window.addEventListener('gamepadconnected', this.#handleGamepadConnectionBound);
+        window.addEventListener('gamepaddisconnected', this.#handleGamepadConnectionBound);
+    }
+
+    #handleGamepadConnection() {
+        if (!this.#selected_platform) return;
+        const hasGamepad = EnvironmentManager.hasGamepad();
+        const keyboardMode = this.#getKeyboardMode();
+        if (hasGamepad && this.#selected_platform.gamepad_filter) {
+            this.#applyGamepadFilter(this.#selected_platform.gamepad_filter);
+        } else {
+            this.#applyGamepadFilter(null);
+        }
     }
 
     #getLibretroUrl(core, extension) {
         const filename = `${core}_libretro.${extension}`;
         return new URL(`./libretro/${filename}`, window.location.href).href;
+    }
+
+    #applyGamepadFilter(filter) {
+        if (!navigator.getGamepads) return;
+
+        if (!filter) {
+            if (this.#original_get_gamepads) {
+                navigator.getGamepads = this.#original_get_gamepads;
+            }
+            this.#gamepad_filter = null;
+            return;
+        }
+
+        if (!this.#original_get_gamepads) {
+            this.#original_get_gamepads = navigator.getGamepads.bind(navigator);
+        }
+
+        this.#gamepad_filter = filter;
+
+        navigator.getGamepads = () => {
+            const pads = this.#original_get_gamepads();
+            if (!pads) return pads;
+            for (const pad of pads) {
+                this.#filterGamepad(pad, this.#gamepad_filter);
+            }
+            return pads;
+        };
+    }
+
+    #filterGamepad(pad, filter) {
+        if (!pad) return pad;
+
+        const buttons = pad.buttons.map(btn => ({
+            pressed: !!btn?.pressed,
+            touched: !!btn?.touched,
+            value: btn?.value ?? 0
+        }));
+
+        const axes = pad.axes ? pad.axes.slice() : [];
+
+        if (filter?.coalesceButtons?.length && Number.isInteger(filter.coalesceTarget)) {
+            const target = buttons[filter.coalesceTarget];
+            if (target) {
+                const shouldPress = filter.coalesceButtons.some(idx => buttons[idx]?.pressed);
+                if (shouldPress) {
+                    target.pressed = true;
+                    target.touched = true;
+                    target.value = 1;
+                }
+            }
+
+            if (filter.clearCoalesced !== false) {
+                for (const idx of filter.coalesceButtons) {
+                    if (idx === filter.coalesceTarget) continue;
+                    const btn = buttons[idx];
+                    if (btn) {
+                        btn.pressed = false;
+                        btn.touched = false;
+                        btn.value = 0;
+                    }
+                }
+            }
+        }
+
+        if (filter?.disableButtons?.length) {
+            for (const idx of filter.disableButtons) {
+                const btn = buttons[idx];
+                if (btn) {
+                    btn.pressed = false;
+                    btn.touched = false;
+                    btn.value = 0;
+                }
+            }
+        }
+
+        try {
+            Object.defineProperty(pad, 'buttons', { value: buttons, configurable: true });
+        } catch (err) {
+            for (let i = 0; i < buttons.length; i++) {
+                try {
+                    pad.buttons[i].pressed = buttons[i].pressed;
+                    pad.buttons[i].touched = buttons[i].touched;
+                    pad.buttons[i].value = buttons[i].value;
+                } catch (innerErr) {
+                }
+            }
+        }
+
+        try {
+            Object.defineProperty(pad, 'axes', { value: axes, configurable: true });
+        } catch (err) {
+            if (pad.axes && axes.length) {
+                for (let i = 0; i < axes.length; i++) {
+                    try {
+                        pad.axes[i] = axes[i];
+                    } catch (innerErr) {
+                    }
+                }
+            }
+        }
+
+        return pad;
+    }
+
+    #getKeyboardMode() {
+        try {
+            if (window.__VME_KB_MODE) {
+                return window.__VME_KB_MODE;
+            }
+            return GameFocusManager.getInstance().isEnabled() ? 'focusmode' : 'retropad';
+        } catch (err) {
+            return 'retropad';
+        }
     }
 
     async #prepareNostalgist(romName, caption) {
@@ -90,6 +220,14 @@ export class PlatformManager {
         const self = this;
 
         let retroarchConfigOverrides = {};
+        const keyboardMode = this.#getKeyboardMode();
+        const hasGamepad = EnvironmentManager.hasGamepad();
+        const effectiveKeyboardMode = keyboardMode;
+        const hasSyntheticKeyboardJoy = !!this.#selected_platform.keyboard_joystick_mapping;
+
+        window.__VME_KB_JOY_MAP = hasSyntheticKeyboardJoy
+            ? this.#selected_platform.keyboard_joystick_mapping
+            : null;
 
         if (EnvironmentManager.isDesktop() && this.#selected_platform.touch_controllers.length == 1 && this.#selected_platform.touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
             retroarchConfigOverrides = {
@@ -97,22 +235,47 @@ export class PlatformManager {
             }
         }
 
-        if (EnvironmentManager.hasTouch() && this.#selected_platform.touch_controller_mapping != undefined) {
+        if (hasSyntheticKeyboardJoy) {
+            if (EnvironmentManager.hasTouch() && this.#selected_platform.touch_controller_mapping != undefined) {
+                retroarchConfigOverrides = {
+                    ...this.#selected_platform.touch_controller_mapping
+                }
+            } else if (this.#selected_platform.keyboard_controller_mapping != undefined) {
+                retroarchConfigOverrides = this.#selected_platform.keyboard_controller_mapping;
+            }
+
+            if (hasGamepad && this.#selected_platform.gamepad_controller_mapping) {
+                retroarchConfigOverrides = {
+                    ...retroarchConfigOverrides,
+                    ...this.#selected_platform.gamepad_controller_mapping
+                }
+            }
+            this.#applyGamepadFilter(hasGamepad ? this.#selected_platform.gamepad_filter : null);
+        } else if (EnvironmentManager.hasTouch() && this.#selected_platform.touch_controller_mapping != undefined) {
             retroarchConfigOverrides = {
                 ...this.#selected_platform.touch_controller_mapping
             }
-        } else if (EnvironmentManager.hasGamepad()) {
-            retroarchConfigOverrides = {
-                input_player1_up: 'nul',
-                input_player1_left: 'nul',
-                input_player1_down: 'nul',
-                input_player1_right: 'nul',
-                input_player1_b: 'nul',
-                input_player1_a: 'nul',
-                input_player1_c: 'nul'
+            this.#applyGamepadFilter(null);
+        } else if (hasGamepad && effectiveKeyboardMode !== 'retropad') {
+            if (this.#selected_platform.gamepad_controller_mapping) {
+                retroarchConfigOverrides = {
+                    ...this.#selected_platform.gamepad_controller_mapping
+                }
+            } else {
+                retroarchConfigOverrides = {
+                    input_player1_up: 'nul',
+                    input_player1_left: 'nul',
+                    input_player1_down: 'nul',
+                    input_player1_right: 'nul',
+                    input_player1_b: 'nul',
+                    input_player1_a: 'nul',
+                    input_player1_c: 'nul'
+                }
             }
+            this.#applyGamepadFilter(this.#selected_platform.gamepad_filter);
         } else if (this.#selected_platform.keyboard_controller_mapping != undefined) {
             retroarchConfigOverrides = this.#selected_platform.keyboard_controller_mapping;
+            this.#applyGamepadFilter(null);
         }
 
         Nostalgist.configure({
