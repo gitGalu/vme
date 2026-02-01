@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.56] - 2026-02-01
+
+-  A800: improve input handling incl. external joystick support
+
 ## [0.55] - 2026-01-28
 
 - add Atari ST/TT/STE/Falcon030 emulation (uses hatarib core) - w.i.p.
