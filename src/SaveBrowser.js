@@ -499,7 +499,18 @@ export class SaveBrowser {
                         if (data.caption == undefined) {
                             data.caption = data.program_name;
                         }
-                        this.#platform_manager.loadState(data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption, () => this.close(true));
+                        this.#platform_manager.loadState(
+                            data.platform_id,
+                            data.save_data,
+                            data.rom_data,
+                            data.program_name,
+                            data.caption,
+                            () => this.close(true),
+                            data.m3u_disks,
+                            data.m3u_disk_index,
+                            data.m3u_disk_rom_ids,
+                            data.m3u_disk_launch_names
+                        );
                     });
             }
         }

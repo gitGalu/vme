@@ -74,13 +74,24 @@ export class OpenCommand extends CommandBase {
     }
 
     process_input(input, is_enter_pressed) {
+        let arg = input.join().toUpperCase();
+
         if (!is_enter_pressed) {
             this.cli.clear();
             this.cli.print("Press ENTER to open local file.");
             this.cli.redraw();
             return;
+        } else {
+            if (arg === "IA") {
+                this.#resync();
+                return;
+            }
+            if (arg === "COL") {
+                this.#openCollectionFromAssets();
+                return;
+            }
+            this.#openFile();
         }
-        this.#openFile();
     }
 
     is_selection_enabled() {
@@ -131,7 +142,7 @@ export class OpenCommand extends CommandBase {
             self.#platform_manager.loadVmeImportFile(file);
         } else if (filename.includes("vme_collection")) { // collection file
             self.#platform_manager.loadCollectionFile(file);
-        } else { 
+        } else {
             var reader = new FileReader();
 
             reader.onload = function (e) {
@@ -148,6 +159,50 @@ export class OpenCommand extends CommandBase {
             };
 
             reader.readAsArrayBuffer(file);
+        }
+    }
+
+    async #resync() {
+        const self = this;
+        const url = new URL('../assets/vme_import.zip', import.meta.url).href;
+
+        self.cli.set_loading(true);
+        self.cli.clear();
+        self.cli.print("Loading ...");
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            await self.#platform_manager.loadVmeImportFile(blob);
+        } catch (error) {
+            console.error("Error loading local vme_import.zip:", error);
+            self.cli.guru(error, false);
+            self.cli.message("&nbsp;", "Error loading VM/E Import archive.", "File not found or unreadable.");
+        }
+    }
+
+    async #openCollectionFromAssets() {
+        const self = this;
+        const url = new URL('../assets/vme_collection.zip', import.meta.url).href;
+
+        self.cli.set_loading(true);
+        self.cli.clear();
+        self.cli.print("Loading ...");
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            await self.#platform_manager.loadCollectionFile(blob);
+        } catch (error) {
+            console.error("Error loading local vme_collection.zip:", error);
+            self.cli.guru(error, false);
+            self.cli.message("&nbsp;", "Error importing VM/E Collection archive.", "File not found or unreadable.");
         }
     }
 

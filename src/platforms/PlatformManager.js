@@ -35,6 +35,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
+import { DiskSetBuilder } from '../utils/DiskSetBuilder.js';
 import { ToastManager } from '../ui/ToastManager.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
@@ -59,6 +60,9 @@ export class PlatformManager {
 
     #state;
     #current_rom;
+    #current_m3u_disks;
+    #current_m3u_disk_index;
+    #current_m3u_disk_files;
     #original_get_gamepads;
     #gamepad_filter;
     #handleGamepadConnectionBound;
@@ -170,6 +174,39 @@ export class PlatformManager {
             }
         }
 
+        if (filter?.leftStickToDpad) {
+            const threshold = Number.isFinite(filter.leftStickThreshold) ? filter.leftStickThreshold : 0.5;
+            const x = axes[0] || 0;
+            const y = axes[1] || 0;
+            const dpad = {
+                up: y <= -threshold,
+                down: y >= threshold,
+                left: x <= -threshold,
+                right: x >= threshold
+            };
+            const ensureButton = (idx) => {
+                if (!buttons[idx]) {
+                    buttons[idx] = { pressed: false, touched: false, value: 0 };
+                }
+            };
+            ensureButton(12);
+            ensureButton(13);
+            ensureButton(14);
+            ensureButton(15);
+            buttons[12].pressed = dpad.up;
+            buttons[12].touched = dpad.up;
+            buttons[12].value = dpad.up ? 1 : 0;
+            buttons[13].pressed = dpad.down;
+            buttons[13].touched = dpad.down;
+            buttons[13].value = dpad.down ? 1 : 0;
+            buttons[14].pressed = dpad.left;
+            buttons[14].touched = dpad.left;
+            buttons[14].value = dpad.left ? 1 : 0;
+            buttons[15].pressed = dpad.right;
+            buttons[15].touched = dpad.right;
+            buttons[15].value = dpad.right ? 1 : 0;
+        }
+
         try {
             Object.defineProperty(pad, 'buttons', { value: buttons, configurable: true });
         } catch (err) {
@@ -275,7 +312,7 @@ export class PlatformManager {
             this.#applyGamepadFilter(this.#selected_platform.gamepad_filter);
         } else if (this.#selected_platform.keyboard_controller_mapping != undefined) {
             retroarchConfigOverrides = this.#selected_platform.keyboard_controller_mapping;
-            this.#applyGamepadFilter(null);
+            this.#applyGamepadFilter(hasGamepad ? this.#selected_platform.gamepad_filter : null);
         }
 
         Nostalgist.configure({
@@ -449,6 +486,19 @@ export class PlatformManager {
             } else {
                 romBlob = await downloadFile.call(this, romSource, "Loading ...", true);
             }
+            let launchRomInput = romBlob;
+            let autoDiskSetInfo = null;
+
+            if (!isLocal) {
+                const autoDiskSet = await this.#buildAutoDiskM3uPackage(originalRomSource, originalRomName, romBlob, downloadFile);
+                if (autoDiskSet) {
+                    launchRomInput = autoDiskSet;
+                    romBlob = autoDiskSet.primaryBlob;
+                    romName = autoDiskSet.primaryFileName;
+                    autoDiskSetInfo = autoDiskSet;
+                    self.#cli.print_progress(`Loading multi-disk game (${autoDiskSet.totalDisks} disks) ...`);
+                }
+            }
 
             if (self.#isZipFile(romName) && this.#selected_platform.loader === 'unzip') {
                 const zip = new JSZip();
@@ -463,6 +513,7 @@ export class PlatformManager {
                 caption = firstFileName;
                 const firstFile = zipContent.files[firstFileName];
                 romBlob = await firstFile.async('blob');
+                launchRomInput = romBlob;
             } else if (self.#isZipFile(romName) && this.#selected_platform.loader === 'gemzip') {
                 const zip = new JSZip();
                 const zipContent = await zip.loadAsync(romBlob);
@@ -483,6 +534,7 @@ export class PlatformManager {
                     caption = firstFileName;
                     const firstFile = zipContent.files[firstFileName];
                     romBlob = await firstFile.async('blob');
+                    launchRomInput = romBlob;
                 } else {
                     const folderName = "gemtest";
                     this.#selected_platform._gemdosZipContent = zipContent;
@@ -497,6 +549,7 @@ export class PlatformManager {
                     romBlob = await bootResp.blob();
                     romName = "st.zip";
                     caption = romName;
+                    launchRomInput = romBlob;
                 }
             }
 
@@ -522,6 +575,11 @@ export class PlatformManager {
 
             self.#cli.clear();
             self.#cli.print("Loading complete.");
+            if (autoDiskSetInfo) {
+                self.#cli.print(`Auto M3U prepared (${autoDiskSetInfo.selectedNames.length}/${autoDiskSetInfo.totalDisks}):`);
+                autoDiskSetInfo.selectedNames.forEach((name) => self.#cli.print(`- ${name}`));
+                self.#cli.print("&nbsp;");
+            }
             self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
 
             hide('#cors_interface');
@@ -546,7 +604,7 @@ export class PlatformManager {
                 // Remove all launch listeners
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
-                self.startEmulation(romBlob, caption, romName, wasmArrayBuffer);
+                self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
             };
 
             // Only allow keyboard or mouse to proceed - gamepad does not count as user gesture for AudioContext
@@ -744,7 +802,11 @@ export class PlatformManager {
         this.#clearSoftwareDirCache();
         this.#vme.clearCollectionCache();
 
-        this.#current_rom = blob;
+        const launchRom = this.#normalizeLaunchRomInput(blob, romName);
+        this.#current_rom = launchRom.saveBlob;
+        this.#current_m3u_disks = launchRom.diskNames;
+        this.#current_m3u_disk_index = launchRom.diskIndex;
+        this.#current_m3u_disk_files = launchRom.diskFiles;
 
         let storageManager = this.#storage_manager;
         let platform = this.#selected_platform;
@@ -770,7 +832,7 @@ export class PlatformManager {
             : platformEmscriptenModule;
 
         let errored = false;
-        self.#program_name = romName;
+        self.#program_name = launchRom.programName;
 
         if (this.getSelectedPlatform().touch_keyboard_reconfig != undefined) {
             this.#keyboard_manager.updateConfig(this.getSelectedPlatform().touch_keyboard_reconfig);
@@ -784,10 +846,7 @@ export class PlatformManager {
         try {
             this.#nostalgist = await Nostalgist.launch({
                 core: core,
-                rom: {
-                    fileName: romName,
-                    fileContent: blob
-                },
+                rom: launchRom.nostalgistRom,
                 async beforeLaunch(nostalgist) {
                     GameFocusManager.initialize(nostalgist);
 
@@ -859,6 +918,38 @@ export class PlatformManager {
 
     getProgramName() {
         return this.#program_name;
+    }
+
+    getCurrentM3uDisks() {
+        return Array.isArray(this.#current_m3u_disks) ? [...this.#current_m3u_disks] : [];
+    }
+
+    getCurrentM3uDiskIndex() {
+        return Number.isInteger(this.#current_m3u_disk_index) ? this.#current_m3u_disk_index : null;
+    }
+
+    setCurrentM3uDiskIndex(index) {
+        if (!Array.isArray(this.#current_m3u_disks) || this.#current_m3u_disks.length === 0) {
+            this.#current_m3u_disk_index = null;
+            return;
+        }
+
+        const max = this.#current_m3u_disks.length - 1;
+        const next = Number.isInteger(index) ? Math.min(max, Math.max(0, index)) : null;
+        this.#current_m3u_disk_index = next;
+    }
+
+    getCurrentM3uDiskFiles() {
+        if (!Array.isArray(this.#current_m3u_disk_files)) {
+            return [];
+        }
+        return this.#current_m3u_disk_files
+            .filter((disk) => disk?.name && disk?.launch_name && disk?.blob instanceof Blob)
+            .map((disk) => ({
+                name: disk.name,
+                launch_name: disk.launch_name,
+                blob: disk.blob
+            }));
     }
 
     get_software_dir() {
@@ -1278,11 +1369,464 @@ export class PlatformManager {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    #isMultidiskEnabled() {
+        return this.#selected_platform?.multidisk === true;
+    }
+
+    #isStDiskImageName(fileName) {
+        const lower = String(fileName || '').toLowerCase();
+        return lower.endsWith('.stx') || lower.endsWith('.st') || lower.endsWith('.msa') || lower.endsWith('.dim');
+    }
+
+    #isAtari800DiskImageName(fileName) {
+        const lower = String(fileName || '').toLowerCase();
+        return lower.endsWith('.atr') || lower.endsWith('.atx') || lower.endsWith('.xfd') || lower.endsWith('.dcm') || lower.endsWith('.pro');
+    }
+
+    async #resolveM3uLaunchFileFromSource(sourceFileName, sourceBlob) {
+        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800') {
+            return {
+                sourceFileName,
+                launchFileName: sourceFileName,
+                launchBlob: sourceBlob
+            };
+        }
+
+        const isSupportedDiskName = (name) => {
+            if (this.#selected_platform.core === 'hatarib') {
+                return this.#isStDiskImageName(name);
+            }
+            if (this.#selected_platform.core === 'atari800') {
+                return this.#isAtari800DiskImageName(name);
+            }
+            return false;
+        };
+
+        if (!this.#isZipFile(sourceFileName)) {
+            if (!isSupportedDiskName(sourceFileName)) {
+                return null;
+            }
+            return {
+                sourceFileName,
+                launchFileName: sourceFileName,
+                launchBlob: sourceBlob
+            };
+        }
+
+        const zip = new JSZip();
+        const zipContent = await zip.loadAsync(sourceBlob);
+        const fileNames = Object.keys(zipContent.files);
+        if (fileNames.length === 0) {
+            return null;
+        }
+
+        const diskEntryName = fileNames.find((name) => {
+            const entry = zipContent.files[name];
+            if (!entry || entry.dir) return false;
+            const base = name.split('/').pop() || name;
+            return isSupportedDiskName(base);
+        });
+
+        if (!diskEntryName) {
+            return null;
+        }
+
+        const diskEntry = zipContent.files[diskEntryName];
+        if (!diskEntry) {
+            return null;
+        }
+
+        const launchBlob = await diskEntry.async('blob');
+        const launchFileName = diskEntryName.split('/').pop() || diskEntryName;
+        return {
+            sourceFileName,
+            launchFileName,
+            launchBlob
+        };
+    }
+
+    #extractDiskOrdinal(fileName) {
+        const name = String(fileName || '');
+        const m = name.match(/(?:disk|disc|side)\s*([0-9]+)/i);
+        if (!m) {
+            return null;
+        }
+        const parsed = Number.parseInt(m[1], 10);
+        return Number.isInteger(parsed) ? parsed : null;
+    }
+
+    async #buildDiskM3uPackageFromArchive(selectedRomName, selectedBlob) {
+        if (!this.#isZipFile(selectedRomName)) {
+            return null;
+        }
+        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800') {
+            return null;
+        }
+
+        const zip = new JSZip();
+        const zipContent = await zip.loadAsync(selectedBlob);
+        const fileNames = Object.keys(zipContent.files);
+        if (fileNames.length === 0) {
+            return null;
+        }
+
+        const candidates = [];
+        for (const entryName of fileNames) {
+            const entry = zipContent.files[entryName];
+            if (!entry || entry.dir) {
+                continue;
+            }
+            const entryBlob = await entry.async('blob');
+            const baseName = entryName.split('/').pop() || entryName;
+            const resolved = await this.#resolveM3uLaunchFileFromSource(baseName, entryBlob);
+            if (!resolved) {
+                continue;
+            }
+            candidates.push({
+                displayName: baseName,
+                launchName: resolved.launchFileName,
+                launchBlob: resolved.launchBlob
+            });
+        }
+
+        if (candidates.length < 2) {
+            return null;
+        }
+
+        candidates.sort((a, b) => {
+            const diskA = this.#extractDiskOrdinal(a.displayName);
+            const diskB = this.#extractDiskOrdinal(b.displayName);
+            if (Number.isInteger(diskA) && Number.isInteger(diskB) && diskA !== diskB) {
+                return diskA - diskB;
+            }
+            return a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        const launchFiles = candidates.map((candidate) => ({
+            fileName: candidate.launchName,
+            fileContent: candidate.launchBlob
+        }));
+        const selectedDisplayNames = candidates.map((candidate) => candidate.displayName);
+        const launchNames = candidates.map((candidate) => candidate.launchName);
+        const launchBlobs = candidates.map((candidate) => candidate.launchBlob);
+
+        const m3uName = `${FileUtils.getFilenameWithoutExtension(selectedRomName)}.m3u`;
+        const m3uBody = launchNames.join('\n');
+        const m3uBlob = new Blob([m3uBody], { type: 'text/plain' });
+
+        return {
+            launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...launchFiles],
+            primaryBlob: m3uBlob,
+            saveBlob: selectedBlob,
+            primaryFileName: m3uName,
+            selectedNames: selectedDisplayNames,
+            selectedDisplayNames: selectedDisplayNames,
+            selectedLaunchNames: launchNames,
+            selectedDiskBlobs: launchBlobs,
+            totalDisks: candidates.length,
+            diskIndex: 0
+        };
+    }
+
+    #getSoftwareEntries() {
+        if (!this.#model || !Array.isArray(this.#model.items) || !Array.isArray(this.#model.bases)) {
+            return [];
+        }
+
+        return this.#model.items.map((item) => {
+            const baseIndex = item[1];
+            const url = this.#model.root + this.#model.bases[baseIndex] + item[2];
+            return {
+                romName: item[0],
+                label: item[4] || item[0],
+                url,
+                size: item[3]
+            };
+        });
+    }
+
+    async #buildAutoDiskM3uPackage(selectedUrl, selectedRomName, selectedBlob, downloadFile) {
+        if (!this.#isMultidiskEnabled()) {
+            return null;
+        }
+
+        const archiveDiskSet = await this.#buildDiskM3uPackageFromArchive(selectedRomName, selectedBlob);
+        if (archiveDiskSet) {
+            this.#cli.print_progress(`Detected multi-disk archive (${archiveDiskSet.totalDisks} disks). Preparing M3U ...`);
+            return archiveDiskSet;
+        }
+
+        const entries = this.#getSoftwareEntries();
+        if (entries.length === 0) {
+            return null;
+        }
+
+        const diskSet = DiskSetBuilder.buildBestSet(entries, selectedRomName, selectedUrl);
+        if (!diskSet || !diskSet.isComplete || !diskSet.isConfident || diskSet.total < 2) {
+            return null;
+        }
+        if (diskSet.selected.length !== diskSet.total) {
+            return null;
+        }
+        this.#cli.print_progress(`Detected multi-disk set (${diskSet.total} disks). Preparing M3U ...`);
+
+        const selectedFiles = [];
+        const selectedSourceNames = [];
+        const selectedLaunchNames = [];
+        const selectedLaunchBlobs = [];
+        for (let i = 0; i < diskSet.selected.length; i++) {
+            const file = diskSet.selected[i];
+            let fileBlob;
+            if (file.url === selectedUrl && file.romName === selectedRomName) {
+                fileBlob = selectedBlob;
+            } else {
+                fileBlob = await downloadFile.call(this, file.url, `Loading disk ${i + 1}/${diskSet.total} ...`, true);
+            }
+            const resolved = await this.#resolveM3uLaunchFileFromSource(file.romName, fileBlob);
+            if (!resolved) {
+                return null;
+            }
+            selectedFiles.push({
+                fileName: resolved.launchFileName,
+                fileContent: resolved.launchBlob
+            });
+            selectedSourceNames.push(file.romName);
+            selectedLaunchNames.push(resolved.launchFileName);
+            selectedLaunchBlobs.push(resolved.launchBlob);
+        }
+
+        const m3uName = `${FileUtils.getFilenameWithoutExtension(selectedRomName)}.m3u`;
+        const m3uBody = selectedFiles.map((file) => file.fileName).join('\n');
+        const m3uBlob = new Blob([m3uBody], { type: 'text/plain' });
+
+        return {
+            launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...selectedFiles],
+            primaryBlob: m3uBlob,
+            saveBlob: selectedBlob,
+            primaryFileName: m3uName,
+            selectedNames: selectedSourceNames,
+            selectedDisplayNames: selectedSourceNames,
+            selectedLaunchNames: selectedLaunchNames,
+            selectedDiskBlobs: selectedLaunchBlobs,
+            totalDisks: diskSet.total,
+            diskIndex: 0
+        };
+    }
+
+    async #ensureSoftwareDirLoaded() {
+        if (this.#model && Array.isArray(this.#model.items)) {
+            return true;
+        }
+
+        const [, , softFile] = await this.#storage_manager.checkFiles(this.#selected_platform);
+        if (!softFile || !Array.isArray(softFile.items)) {
+            return false;
+        }
+
+        this.loadCorsFile(softFile);
+        return !!(this.#model && Array.isArray(this.#model.items));
+    }
+
+    #resolveSoftwareUrlByRomName(romName) {
+        if (!this.#model || !Array.isArray(this.#model.items) || !Array.isArray(this.#model.bases)) {
+            return null;
+        }
+
+        const wanted = String(romName || '').trim().toLowerCase();
+        if (!wanted) {
+            return null;
+        }
+
+        for (const item of this.#model.items) {
+            const itemName = String(item?.[0] || '').trim().toLowerCase();
+            if (itemName !== wanted) {
+                continue;
+            }
+            const baseIndex = item[1];
+            return this.#model.root + this.#model.bases[baseIndex] + item[2];
+        }
+
+        return null;
+    }
+
+    async #buildLaunchPackageFromSavedDiskRefs(diskNames, diskLaunchNames, diskRomIds, diskIndex, programName) {
+        if (!Array.isArray(diskNames) || diskNames.length < 2) {
+            return null;
+        }
+        if (!Array.isArray(diskRomIds) || diskRomIds.length !== diskNames.length) {
+            return null;
+        }
+
+        const launchNames = Array.isArray(diskLaunchNames) && diskLaunchNames.length === diskNames.length
+            ? [...diskLaunchNames]
+            : [...diskNames];
+
+        const launchFiles = [];
+        for (let i = 0; i < diskRomIds.length; i++) {
+            const romDataId = diskRomIds[i];
+            if (!Number.isInteger(romDataId)) {
+                return null;
+            }
+            const romData = await this.#storage_manager.getRomData(romDataId);
+            if (!romData || !(romData.rom_data instanceof Blob)) {
+                return null;
+            }
+            launchFiles.push({
+                fileName: launchNames[i],
+                fileContent: romData.rom_data
+            });
+        }
+
+        const m3uName = (typeof programName === 'string' && programName.toLowerCase().endsWith('.m3u'))
+            ? programName
+            : `${FileUtils.getFilenameWithoutExtension(diskNames[0])}.m3u`;
+        const m3uBody = launchNames.join('\n');
+        const m3uBlob = new Blob([m3uBody], { type: 'text/plain' });
+        const safeIndex = Number.isInteger(diskIndex)
+            ? Math.min(diskNames.length - 1, Math.max(0, diskIndex))
+            : 0;
+
+        return {
+            launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...launchFiles],
+            primaryBlob: m3uBlob,
+            saveBlob: launchFiles[safeIndex]?.fileContent || launchFiles[0].fileContent,
+            primaryFileName: m3uName,
+            selectedNames: [...diskNames],
+            selectedDisplayNames: [...diskNames],
+            selectedLaunchNames: [...launchNames],
+            selectedDiskBlobs: launchFiles.map((entry) => entry.fileContent),
+            totalDisks: diskNames.length,
+            diskIndex: safeIndex
+        };
+    }
+
+    async #buildLaunchPackageFromSavedDiskSet(diskNames, diskIndex, programName) {
+        if (!Array.isArray(diskNames) || diskNames.length < 2) {
+            return null;
+        }
+        if (!(await this.#ensureSoftwareDirLoaded())) {
+            return null;
+        }
+
+        const launchFiles = [];
+        const sourceDisplayNames = [];
+        const launchFileNames = [];
+        const launchBlobs = [];
+        for (let i = 0; i < diskNames.length; i++) {
+            const fileName = diskNames[i];
+            const url = this.#resolveSoftwareUrlByRomName(fileName);
+            if (!url) {
+                return null;
+            }
+            const response = await this.#network_manager.fetch(url, true);
+            const fileContent = await response.blob();
+            const resolved = await this.#resolveM3uLaunchFileFromSource(fileName, fileContent);
+            if (!resolved) {
+                return null;
+            }
+            launchFiles.push({ fileName: resolved.launchFileName, fileContent: resolved.launchBlob });
+            sourceDisplayNames.push(fileName);
+            launchFileNames.push(resolved.launchFileName);
+            launchBlobs.push(resolved.launchBlob);
+        }
+
+        const m3uName = (typeof programName === 'string' && programName.toLowerCase().endsWith('.m3u'))
+            ? programName
+            : `${FileUtils.getFilenameWithoutExtension(diskNames[0])}.m3u`;
+        const m3uBody = launchFileNames.join('\n');
+        const m3uBlob = new Blob([m3uBody], { type: 'text/plain' });
+        const safeIndex = Number.isInteger(diskIndex)
+            ? Math.min(diskNames.length - 1, Math.max(0, diskIndex))
+            : 0;
+
+        return {
+            launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...launchFiles],
+            primaryBlob: m3uBlob,
+            saveBlob: launchFiles[safeIndex]?.fileContent || launchFiles[0].fileContent,
+            primaryFileName: m3uName,
+            selectedNames: [...diskNames],
+            selectedDisplayNames: sourceDisplayNames,
+            selectedLaunchNames: launchFileNames,
+            selectedDiskBlobs: launchBlobs,
+            totalDisks: diskNames.length,
+            diskIndex: safeIndex
+        };
+    }
+
+    #normalizeLaunchRomInput(romInput, fallbackName) {
+        if (romInput && typeof romInput === 'object' && Array.isArray(romInput.launchFiles)) {
+            const files = romInput.launchFiles
+                .filter(file => file?.fileName && file?.fileContent)
+                .map(file => ({
+                    fileName: file.fileName,
+                    fileContent: file.fileContent
+                }));
+
+            if (files.length > 0) {
+                const diskNames = Array.isArray(romInput.selectedNames) && romInput.selectedNames.length > 0
+                    ? [...romInput.selectedNames]
+                    : files
+                        .map((file) => file.fileName)
+                        .filter((fileName) => !String(fileName).toLowerCase().endsWith('.m3u'));
+                const diskDisplayNames = Array.isArray(romInput.selectedDisplayNames) && romInput.selectedDisplayNames.length > 0
+                    ? [...romInput.selectedDisplayNames]
+                    : [...diskNames];
+                const diskLaunchNames = Array.isArray(romInput.selectedLaunchNames) && romInput.selectedLaunchNames.length > 0
+                    ? [...romInput.selectedLaunchNames]
+                    : files
+                        .map((file) => file.fileName)
+                        .filter((fileName) => !String(fileName).toLowerCase().endsWith('.m3u'));
+                const diskLaunchBlobs = Array.isArray(romInput.selectedDiskBlobs) && romInput.selectedDiskBlobs.length > 0
+                    ? [...romInput.selectedDiskBlobs]
+                    : files
+                        .filter((file) => !String(file.fileName).toLowerCase().endsWith('.m3u'))
+                        .map((file) => file.fileContent);
+                const diskIndex = Number.isInteger(romInput.diskIndex) && diskNames.length > 0
+                    ? Math.min(diskNames.length - 1, Math.max(0, romInput.diskIndex))
+                    : (diskNames.length > 0 ? 0 : null);
+                const diskFiles = [];
+                const diskCount = Math.min(diskDisplayNames.length, diskLaunchNames.length, diskLaunchBlobs.length);
+                for (let i = 0; i < diskCount; i++) {
+                    const blob = diskLaunchBlobs[i];
+                    if (!(blob instanceof Blob)) {
+                        continue;
+                    }
+                    diskFiles.push({
+                        name: diskDisplayNames[i],
+                        launch_name: diskLaunchNames[i],
+                        blob
+                    });
+                }
+
+                return {
+                    nostalgistRom: files,
+                    saveBlob: romInput.saveBlob || romInput.primaryBlob || files[0].fileContent,
+                    programName: romInput.primaryFileName || files[0].fileName || fallbackName,
+                    diskNames: diskDisplayNames,
+                    diskIndex,
+                    diskFiles
+                };
+            }
+        }
+
+        return {
+            nostalgistRom: {
+                fileName: fallbackName,
+                fileContent: romInput
+            },
+            saveBlob: romInput,
+            programName: fallbackName,
+            diskNames: [],
+            diskIndex: null,
+            diskFiles: []
+        };
+    }
+
     #isZipFile(fileName) {
         return typeof fileName === 'string' && fileName.toLowerCase().endsWith('.zip');
     }
 
-    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null) {
+    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null) {
         if (closeCallback) {
             s("html").style.background = "#000000";
             s("body").style.background = "#000000";
@@ -1297,8 +1841,37 @@ export class PlatformManager {
                 this.updatePlatform();
             }
         }
+
+        let launchBlob = blob;
+        let launchProgramName = program_name;
+
+        if (this.#isMultidiskEnabled() && Array.isArray(m3uDisks) && m3uDisks.length > 1) {
+            try {
+                let restoredM3uLaunch = null;
+                if (Array.isArray(m3uDiskRomIds) && m3uDiskRomIds.length === m3uDisks.length) {
+                    restoredM3uLaunch = await this.#buildLaunchPackageFromSavedDiskRefs(
+                        m3uDisks,
+                        m3uDiskLaunchNames,
+                        m3uDiskRomIds,
+                        m3uDiskIndex,
+                        program_name
+                    );
+                }
+
+                if (!restoredM3uLaunch) {
+                    restoredM3uLaunch = await this.#buildLaunchPackageFromSavedDiskSet(m3uDisks, m3uDiskIndex, program_name);
+                }
+                if (restoredM3uLaunch) {
+                    launchBlob = restoredM3uLaunch;
+                    launchProgramName = restoredM3uLaunch.primaryFileName;
+                }
+            } catch (error) {
+                console.error('Failed to restore M3U disk set from save metadata:', error);
+            }
+        }
+
         this.#state = state;
-        await this.loadRomFile(blob, program_name, caption, true, 'save', closeCallback);
+        await this.loadRomFile(launchBlob, launchProgramName, caption, true, 'save', closeCallback);
     }
 
     async saveState(isQuickSave = false) {
@@ -1311,8 +1884,13 @@ export class PlatformManager {
         const program_name = this.#program_name;
         const caption = this.#caption;
         const rom_data = this.#current_rom;
+        const m3uData = {
+            diskNames: this.getCurrentM3uDisks(),
+            diskIndex: this.getCurrentM3uDiskIndex(),
+            diskFiles: this.getCurrentM3uDiskFiles()
+        };
 
-        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave).then(() => {
+        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave, m3uData).then(() => {
             ToastManager.enqueueToast(isQuickSave ? 'Quicksave created.' : 'Savestate created.');
         });
     }

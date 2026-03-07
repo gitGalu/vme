@@ -6,6 +6,7 @@ const ST = {
   ...PlatformBase,
   platform_id: 'st',
   core: 'hatarib',
+  multidisk: true,
   platform_name: 'Atari ST / STE / TT / Falcon',
   short_name: 'ST',
   loader: 'gemzip',

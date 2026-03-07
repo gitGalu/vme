@@ -48,6 +48,15 @@ export class StorageManager {
             collectionMeta: '++id, collection_unique_name, collection_title, collection_image',
             collectionItemData: '++id, collection_id, platform_id, title, credits, description, image, rom_name, rom_data_id, rom_url, launched'
         });
+
+        this.#db.version(6).stores({
+            files: "key, data",
+            saveMeta: '++id, platform_id, program_name, save_data_id, rom_data_id, timestamp, caption, is_quicksave, *m3u_disk_rom_ids',
+            saveData: '++id, save_data',
+            romData: '++id, rom_data, hash, data_type',
+            collectionMeta: '++id, collection_unique_name, collection_title, collection_image',
+            collectionItemData: '++id, collection_id, platform_id, title, credits, description, image, rom_name, rom_data_id, rom_url, launched'
+        });
     }
 
     async #computeHash(blob) {
@@ -197,13 +206,54 @@ export class StorageManager {
         });
     }
 
-    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false) {
+    async #getOrCreateRomDataIdByHash(hash, blob) {
+        const existing = await this.#db.romData.where({ hash }).first();
+        if (existing != undefined) {
+            return existing.id;
+        }
+        return await this.#db.romData.add({ rom_data: blob, hash, data_type: 'blob' });
+    }
+
+    #extractM3uRomIds(saveMetaEntry) {
+        if (!Array.isArray(saveMetaEntry?.m3u_disk_rom_ids)) {
+            return [];
+        }
+        return saveMetaEntry.m3u_disk_rom_ids.filter((id) => Number.isInteger(id));
+    }
+
+    async #collectSaveReferencedRomIds() {
+        const saveMetaEntries = await this.#db.saveMeta.toArray();
+        const referenced = new Set();
+
+        for (const saveMetaEntry of saveMetaEntries) {
+            if (Number.isInteger(saveMetaEntry?.rom_data_id)) {
+                referenced.add(saveMetaEntry.rom_data_id);
+            }
+            for (const romId of this.#extractM3uRomIds(saveMetaEntry)) {
+                referenced.add(romId);
+            }
+        }
+
+        return referenced;
+    }
+
+    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null) {
         const hash = await this.#computeHash(rom_data);
 
         const screenshotFix = await this.#fixScreenshot(platform_id, screenshot);
         const screenshotB64 = await this.blobToBase64(screenshotFix);
         const romB64 = rom_data;
         const saveB64 = await this.blobToBase64(save_data);
+        const diskNames = Array.isArray(m3uData?.diskNames) ? m3uData.diskNames.filter(Boolean) : [];
+        const diskIndex = Number.isInteger(m3uData?.diskIndex) ? m3uData.diskIndex : null;
+        const diskFiles = Array.isArray(m3uData?.diskFiles)
+            ? m3uData.diskFiles.filter((disk) => disk && disk.blob instanceof Blob)
+            : [];
+        const hasDiskSet = diskNames.length > 1;
+        const hasLocalDiskSet = hasDiskSet && diskFiles.length === diskNames.length;
+        const diskFileHashes = hasLocalDiskSet
+            ? await Promise.all(diskFiles.map((disk) => this.#computeHash(disk.blob)))
+            : [];
 
         try {
             await this.#db.transaction('rw', this.#db.saveMeta, this.#db.saveData, this.#db.romData, async () => {
@@ -214,6 +264,19 @@ export class StorageManager {
                     romDataId = await this.#db.romData.add({ rom_data: romB64, hash, data_type: 'blob' });
                 } else {
                     romDataId = existing.id;
+                }
+
+                let m3uDiskRomIds;
+                let m3uDiskLaunchNames;
+                if (hasLocalDiskSet) {
+                    m3uDiskRomIds = [];
+                    m3uDiskLaunchNames = [];
+                    for (let i = 0; i < diskFiles.length; i++) {
+                        const diskFile = diskFiles[i];
+                        const diskRomId = await this.#getOrCreateRomDataIdByHash(diskFileHashes[i], diskFile.blob);
+                        m3uDiskRomIds.push(diskRomId);
+                        m3uDiskLaunchNames.push(diskFile.launch_name || diskFile.name || diskNames[i]);
+                    }
                 }
 
                 if (isQuickSave) {
@@ -232,7 +295,11 @@ export class StorageManager {
                             screenshot: screenshotB64,
                             save_data_id: saveDataId,
                             timestamp: Date.now(),
-                            caption: (program_name !== caption) ? caption : undefined
+                            caption: (program_name !== caption) ? caption : undefined,
+                            m3u_disks: hasDiskSet ? diskNames : undefined,
+                            m3u_disk_index: hasDiskSet ? diskIndex : undefined,
+                            m3u_disk_rom_ids: hasLocalDiskSet ? m3uDiskRomIds : undefined,
+                            m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined
                         });
                     } else {
                         let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
@@ -245,7 +312,11 @@ export class StorageManager {
                             save_data_id: saveDataId,
                             timestamp: Date.now(),
                             caption: (program_name !== caption) ? caption : undefined,
-                            is_quicksave: true
+                            is_quicksave: true,
+                            m3u_disks: hasDiskSet ? diskNames : undefined,
+                            m3u_disk_index: hasDiskSet ? diskIndex : undefined,
+                            m3u_disk_rom_ids: hasLocalDiskSet ? m3uDiskRomIds : undefined,
+                            m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined
                         });
                     }
                 } else {
@@ -259,7 +330,11 @@ export class StorageManager {
                         save_data_id: saveDataId,
                         timestamp: Date.now(),
                         caption: (program_name !== caption) ? caption : undefined,
-                        is_quicksave: false
+                        is_quicksave: false,
+                        m3u_disks: hasDiskSet ? diskNames : undefined,
+                        m3u_disk_index: hasDiskSet ? diskIndex : undefined,
+                        m3u_disk_rom_ids: hasLocalDiskSet ? m3uDiskRomIds : undefined,
+                        m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined
                     });
                 }
             });
@@ -370,18 +445,18 @@ export class StorageManager {
             throw new Error('Save state not found.');
         }
 
-        const saveData = await this.#db.saveData.get(saveMeta.save_data_id);
         const romData = await this.#db.romData.get(saveMeta.rom_data_id);
+        const saveData = await this.#db.saveData.get(saveMeta.save_data_id);
+
+        if (!saveData || !romData) {
+            throw new Error('Save state or program data is missing.');
+        }
 
         let romBlob;
         if (romData.data_type == 'base64') {
             romBlob = this.base64ToBlob(romData.rom_data);
         } else {
             romBlob = romData.rom_data;
-        }
-
-        if (!saveData || !romData) {
-            throw new Error('Save state or program data is missing.');
         }
 
         const saveBlob = this.base64ToBlob(saveData.save_data);
@@ -392,7 +467,11 @@ export class StorageManager {
             save_data: saveBlob,
             rom_data: romBlob,
             timestamp: saveMeta.timestamp,
-            caption: saveMeta.caption
+            caption: saveMeta.caption,
+            m3u_disks: saveMeta.m3u_disks,
+            m3u_disk_index: saveMeta.m3u_disk_index,
+            m3u_disk_rom_ids: saveMeta.m3u_disk_rom_ids,
+            m3u_disk_launch_names: saveMeta.m3u_disk_launch_names
         };
     }
 
@@ -401,15 +480,23 @@ export class StorageManager {
             await this.#db.transaction('rw', this.#db.saveMeta, this.#db.saveData, this.#db.collectionItemData, this.#db.romData, async () => {
                 const saveMetaEntry = await this.#db.saveMeta.get(id);
                 if (saveMetaEntry) {
+                    const candidateRomIds = new Set();
+                    if (Number.isInteger(saveMetaEntry.rom_data_id)) {
+                        candidateRomIds.add(saveMetaEntry.rom_data_id);
+                    }
+                    for (const romId of this.#extractM3uRomIds(saveMetaEntry)) {
+                        candidateRomIds.add(romId);
+                    }
+
                     await this.#db.saveData.where('id').equals(saveMetaEntry.save_data_id).delete();
                     await this.#db.saveMeta.delete(id);
 
-                    let saveSameRomCount = await this.#db.saveMeta.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
-
-                    let collectionSameRomCount = await this.#db.collectionItemData.where('rom_data_id').equals(saveMetaEntry.rom_data_id).count();
-
-                    if ((collectionSameRomCount + saveSameRomCount) == 0) {
-                        await this.#db.romData.where('id').equals(saveMetaEntry.rom_data_id).delete();
+                    const saveReferencedRomIds = await this.#collectSaveReferencedRomIds();
+                    for (const romId of candidateRomIds) {
+                        const collectionSameRomCount = await this.#db.collectionItemData.where('rom_data_id').equals(romId).count();
+                        if (collectionSameRomCount === 0 && !saveReferencedRomIds.has(romId)) {
+                            await this.#db.romData.where('id').equals(romId).delete();
+                        }
                     }
                 }
             });
@@ -421,23 +508,14 @@ export class StorageManager {
     async deleteAllCollections() {
         try {
             await this.#db.transaction('rw', this.#db.collectionMeta, this.#db.collectionItemData, this.#db.saveMeta, this.#db.romData, async () => {
-                const allCollections = await this.#db.collectionMeta.toArray();
+                await this.#db.collectionItemData.clear();
+                await this.#db.collectionMeta.clear();
 
-                for (let collection of allCollections) {
-                    const collectionId = collection.id;
-                    const collectionItems = await this.#db.collectionItemData.where('collection_id').equals(collectionId).toArray();
-                    if (collectionItems.length > 0) {
-                        await this.#db.collectionItemData.where('collection_id').equals(collectionId).delete();
-                        await this.#db.collectionMeta.delete(collectionId);
-
-                        for (let item of collectionItems) {
-                            const romDataId = item.rom_data_id;
-                            let saveSameRomCount = await this.#db.saveMeta.where('rom_data_id').equals(romDataId).count();
-                            let collectionSameRomCount = await this.#db.collectionItemData.where('rom_data_id').equals(romDataId).count();
-                            if ((collectionSameRomCount + saveSameRomCount) == 0) {
-                                await this.#db.romData.where('id').equals(romDataId).delete();
-                            }
-                        }
+                const saveReferencedRomIds = await this.#collectSaveReferencedRomIds();
+                const allRomData = await this.#db.romData.toArray();
+                for (const romEntry of allRomData) {
+                    if (!saveReferencedRomIds.has(romEntry.id)) {
+                        await this.#db.romData.where('id').equals(romEntry.id).delete();
                     }
                 }
             });

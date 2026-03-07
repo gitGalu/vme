@@ -44,7 +44,9 @@ export class UiManager {
     static #customControllerManager;
     static #keymapSelector;
     static #joystickSelector;
+    static #touchDiskSelector;
     static #specialButton;
+    static #diskSwitchInProgress = false;
 
     static #currentInputMethod;
     static #previousInputMethod;
@@ -53,6 +55,7 @@ export class UiManager {
 
     #kb_mode_change_handler_bound;
     #kbModeDropdown = null;
+    #diskDropdown = null;
     #focusSyncUnsub = null;
 
     constructor(platform_manager, kb_manager) {
@@ -205,6 +208,7 @@ export class UiManager {
             });
 
         this.initSaveButton();
+        this.initDiskButton();
 
         addButtonEventListeners(s('#desktopUiRewind'),
             (pressed) => {
@@ -415,6 +419,10 @@ export class UiManager {
             UiManager.#keymapSelector.destroy();
             UiManager.#keymapSelector = undefined;
         }
+        if (UiManager.#touchDiskSelector) {
+            UiManager.#touchDiskSelector.destroy();
+            UiManager.#touchDiskSelector = undefined;
+        }
 
         const overridenController = this.#getOverridenControllerType();
         if (overridenController) {
@@ -443,6 +451,31 @@ export class UiManager {
                 );
             } else if (touch_controllers.length === 1) {
                 new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new InputSwitchListener(TOUCH_INPUT.JOYSTICK), FAST_BTN_RADIUS);
+            }
+
+            const diskNames = UiManager.#platform_manager.getCurrentM3uDisks();
+            if (Array.isArray(diskNames) && diskNames.length > 1) {
+                const diskOptions = diskNames.map((_, index) => String(index + 1));
+                const currentIndex = UiManager.#platform_manager.getCurrentM3uDiskIndex();
+                const activeIndex = Number.isInteger(currentIndex) && currentIndex >= 0 && currentIndex < diskOptions.length
+                    ? currentIndex
+                    : 0;
+
+                const diskListener = new DiskSelectorListener(diskNames);
+                UiManager.#touchDiskSelector = new MultiSelectTouchButton(
+                    s("#fastui"),
+                    diskOptions,
+                    undefined,
+                    'fastdisk',
+                    diskListener,
+                    activeIndex,
+                    FAST_BTN_RADIUS,
+                    false,
+                    null,
+                    'DISK',
+                    true
+                );
+                diskListener.attachSelector(UiManager.#touchDiskSelector);
             }
 
             class KeymapOptionsListener extends TouchButtonListener {
@@ -561,12 +594,13 @@ export class UiManager {
             });
         }
 
-        function toggleMenu() {
+        const toggleMenu = () => {
             if (controlsMenu.style.display === 'none' || controlsMenu.style.display === '') {
 
                 if (saveMenu) {
                     saveMenu.style.display = 'none';
                 }
+                this.#diskDropdown?.close();
 
                 controlsMenu.style.display = 'block';
                 controlsMenu.style.position = 'fixed';
@@ -580,7 +614,7 @@ export class UiManager {
             } else {
                 controlsMenu.style.display = 'none';
             }
-        }
+        };
 
         document.addEventListener('click', (event) => {
             if (!controlsButton.contains(event.target) && !controlsMenu.contains(event.target)) {
@@ -625,11 +659,12 @@ export class UiManager {
             });
         }
 
-        function toggleMenu() {
+        const toggleMenu = () => {
             if (saveMenu.style.display === 'none' || saveMenu.style.display === '') {
                 if (controlsMenu) {
                     controlsMenu.style.display = 'none';
                 }
+                this.#diskDropdown?.close();
 
                 saveMenu.style.display = 'block';
                 saveMenu.style.position = 'fixed';
@@ -643,7 +678,7 @@ export class UiManager {
             } else {
                 saveMenu.style.display = 'none';
             }
-        }
+        };
 
         document.addEventListener('click', (event) => {
             if (!saveButton.contains(event.target) && !saveMenu.contains(event.target)) {
@@ -653,6 +688,116 @@ export class UiManager {
 
         saveButton.addEventListener('click', toggleMenu);
         createMenu();
+    }
+
+    initDiskButton() {
+        const diskDropdownWrap = document.getElementById('desktopDiskDropdownWrap');
+        const diskDropdownContainer = document.getElementById('desktopDiskDropdownContainer');
+
+        if (!diskDropdownWrap || !diskDropdownContainer) {
+            return;
+        }
+
+        const diskNames = UiManager.#platform_manager.getCurrentM3uDisks();
+        if (!Array.isArray(diskNames) || diskNames.length < 2) {
+            diskDropdownWrap.style.display = 'none';
+            this.#diskDropdown?.close();
+            this.#diskDropdown = null;
+            return;
+        }
+
+        diskDropdownWrap.style.display = 'flex';
+
+        const currentIndex = UiManager.#platform_manager.getCurrentM3uDiskIndex();
+        const activeIndex = Number.isInteger(currentIndex) && currentIndex >= 0 && currentIndex < diskNames.length ? currentIndex : 0;
+        UiManager.#platform_manager.setCurrentM3uDiskIndex(activeIndex);
+
+        const options = diskNames.map((_, index) => ({
+            value: String(index),
+            text: `Disk ${index + 1} of ${diskNames.length}`
+        }));
+
+        diskDropdownContainer.innerHTML = '';
+        this.#diskDropdown = new CustomDropdown('desktopDiskDropdownContainer', options, String(activeIndex));
+        this.#diskDropdown.onChange(async (event) => {
+            const targetIndex = Number.parseInt(event.target.value, 10);
+            await this.#switchDesktopDisk(targetIndex, diskNames);
+        });
+    }
+
+    async #switchDesktopDisk(targetIndex, diskNames) {
+        const currentIndex = UiManager.#platform_manager.getCurrentM3uDiskIndex();
+        const fromIndex = Number.isInteger(currentIndex) ? currentIndex : 0;
+        this.#diskDropdown?.getElement()?.classList.add('busy');
+        try {
+            const switched = await UiManager.switchM3uDisk(targetIndex, diskNames);
+            if (switched) {
+                this.#diskDropdown?.setValue(String(targetIndex));
+            } else {
+                this.#diskDropdown?.setValue(String(fromIndex));
+            }
+        } finally {
+            this.#diskDropdown?.getElement()?.classList.remove('busy');
+        }
+    }
+
+    static #sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    static async switchM3uDisk(targetIndex, diskNames = null) {
+        if (UiManager.#diskSwitchInProgress) {
+            return false;
+        }
+
+        const names = Array.isArray(diskNames) ? diskNames : UiManager.#platform_manager.getCurrentM3uDisks();
+        if (!Array.isArray(names) || names.length < 2) {
+            return false;
+        }
+        if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= names.length) {
+            return false;
+        }
+
+        const nostalgist = UiManager.#platform_manager.getNostalgist();
+        if (!nostalgist) {
+            return false;
+        }
+
+        const currentIndex = UiManager.#platform_manager.getCurrentM3uDiskIndex();
+        const fromIndex = Number.isInteger(currentIndex) ? currentIndex : 0;
+        if (targetIndex === fromIndex) {
+            return true;
+        }
+
+        const stepCount = Math.abs(targetIndex - fromIndex);
+        const stepCommand = targetIndex > fromIndex ? 'DISK_NEXT' : 'DISK_PREV';
+
+        UiManager.#diskSwitchInProgress = true;
+        try {
+            UiManager.osdMessage(`Switching to disk ${targetIndex + 1}/${names.length} ...`);
+            nostalgist.sendCommand('DISK_EJECT_TOGGLE');
+            await UiManager.#sleep(80);
+
+            for (let i = 0; i < stepCount; i++) {
+                nostalgist.sendCommand(stepCommand);
+                await UiManager.#sleep(70);
+            }
+
+            await UiManager.#sleep(80);
+            nostalgist.sendCommand('DISK_EJECT_TOGGLE');
+            UiManager.#platform_manager.setCurrentM3uDiskIndex(targetIndex);
+            return true;
+        } catch (error) {
+            console.error('Disk switch failed', error);
+            UiManager.osdMessage('Disk switch failed', 1200);
+            return false;
+        } finally {
+            UiManager.#diskSwitchInProgress = false;
+        }
+    }
+
+    static getCurrentM3uDiskIndex() {
+        return UiManager.#platform_manager.getCurrentM3uDiskIndex();
     }
 
     initQuickJoy() {
@@ -1161,6 +1306,34 @@ class JoystickSelectorListener extends TouchButtonListener {
             UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK);
 
             UiManager.updateJoystickSelectorIndex();
+        }
+    }
+}
+
+class DiskSelectorListener extends TouchButtonListener {
+    #diskNames;
+    #selector;
+
+    constructor(diskNames) {
+        super();
+        this.#diskNames = Array.isArray(diskNames) ? [...diskNames] : [];
+        this.#selector = null;
+    }
+
+    attachSelector(selector) {
+        this.#selector = selector;
+    }
+
+    async trigger(event) {
+        if (!event || !event.selected || !Number.isInteger(event.index)) {
+            return;
+        }
+
+        const fromIndex = UiManager.getCurrentM3uDiskIndex();
+        const previousIndex = Number.isInteger(fromIndex) ? fromIndex : 0;
+        const switched = await UiManager.switchM3uDisk(event.index, this.#diskNames);
+        if (!switched && this.#selector) {
+            this.#selector.setSelectedIndex(previousIndex);
         }
     }
 }
