@@ -542,7 +542,211 @@ const Amiga = {
           }
         ]
       },
-
+      {
+        "id": "amiga-pinball-3",
+        "name": "Pinball 3",
+        "description": "Slam Tilt",
+        "gameFocus": true,
+        "layout": {
+          "landscape": {
+            "columns": 50,
+            "rows": 50
+          },
+          "portrait": {
+            "columns": 50,
+            "rows": 50
+          }
+        },
+        "elements": [
+          {
+            "id": "amiga-pinball-left-shift",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Alt",
+                "code": "AltLeft",
+                "keyCode": 18
+              }
+            },
+            "gridArea": {
+              "landscape": "37 / 1 / span 14 / span 10",
+              "portrait": "44 / 1 / span 7 / span 23"
+            },
+            "label": "LEFT"
+          },
+          {
+            "id": "amiga-pinball-right-shift",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Alt",
+                "code": "AltRight",
+                "keyCode": 18
+              }
+            },
+            "gridArea": {
+              "landscape": "37 / 41 / span 14 / span 10",
+              "portrait": "44 / 28 / span 7 / span 23"
+            },
+            "label": "RIGHT"
+          },
+          {
+            "id": "amiga-pinball-plunger",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Enter",
+                "code": "Enter",
+                "keyCode": "13"
+              }
+            },
+            "gridArea": {
+              "landscape": "27 / 43 / span 9 / span 8",
+              "portrait": "38 / 32 / span 5 / span 19"
+            },
+            "label": "PLUNGER"
+          },
+          {
+            "id": "amiga-pinball-tilt",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Meta",
+                "code": "MetaLeft",
+                "keyCode": 19
+              }
+            },
+            "gridArea": {
+              "landscape": "27 / 1 / span 9 / span 4",
+              "portrait": "38 / 1 / span 5 / span 9"
+            },
+            "label": "TILT"
+          },
+          {
+            "id": "amiga-pinball-f1",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F1",
+                "code": "F1",
+                "keyCode": "112"
+              }
+            },
+            "gridArea": {
+              "landscape": "3 / 5 / span 4 / span 4",
+              "portrait": "26 / 11 / span 2 / span 9"
+            },
+            "label": "F1"
+          },
+          {
+            "id": "amiga-pinball-f2",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "ArrowUp",
+                "code": "ArrowUp",
+                "keyCode": "38"
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 5 / span 4 / span 4",
+              "portrait": "29 / 11 / span 2 / span 9"
+            },
+            "label": "▲"
+          },
+          {
+            "id": "amiga-pinball-f3",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "ArrowDown",
+                "code": "ArrowDown",
+                "keyCode": "40"
+              }
+            },
+            "gridArea": {
+              "landscape": "13 / 5 / span 4 / span 4",
+              "portrait": "32 / 11 / span 2 / span 9"
+            },
+            "label": "▼"
+          },
+          {
+            "id": "amiga-pinball-f4",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "X",
+                "code": "Space",
+                "keyCode": "32"
+              }
+            },
+            "gridArea": {
+              "landscape": "18 / 5 / span 4 / span 4",
+              "portrait": "35 / 11 / span 2 / span 9"
+            },
+            "label": "OK"
+          },
+          {
+            "id": "amiga-pinball-esc",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Escape",
+                "code": "Escape",
+                "keyCode": 27
+              }
+            },
+            "gridArea": {
+              "landscape": "3 / 47 / span 4 / span 4",
+              "portrait": "26 / 42 / span 2 / span 9"
+            },
+            "label": "ESC"
+          },
+          {
+            "id": "amiga-pinball-y",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "y",
+                "code": "KeyY",
+                "keyCode": 89
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 47 / span 4 / span 4",
+              "portrait": "29 / 42 / span 2 / span 9"
+            },
+            "label": "Y"
+          },
+          {
+            "id": "tilt-2",
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Meta",
+                "code": "MetaRight",
+                "keyCode": "93"
+              }
+            },
+            "gridArea": {
+              "landscape": "27 / 5 / span 9 / span 4",
+              "portrait": "38 / 11 / span 5 / span 9"
+            },
+            "label": "TILT"
+          }
+        ]
+      },
       {
         "id": "preset-test",
         "name": "Worms (1995)",
