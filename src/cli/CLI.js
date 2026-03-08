@@ -290,7 +290,18 @@ export class CLI {
             selected_command.process_input(params, is_enter);
         } else {
             this.selected_command = null;
+            this.#showDefaultFindHint(input);
         }
+    }
+
+    #showDefaultFindHint(input) {
+        if (this.default_command_name !== 'find') {
+            return;
+        }
+        if (typeof input !== 'string' || input.length === 0 || input.length > 3) {
+            return;
+        }
+        this.soft_msg('Enter at least 4 letters to search for software.');
     }
 
     print_help() {

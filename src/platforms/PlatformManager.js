@@ -986,8 +986,13 @@ export class PlatformManager {
         const gamepadMsgEl = document.getElementById('gamepad-help-msg');
         if (gamepadMsgEl) {
             const hasGamepad = this.#vme.hasGamepad();
-            gamepadMsgEl.textContent = hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.';
+            gamepadMsgEl.textContent = this.#buildMenuHelpMessage(hasGamepad);
         }
+    }
+
+    #buildMenuHelpMessage(hasGamepad) {
+        const base = hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.';
+        return `${base} Enter at least 4 letters to search for software.`;
     }
 
     #printPlatformStatus(platformName, reqs, soft) {
@@ -1044,11 +1049,12 @@ export class PlatformManager {
                     this.#cli.print('&nbsp;');
                 }
                 const hasGamepad = this.#vme.hasGamepad();
+                const menuHelpMessage = this.#buildMenuHelpMessage(hasGamepad);
 
                 if (this.#selected_platform.message) {
                     this.#cli.print("<span class='blinking2'>" + this.#selected_platform.message + "</span>");
                     this.#cli.print('&nbsp;');
-                    this.#cli.print('<span id="gamepad-help-msg">' + (hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.') + '</span>');
+                    this.#cli.print('<span id="gamepad-help-msg">' + menuHelpMessage + '</span>');
                     if (hasGamepad) {
                         this.#printGamePadWarning();
                     }
@@ -1059,7 +1065,7 @@ export class PlatformManager {
                 } else {
                     this.#cli.print(softFile.items.length + ' files available.');
                     this.#cli.print('&nbsp;');
-                    this.#cli.print('<span id="gamepad-help-msg">' + (hasGamepad ? 'Gamepad connected.' : 'Type HELP for info.') + '</span>');
+                    this.#cli.print('<span id="gamepad-help-msg">' + menuHelpMessage + '</span>');
                     if (hasGamepad) {
                         this.#printGamePadWarning();
                     }
