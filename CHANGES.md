@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.60] - 2026-03-08
+
+-  add multi-disk game support (Amiga and Atari ST)
+-  DOS: add save states support (buggy)
+-  DOS: add basic touch controls
+-  Amiga: add Slam Tilt custom touch controller
+
 ## [0.56] - 2026-02-01
 
 -  A800: improve input handling incl. external joystick support
