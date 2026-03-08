@@ -1,6 +1,7 @@
 import { s, show, hide } from '../dom.js';
 import { SingleTouchButton } from "./SingleTouchButton";
 import { SingleTouchButtonKbListener } from "./SingleTouchButtonKbListener";
+import { SingleTouchMouseButtonListener } from "./SingleTouchMouseButtonListener";
 import { SingleTouchButtonJoyListener } from "./SingleTouchButtonJoyListener";
 import { FileUtils } from '../utils/FileUtils.js';
 
@@ -115,7 +116,10 @@ export class Mousepad {
             }
         });
 
-        if (platform_id == "amiga" || platform_id == "st") {
+        if (platform_id == "dos") {
+            new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchMouseButtonListener(s('canvas'), 0));
+            new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchMouseButtonListener(s('canvas'), 2));
+        } else if (platform_id == "amiga" || platform_id == "st") {
             new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchButtonKbListener('F13', 'F13', '124', s('canvas')));
             new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchButtonKbListener('F14', 'F14', '125', s('canvas')));
         } else if (platform_id == "mame") {

@@ -322,6 +322,7 @@ export class PlatformManager {
                 rewind_buffer_size: 20,
                 rewind_granularity: (this.#selected_platform.rewind_granularity === undefined) ? 5 : this.#selected_platform.rewind_granularity,
                 fastforward_ratio: (this.#selected_platform.fastforward_ratio === undefined) ? 10 : this.#selected_platform.fastforward_ratio,
+                ...(this.#selected_platform.platform_id === 'dos' ? { video_gpu_screenshot: false } : {}),
                 input_pause_toggle: false,
                 video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
                 video_smooth: (this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth,

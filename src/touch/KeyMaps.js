@@ -54,8 +54,8 @@ export class KeyMaps {
         down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
         left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
         right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
-        a: { key: 'Enter', code: 'Enter', keyCode: 13, label: 'RETURN' },
-        b: { key: 'x', code: 'KeyX', keyCode: 88, label: 'X' }
+        a: { key: ' ', code: 'Space', keyCode: 32, label: 'SPACE' },
+        b: { key: 'Enter', code: 'Enter', keyCode: 13, label: 'RETURN' }
     }
 
     static XT_ARROWS_SPACE_X = {
@@ -101,5 +101,32 @@ export class KeyMaps {
         right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
         a: { key: ' ', code: 'Space', keyCode: 32, label: 'SPACE' },
         b: { key: 'Shift', code: 'ShiftLeft', keyCode: 16, label: 'SHIFT' }
+    }
+
+    // DOS
+
+    static DOS_ARROWS_CTRL = {
+        up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+        down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+        left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+        right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+        a: { key: 'Control', code: 'ControlLeft', keyCode: 17, label: 'CTRL' }
+    }
+
+    static DOS_ARROWS_SPACE = {
+        up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+        down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+        left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+        right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+        a: { key: ' ', code: 'Space', keyCode: 32, label: 'SPACE' }
+    }
+
+    static DOS_ARROWS_ALT_SPACE = {
+        up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+        down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+        left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+        right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+        a: { key: 'Alt', code: 'AltLeft', keyCode: 18, label: 'ALT' },
+        b: { key: ' ', code: 'Space', keyCode: 32, label: 'SPACE' }
     }
 }

@@ -345,7 +345,7 @@ export class StorageManager {
     }
 
     #fixScreenshot(platform_id, blob) {
-        if (platform_id != "atari2600" && platform_id != "amiga") {
+        if (platform_id != "atari2600" && platform_id != "amiga" && platform_id != "dos") {
             return blob;
         }
 
@@ -360,24 +360,36 @@ export class StorageManager {
 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
+                let targetWidth = width;
+                let targetHeight = height;
 
                 if (platform_id == "atari2600" && ratio < 0.8) {
-                    canvas.width = width * 2;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    targetWidth = width * 2;
+                    targetHeight = height;
                 } else if (platform_id == "amiga" && ratio > 2) {
-                    canvas.width = width / 2;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                } else {
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0);
+                    targetWidth = width / 2;
+                    targetHeight = height;
                 }
+
+                if (platform_id == "dos") {
+                    const maxWidth = 640;
+                    const maxHeight = 480;
+                    const widthScale = maxWidth / targetWidth;
+                    const heightScale = maxHeight / targetHeight;
+                    const scale = Math.min(1, widthScale, heightScale);
+                    if (scale < 1) {
+                        targetWidth = Math.max(1, Math.round(targetWidth * scale));
+                        targetHeight = Math.max(1, Math.round(targetHeight * scale));
+                    }
+                }
+
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
                 canvas.toBlob((newBlob) => {
                     URL.revokeObjectURL(url);
-                    resolve(newBlob);
+                    resolve(newBlob || blob);
                 }, 'image/png');
             };
 

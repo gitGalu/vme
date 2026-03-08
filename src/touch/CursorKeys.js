@@ -1,7 +1,6 @@
 import { s, show, hide } from '../dom.js';
 import { SingleTouchButton } from "./SingleTouchButton";
 import { SingleTouchButtonKbListener } from './SingleTouchButtonKbListener.js';
-import { KeyMaps } from './KeyMaps.js';
 import { CursorKeysComponent } from './CursorKeysComponent.js';
 
 export class CursorKeys {
@@ -12,6 +11,7 @@ export class CursorKeys {
     #fireA;
     #fireAB1;
     #fireAB2;
+    #bottomContainer;
 
     #joystickContainer;
     #joystickComponent;
@@ -40,27 +40,12 @@ export class CursorKeys {
         bottomContainer.style.gridTemplateColumns = 'repeat(50, 1fr)';
         bottomContainer.style.gridTemplateRows = 'repeat(50, 1fr)';
         bottomContainer.style.pointerEvents = 'none';
+        this.#bottomContainer = bottomContainer;
 
         const selectedPlatform = this.#platform_manager.getSelectedPlatform();
-        const platformId = selectedPlatform.platform_id;
-
-        if (platformId === 'spectrum') {
-            const DEF = KeyMaps.ZX_CURSOR;
-            this.#keyConfig = DEF;
-            this.#fireAListener = new SingleTouchButtonKbListener(DEF.a.key, DEF.a.code, DEF.a.keyCode, s('canvas'));
-            this.#fireA = new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'cursorbf', this.#fireAListener);
-        } else if (platformId === 'xt') {
-            const DEF = KeyMaps.XT_ARROWS_SPACE_RETURN;
-            this.#keyConfig = DEF;
-            this.#fireAB1Listener = new SingleTouchButtonKbListener(' ', 'Space', '32', s('canvas'));
-            this.#fireAB2Listener = new SingleTouchButtonKbListener('Enter', 'Enter', '13', s('canvas'));
-            this.#fireAB1 = new SingleTouchButton(bottomContainer, 'SPACE', undefined, 'cursorb1', this.#fireAB1Listener);
-            this.#fireAB2 = new SingleTouchButton(bottomContainer, 'RETURN', undefined, 'cursorb2', this.#fireAB2Listener);
-        } else {
-            new SingleTouchButton(bottomContainer, 'SPACE', undefined, 'cursorb1', new SingleTouchButtonKbListener(' ', 'Space', '32', s('canvas')));
-            new SingleTouchButton(bottomContainer, 'ENTER', undefined, 'cursorb2', new SingleTouchButtonKbListener('Enter', 'Enter', '13', s('canvas')));
-            this.#keyConfig = selectedPlatform.arrow_keys;
-        }
+        const defaultMapping = selectedPlatform.touch_key_mapping?.default;
+        this.#keyConfig = defaultMapping || selectedPlatform.arrow_keys;
+        this.#setActionButtons(defaultMapping);
 
         document.body.appendChild(bottomContainer);
 
@@ -88,22 +73,60 @@ export class CursorKeys {
         this.#joystickComponent.setKeys(this.#keyConfig);
     }
 
+    #clearActionButtons() {
+        this.#fireA?.el?.remove();
+        this.#fireAB1?.el?.remove();
+        this.#fireAB2?.el?.remove();
+
+        this.#fireA = undefined;
+        this.#fireAB1 = undefined;
+        this.#fireAB2 = undefined;
+        this.#fireAListener = undefined;
+        this.#fireAB1Listener = undefined;
+        this.#fireAB2Listener = undefined;
+    }
+
+    #setActionButtons(mapping) {
+        this.#clearActionButtons();
+
+        if (!this.#bottomContainer) {
+            return;
+        }
+
+        const target = s('canvas');
+        const hasPrimaryAction = mapping && typeof mapping.a === 'object';
+        const hasSecondaryAction = mapping && typeof mapping.b === 'object';
+
+        if (hasPrimaryAction && hasSecondaryAction) {
+            const a = mapping.a;
+            const b = mapping.b;
+            this.#fireAB1Listener = new SingleTouchButtonKbListener(a.key, a.code, a.keyCode, target);
+            this.#fireAB2Listener = new SingleTouchButtonKbListener(b.key, b.code, b.keyCode, target);
+            this.#fireAB1 = new SingleTouchButton(this.#bottomContainer, a.label ?? 'BTN1', undefined, 'cursorb1', this.#fireAB1Listener);
+            this.#fireAB2 = new SingleTouchButton(this.#bottomContainer, b.label ?? 'BTN2', undefined, 'cursorb2', this.#fireAB2Listener);
+            return;
+        }
+
+        if (hasPrimaryAction) {
+            const a = mapping.a;
+            this.#fireAListener = new SingleTouchButtonKbListener(a.key, a.code, a.keyCode, target);
+            this.#fireA = new SingleTouchButton(this.#bottomContainer, a.label ?? 'FIRE', undefined, 'cursorbf', this.#fireAListener);
+            return;
+        }
+
+        this.#fireAB1Listener = new SingleTouchButtonKbListener(' ', 'Space', '32', target);
+        this.#fireAB2Listener = new SingleTouchButtonKbListener('Enter', 'Enter', '13', target);
+        this.#fireAB1 = new SingleTouchButton(this.#bottomContainer, 'SPACE', undefined, 'cursorb1', this.#fireAB1Listener);
+        this.#fireAB2 = new SingleTouchButton(this.#bottomContainer, 'ENTER', undefined, 'cursorb2', this.#fireAB2Listener);
+    }
+
     updateKeyMap(value) {
         const selected = this.#platform_manager.getSelectedPlatform();
         const mapping = selected.touch_key_mapping?.keyMap?.[value];
 
         if (mapping) {
             this.#keyConfig = mapping;
-
-            if (mapping.b !== undefined) {
-                this.#fireAB1?.setLabel(mapping.a.label ?? 'BTN1');
-                this.#fireAB1Listener?.updateKeyMapping(mapping.a);
-                this.#fireAB2?.setLabel(mapping.b.label ?? 'BTN2');
-                this.#fireAB2Listener?.updateKeyMapping(mapping.b);
-            } else if (mapping.a) {
-                this.#fireA?.setLabel(mapping.a.label ?? 'FIRE');
-                this.#fireAListener?.updateKeyMapping(mapping.a);
-            }
+            this.#setActionButtons(mapping);
         }
 
         this.#joystickComponent?.setKeys(this.#keyConfig);

@@ -785,7 +785,7 @@ a {
   }
 
   #fastspectrumjoy {
-    grid-area: 21 / 1 / span 4 / span 7;
+    grid-area: 23 / 1 / span 4 / span 7;
   }
 
   #qjlr {
@@ -2580,6 +2580,11 @@ a {
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+.flicking-panel[data-platform-id="dos"] img {
+  max-height: min(56vh, 520px);
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {

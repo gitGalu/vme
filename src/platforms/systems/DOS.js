@@ -1,6 +1,7 @@
 
 import PlatformBase from '../PlatformBase.js';
-import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
+import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../../Constants.js';
+import { KeyMaps } from '../../touch/KeyMaps.js';
 
 const DOS = {
     ...PlatformBase,
@@ -24,19 +25,35 @@ const DOS = {
         return {
             dosbox_pure_memory_size: "16",
             dosbox_pure_voodoo: "off",
-            dosbox_pure_savestate: "off"
+            dosbox_pure_savestate: "on",
+            video_gpu_screenshot: "false"
         }
     },
-    savestates_disabled: true,
+    savestates_disabled: false,
     rewind_disabled: true,
     ffd_disabled: true,
     force_scale: true,
     video_smooth: false,
     dependencies: [
     ],
+    arrow_keys: {
+        up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+        down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+        left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+        right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 }
+    },
     touch_controllers: [
     ],
+    touch_key_mapping: {
+        keyMap: {
+            'Arrows+Space': KeyMaps.DOS_ARROWS_SPACE,
+            'Arrows+Ctrl': KeyMaps.DOS_ARROWS_CTRL,
+            'Arrows+Alt+Space': KeyMaps.DOS_ARROWS_ALT_SPACE
+        },
+        default: KeyMaps.DOS_ARROWS_SPACE
+    },
     mouse_controllers: [
+        MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS
     ],
     keyboard_controller_mapping: {
         input_player1_up: 'nul',
@@ -180,8 +197,203 @@ const DOS = {
         input_player1_gun_select_axis: 'nul',
         input_player1_gun_select_mbtn: 'nul',
     },
-    default_touch_controller: JOYSTICK_TOUCH_MODE.HIDEAWAY,
-    disable_touch_input: true,
+    custom_controllers: {
+        special_button: {
+            label: 'CUSTOM'
+        },
+        fastui_area: {
+            landscape: '1 / 1 / span 50 / span 50',
+            portrait: '1 / 1 / span 50 / span 50'
+        },
+        presets: [
+            {
+                "id": "dos-qj-space",
+                "name": "Quickjoy Arrows + Space",
+                "description": "Doofus, Magic Boy, Prehistorik 2, Another World",
+                "gameFocus": true,
+                "defaultLayoutId": "layout-1",
+                "currentLayoutId": "layout-1",
+                "layouts": [
+                    {
+                        "id": "layout-1",
+                        "name": "Layout 1",
+                        "layout": {
+                            "landscape": {
+                                "columns": 50,
+                                "rows": 50
+                            },
+                            "portrait": {
+                                "columns": 50,
+                                "rows": 50
+                            }
+                        },
+                        "elements": [
+                            {
+                                "id": "lr",
+                                "component": "DualTouchButton",
+                                "binding": {
+                                    "type": "keyboard",
+                                    "primary": {
+                                        "key": "ArrowLeft",
+                                        "code": "ArrowLeft",
+                                        "keyCode": "37"
+                                    },
+                                    "secondary": {
+                                        "key": "ArrowRight",
+                                        "code": "ArrowRight",
+                                        "keyCode": "39"
+                                    }
+                                },
+                                "gridArea": {
+                                    "landscape": "35 / 1 / span 16 / span 15",
+                                    "portrait": "45 / 1 / span 6 / span 18"
+                                },
+                                "labels": [
+                                    "LEFT",
+                                    "RIGHT"
+                                ],
+                                "options": {
+                                    "isHorizontal": true
+                                }
+                            },
+                            {
+                                "id": "ud",
+                                "component": "DualTouchButton",
+                                "binding": {
+                                    "type": "keyboard",
+                                    "primary": {
+                                        "key": "ArrowUp",
+                                        "code": "ArrowUp",
+                                        "keyCode": "38"
+                                    },
+                                    "secondary": {
+                                        "key": "ArrowDown",
+                                        "code": "ArrowDown",
+                                        "keyCode": "40"
+                                    }
+                                },
+                                "gridArea": {
+                                    "landscape": "27 / 43 / span 24 / span 8",
+                                    "portrait": "39 / 41 / span 12 / span 10"
+                                },
+                                "labels": [
+                                    "UP",
+                                    "DOWN"
+                                ],
+                                "options": {
+                                    "isHorizontal": true
+                                }
+                            },
+                            {
+                                "id": "space",
+                                "component": "SingleTouchButton",
+                                "binding": {
+                                    "type": "keyboard",
+                                    "key": {
+                                        "key": "space",
+                                        "code": "Space",
+                                        "keyCode": "32"
+                                    }
+                                },
+                                "gridArea": {
+                                    "landscape": "34 / 34 / span 17 / span 9",
+                                    "portrait": "45 / 30 / span 6 / span 11"
+                                },
+                                "label": "SPACE"
+                            }
+                        ]
+                    }
+                ],
+                "layout": {
+                    "landscape": {
+                        "columns": 50,
+                        "rows": 50
+                    },
+                    "portrait": {
+                        "columns": 50,
+                        "rows": 50
+                    }
+                },
+                "elements": [
+                    {
+                        "id": "lr",
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowLeft",
+                                "code": "ArrowLeft",
+                                "keyCode": "37"
+                            },
+                            "secondary": {
+                                "key": "ArrowRight",
+                                "code": "ArrowRight",
+                                "keyCode": "39"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "39 / 1 / span 14 / span 16",
+                            "portrait": "45 / 1 / span 6 / span 18"
+                        },
+                        "labels": [
+                            "LEFT",
+                            "RIGHT"
+                        ],
+                        "options": {
+                            "isHorizontal": true
+                        }
+                    },
+                    {
+                        "id": "ud",
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowUp",
+                                "code": "ArrowUp",
+                                "keyCode": "38"
+                            },
+                            "secondary": {
+                                "key": "ArrowDown",
+                                "code": "ArrowDown",
+                                "keyCode": "40"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 43 / span 24 / span 8",
+                            "portrait": "39 / 40 / span 12 / span 11"
+                        },
+                        "labels": [
+                            "UP",
+                            "DOWN"
+                        ],
+                        "options": {
+                            "isHorizontal": false
+                        }
+                    },
+                    {
+                        "id": "space",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "space",
+                                "code": "Space",
+                                "keyCode": "32"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 35 / span 24 / span 8",
+                            "portrait": "39 / 29 / span 12 / span 11"
+                        },
+                        "label": "SPACE"
+                    }
+                ]
+            }
+        ]
+    },
+    default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD,
+    disable_touch_input: false,
     fire_buttons: 1,
     keyboard: {
         shiftKey: 2,
@@ -192,7 +404,30 @@ const DOS = {
         overrides: {
         }
     },
-    message: ["PC emulation is work-in-progress. You can use a keyboard and mouse or a gamepad with automatic keyboard-to-gamepad mappings, but touch controls are not yet available!"]
+    additional_buttons: {
+        1: {
+            "label": "F1",
+            "key": {
+                "key": 'F1',
+                "code": 'F1'
+            }
+        },
+        2: {
+            "label": "ENTER",
+            "key": {
+                "key": 'Enter',
+                "code": 'Enter'
+            }
+        },
+        3: {
+            "label": "ESC",
+            "key": {
+                "key": 'Escape',
+                "code": 'Escape'
+            }
+        }
+    },
+    message: ["PC emulation is work-in-progress."]
 };
 
 export default DOS;

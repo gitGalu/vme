@@ -95,7 +95,9 @@ export class UiManager {
         UiManager.#specialButton = new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">CUSTOM</span>', undefined, 'fastcustom', new InputSwitchListener(TOUCH_INPUT.CUSTOM), FAST_BTN_RADIUS);
         UiManager.#specialButton.el.style.display = 'none';
 
-        if (UiManager.#platform_manager.getSelectedPlatform().arrow_keys) {
+        const selectedPlatform = UiManager.#platform_manager.getSelectedPlatform();
+        const hideArrowsButton = selectedPlatform.platform_id === 'dos';
+        if (selectedPlatform.arrow_keys && !hideArrowsButton) {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">ARROWS</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
         }
 
@@ -481,32 +483,39 @@ export class UiManager {
             class KeymapOptionsListener extends TouchButtonListener {
                 trigger(event) {
                     if (event.selected) {
-                        UiManager.#qj.updateKeyMap(event.label);
-                        UiManager.#ck.updateKeyMap(event.label);
+                        UiManager.#qj?.updateKeyMap(event.label);
+                        UiManager.#ck?.updateKeyMap(event.label);
                     }
+
+                    UiManager.toggleInputMethod(TOUCH_INPUT.CURSORS);
                 }
             }
 
-            if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "spectrum") {
+            const platform = UiManager.#platform_manager.getSelectedPlatform();
+            const keyMapConfig = platform.touch_key_mapping;
+            const keyMapOptions = keyMapConfig?.keyMap ? Object.keys(keyMapConfig.keyMap) : [];
+            if (keyMapOptions.length > 0) {
+                const defaultMap = keyMapConfig?.default;
+                const defaultIndex = Math.max(0, keyMapOptions.findIndex((option) => keyMapConfig.keyMap[option] === defaultMap));
+                const initialLabel = keyMapOptions[defaultIndex];
+
                 UiManager.#keymapSelector = new MultiSelectTouchButton(
                     document.getElementById('fastui'),
-                    ['Cursor', 'Interface 2', 'QAOP', 'QWRE', '1890'],
+                    keyMapOptions,
                     undefined,
                     'fastspectrumjoy',
                     new KeymapOptionsListener(),
-                    0,
-                    FAST_BTN_RADIUS
+                    defaultIndex,
+                    FAST_BTN_RADIUS,
+                    true,
+                    () => UiManager.#currentInputMethod === TOUCH_INPUT.CURSORS
                 );
-            } else if (UiManager.#platform_manager.getSelectedPlatform().platform_id == "xt") {
-                UiManager.#keymapSelector = new MultiSelectTouchButton(
-                    document.getElementById('fastui'),
-                    ['Spc+Ret', 'Spc+X', 'Spc+Ctrl', 'Z+X', 'Spc+A', 'Spc+Shift'],
-                    undefined,
-                    'fastspectrumjoy',
-                    new KeymapOptionsListener(),
-                    0,
-                    FAST_BTN_RADIUS
-                );
+
+                // Ensure default mapping is active immediately, not only after first manual selection.
+                if (initialLabel) {
+                    UiManager.#qj?.updateKeyMap(initialLabel);
+                    UiManager.#ck?.updateKeyMap(initialLabel);
+                }
             }
 
             const mouse_controllers = UiManager.#platform_manager.getSelectedPlatform().mouse_controllers;
@@ -951,12 +960,29 @@ export class UiManager {
         ].filter(Boolean);
 
         elements.forEach((e) => {
-            if (e !== el) {
+            try {
                 e.hide();
+            } catch (err) {
             }
         });
 
+        if (!el || typeof el.show !== 'function') {
+            return;
+        }
+
         el.show();
+
+        if (el !== UiManager.#customControllerManager) {
+            const customOverlay = document.getElementById('custom-touch-controller');
+            if (customOverlay) {
+                customOverlay.style.display = 'none';
+            }
+
+            const customModal = document.querySelector('.custom-controller-modal');
+            if (customModal) {
+                customModal.remove();
+            }
+        }
     };
 
     static setCurrentJoyTouchMode(mode) {
