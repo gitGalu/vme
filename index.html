@@ -10,8 +10,8 @@
     <link rel="icon" href="/vme/assets/favicon-CcvJXZ4M.ico" type="image/x-icon">
     <link rel="icon" href="/vme/assets/favicon-32x32-DDiKfeWr.png" type="image/png" sizes="32x32">
     <link rel="icon" href="/vme/assets/favicon-16x16-q6ilooy1.png" type="image/png" sizes="16x16">
-  <script type="module" crossorigin src="/vme/assets/index-C3r0Nusl.js"></script>
-  <link rel="stylesheet" crossorigin href="/vme/assets/index-DEPMxXiG.css">
+  <script type="module" crossorigin src="/vme/assets/index-Epm2_g4O.js"></script>
+  <link rel="stylesheet" crossorigin href="/vme/assets/index-BvKGsrnM.css">
 <link rel="manifest" href="/vme/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/vme/registerSW.js"></script></head>
 <style>
     html {
@@ -84,11 +84,16 @@
         <div id="desktopUi" style="display:none;">
             <div id="desktopUiBack" class="clickable-area"><img src="/vme/assets/arrow-BwrEbH68.png"></img></div>
 
-            <div id="kbModeContainer">
-                <select id="kbMode" class="minimal-combobox">
-                    <option value="retropad">Keyboard as joystick</option>
-                    <option value="focusmode">Full keyboard passthrough</option>
-                </select>
+            <div id="desktopUiLeft">
+                <div id="kbModeContainer">
+                    <select id="kbMode" class="minimal-combobox">
+                        <option value="retropad">Keyboard as joystick</option>
+                        <option value="focusmode">Full keyboard passthrough</option>
+                    </select>
+                </div>
+                <div id="desktopDiskDropdownWrap" style="display:none;">
+                    <div id="desktopDiskDropdownContainer"></div>
+                </div>
             </div>
 
             <div class="right-area">
