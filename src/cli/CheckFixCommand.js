@@ -216,6 +216,9 @@ export class CheckFixCommand extends CommandBase {
                     .filter(id => Number.isInteger(id))
                     .forEach(id => romReferences.add(id));
             }
+            if (Number.isInteger(meta.dos_sram_data_id)) {
+                romReferences.add(meta.dos_sram_data_id);
+            }
         });
         data.collectionItems.forEach(item => romReferences.add(item.rom_data_id));
 
@@ -315,20 +318,31 @@ export class CheckFixCommand extends CommandBase {
         if (issues.missingRomData.length > 0) {
             const missingRomIds = new Set(issues.missingRomData);
             const saveMetaEntries = await db.saveMeta.toArray();
-            const saveMetaIdsToDelete = saveMetaEntries
-                .filter(meta => {
-                    if (missingRomIds.has(meta.rom_data_id)) {
-                        return true;
-                    }
-                    if (!Array.isArray(meta.m3u_disk_rom_ids)) {
-                        return false;
-                    }
-                    return meta.m3u_disk_rom_ids.some((id) => missingRomIds.has(id));
-                })
-                .map(meta => meta.id);
+            const saveMetaIdsToDelete = [];
+            const saveMetaIdsToClearDosSram = [];
+
+            for (const meta of saveMetaEntries) {
+                const missingMainRom = missingRomIds.has(meta.rom_data_id);
+                const missingM3uRom = Array.isArray(meta.m3u_disk_rom_ids)
+                    ? meta.m3u_disk_rom_ids.some((id) => missingRomIds.has(id))
+                    : false;
+                const missingDosSram = missingRomIds.has(meta.dos_sram_data_id);
+
+                if (missingMainRom || missingM3uRom) {
+                    saveMetaIdsToDelete.push(meta.id);
+                } else if (missingDosSram) {
+                    saveMetaIdsToClearDosSram.push(meta.id);
+                }
+            }
 
             if (saveMetaIdsToDelete.length > 0) {
                 await db.saveMeta.where('id').anyOf(saveMetaIdsToDelete).delete();
+            }
+            if (saveMetaIdsToClearDosSram.length > 0) {
+                await db.saveMeta.where('id').anyOf(saveMetaIdsToClearDosSram).modify((meta) => {
+                    delete meta.dos_sram_data_id;
+                });
+                console.log("[CHKFIX] Cleared missing optional DOS sidecar references:", saveMetaIdsToClearDosSram);
             }
             await db.collectionItemData.where('rom_data_id').anyOf([...missingRomIds]).delete();
             console.log("[CHKFIX] Removed references to missing ROM data records:", [...missingRomIds]);

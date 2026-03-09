@@ -73,6 +73,12 @@ export class RestoreBackupCommand extends CommandBase {
                     const romDataFile = zip.file(`${programPath}/rom_data.bin`);
                     const romArrayBuffer = await romDataFile.async('arraybuffer');
                     const romBlob = new Blob([romArrayBuffer]);
+                    let dosSramBlob = null;
+                    const dosSramFile = zip.file(`${programPath}/dos_pure_data.bin`);
+                    if (dosSramFile) {
+                        const dosSramArrayBuffer = await dosSramFile.async('arraybuffer');
+                        dosSramBlob = new Blob([dosSramArrayBuffer]);
+                    }
 
                     const saveFiles = platformFiles.filter(f =>
                         f.startsWith(programPath + '/save_') && f.endsWith('.json'));
@@ -98,6 +104,7 @@ export class RestoreBackupCommand extends CommandBase {
                                 platformId,
                                 programName: romMetadata.program_name,
                                 romBlob,
+                                dosSramBlob,
                                 saveBlob,
                                 saveMetadata,
                                 screenshot
@@ -132,7 +139,11 @@ export class RestoreBackupCommand extends CommandBase {
                         op.screenshot,
                         op.platformId,
                         op.programName,
-                        op.saveMetadata.caption
+                        op.saveMetadata.caption,
+                        false,
+                        null,
+                        op.dosSramBlob,
+                        op.saveMetadata.dos_exec_hint || null
                     );
 
                     importedSaves++;

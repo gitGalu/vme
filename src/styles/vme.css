@@ -683,6 +683,10 @@ a {
     grid-area: 35 / 1 / span 2 / span 9;
   }
 
+  #fastui[data-platform-id="dos"] #fastspectrumjoy {
+    grid-area: 32 / 1 / span 2 / span 12;
+  }
+
   #qjlr {
     grid-area: -14 / 1 / span 13 / span 22;
   }
@@ -2585,6 +2589,13 @@ a {
 .flicking-panel[data-platform-id="dos"] img {
   max-height: min(56vh, 520px);
   object-fit: contain;
+}
+
+@media (orientation: portrait) {
+  .flicking-panel[data-platform-id="dos"] img {
+    max-height: min(42vh, 360px);
+    max-width: min(92vw, 520px);
+  }
 }
 
 @media (max-width: 768px) {

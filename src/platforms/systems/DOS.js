@@ -25,7 +25,7 @@ const DOS = {
         return {
             dosbox_pure_memory_size: "16",
             dosbox_pure_voodoo: "off",
-            dosbox_pure_savestate: "on",
+            dosbox_pure_savestate: "load-save",
             video_gpu_screenshot: "false"
         }
     },
@@ -214,95 +214,6 @@ const DOS = {
                 "defaultLayoutId": "layout-1",
                 "currentLayoutId": "layout-1",
                 "layouts": [
-                    {
-                        "id": "layout-1",
-                        "name": "Layout 1",
-                        "layout": {
-                            "landscape": {
-                                "columns": 50,
-                                "rows": 50
-                            },
-                            "portrait": {
-                                "columns": 50,
-                                "rows": 50
-                            }
-                        },
-                        "elements": [
-                            {
-                                "id": "lr",
-                                "component": "DualTouchButton",
-                                "binding": {
-                                    "type": "keyboard",
-                                    "primary": {
-                                        "key": "ArrowLeft",
-                                        "code": "ArrowLeft",
-                                        "keyCode": "37"
-                                    },
-                                    "secondary": {
-                                        "key": "ArrowRight",
-                                        "code": "ArrowRight",
-                                        "keyCode": "39"
-                                    }
-                                },
-                                "gridArea": {
-                                    "landscape": "35 / 1 / span 16 / span 15",
-                                    "portrait": "45 / 1 / span 6 / span 18"
-                                },
-                                "labels": [
-                                    "LEFT",
-                                    "RIGHT"
-                                ],
-                                "options": {
-                                    "isHorizontal": true
-                                }
-                            },
-                            {
-                                "id": "ud",
-                                "component": "DualTouchButton",
-                                "binding": {
-                                    "type": "keyboard",
-                                    "primary": {
-                                        "key": "ArrowUp",
-                                        "code": "ArrowUp",
-                                        "keyCode": "38"
-                                    },
-                                    "secondary": {
-                                        "key": "ArrowDown",
-                                        "code": "ArrowDown",
-                                        "keyCode": "40"
-                                    }
-                                },
-                                "gridArea": {
-                                    "landscape": "27 / 43 / span 24 / span 8",
-                                    "portrait": "39 / 41 / span 12 / span 10"
-                                },
-                                "labels": [
-                                    "UP",
-                                    "DOWN"
-                                ],
-                                "options": {
-                                    "isHorizontal": true
-                                }
-                            },
-                            {
-                                "id": "space",
-                                "component": "SingleTouchButton",
-                                "binding": {
-                                    "type": "keyboard",
-                                    "key": {
-                                        "key": "space",
-                                        "code": "Space",
-                                        "keyCode": "32"
-                                    }
-                                },
-                                "gridArea": {
-                                    "landscape": "34 / 34 / span 17 / span 9",
-                                    "portrait": "45 / 30 / span 6 / span 11"
-                                },
-                                "label": "SPACE"
-                            }
-                        ]
-                    }
                 ],
                 "layout": {
                     "landscape": {

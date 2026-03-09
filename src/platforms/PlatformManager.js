@@ -59,6 +59,8 @@ export class PlatformManager {
     #caption;
 
     #state;
+    #sram;
+    #pending_dos_state;
     #current_rom;
     #current_m3u_disks;
     #current_m3u_disk_index;
@@ -69,6 +71,12 @@ export class PlatformManager {
 
     static VME_CFG_CURRENT_PLATFORM = 'VME_CFG.CURRENT_PLATFORM';
     static SOFTWARE_DIR_KEY = '.software';
+    static DOS_SIDECAR_QUICK_CAPTURE_MS = 1200;
+    static DOS_SIDECAR_POLL_INTERVAL_MS = 200;
+    static DOS_RESTORE_ATTEMPTS_WITH_SIDECAR = 6;
+    static DOS_RESTORE_DELAY_WITH_SIDECAR_MS = 900;
+    static DOS_RESTORE_ATTEMPTS_WITHOUT_SIDECAR = 36;
+    static DOS_RESTORE_DELAY_WITHOUT_SIDECAR_MS = 1500;
 
     constructor(app, cli, storage_manager, network_manager, keyboard_manager) {
         this.#vme = app;
@@ -317,6 +325,7 @@ export class PlatformManager {
 
         Nostalgist.configure({
             bios: (typeof this.#selected_platform.guessBIOS === 'function') ? this.#selected_platform.guessBIOS(romName) : this.#selected_platform.bios,
+            ...(this.#selected_platform.platform_id === 'dos' ? { sramType: 'pure.zip' } : {}),
             retroarchConfig: {
                 rewind_enable: true,
                 rewind_buffer_size: 20,
@@ -348,6 +357,48 @@ export class PlatformManager {
                 };
             },
         });
+    }
+
+    async #restorePendingDosStatePostLaunch(nostalgist) {
+        if (this.#selected_platform?.platform_id !== 'dos') {
+            return;
+        }
+        const pendingState = this.#pending_dos_state;
+        if (!(pendingState instanceof Blob)) {
+            return;
+        }
+
+        this.#pending_dos_state = null;
+
+        const hasDosSidecar = this.#isNonEmptyBlob(this.#sram);
+        const maxAttempts = hasDosSidecar
+            ? PlatformManager.DOS_RESTORE_ATTEMPTS_WITH_SIDECAR
+            : PlatformManager.DOS_RESTORE_ATTEMPTS_WITHOUT_SIDECAR;
+        const delayMs = hasDosSidecar
+            ? PlatformManager.DOS_RESTORE_DELAY_WITH_SIDECAR_MS
+            : PlatformManager.DOS_RESTORE_DELAY_WITHOUT_SIDECAR_MS;
+
+        for (let i = 0; i < maxAttempts; i++) {
+            if (i > 0) {
+                await this.sleep(delayMs);
+            }
+
+            if (this.#nostalgist !== nostalgist || this.#selected_platform?.platform_id !== 'dos') {
+                return;
+            }
+
+            try {
+                await nostalgist.loadState(pendingState);
+                return;
+            } catch (error) {
+                this.#warnDosDebug(`DOS post-launch restore attempt ${i + 1} failed:`, error);
+                if (!hasDosSidecar && i === 0) {
+                    this.#warnDosDebug('DOS restore fallback active: waiting for game boot, then retrying savestate load.');
+                }
+            }
+        }
+
+        console.warn('DOS restore: post-launch state could not be loaded after retries.');
     }
 
     getHtmlControls() {
@@ -417,6 +468,9 @@ export class PlatformManager {
         let coreWasm = `./libretro/${core}_libretro.wasm`;
 
         let self = this;
+        this.#state = null;
+        this.#sram = null;
+        this.#pending_dos_state = null;
         let progressMessage;
         let coreConfigOverrides = null;
         const originalRomSource = romSource;
@@ -789,6 +843,8 @@ export class PlatformManager {
                 let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
                 this.setSelectedPlatform(selected);
                 this.#state = state;
+                this.#sram = null;
+                this.#pending_dos_state = null;
                 this.loadRomFile(blob, program_name, caption, true, 'collection', closeCallback);
             });
     }
@@ -866,8 +922,12 @@ export class PlatformManager {
                     }
                 },
                 state: self.#state,
+                sram: self.#sram || undefined,
                 async onLaunch(nostalgist) {
                     self.#caption = caption;
+                    if (self.#selected_platform?.platform_id === 'dos' && self.#pending_dos_state instanceof Blob) {
+                        void self.#restorePendingDosStatePostLaunch(nostalgist);
+                    }
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
                 resolveCoreJs(file) {
@@ -1376,6 +1436,376 @@ export class PlatformManager {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    #logDosDebug(...args) {
+        if (Debug.isEnabled()) {
+            console.info(...args);
+        }
+    }
+
+    #warnDosDebug(...args) {
+        if (Debug.isEnabled()) {
+            console.warn(...args);
+        }
+    }
+
+    #isNonEmptyBlob(blob) {
+        return blob instanceof Blob && blob.size > 0;
+    }
+
+    #normalizeDosRomBaseName(rawName) {
+        if (typeof rawName !== 'string' || rawName.length === 0) {
+            return '';
+        }
+
+        const leafName = rawName.split(/[\\/]/).pop() || rawName;
+        const sanitized = leafName.replace(/["%*/:<>?\\|]/g, '-');
+        const dotIndex = sanitized.lastIndexOf('.');
+        if (dotIndex <= 0) {
+            return sanitized;
+        }
+        return sanitized.substring(0, dotIndex);
+    }
+
+    #getDosPureSramPath() {
+        const nostalgist = this.#nostalgist;
+        if (!nostalgist || typeof nostalgist.getEmulator !== 'function') {
+            return null;
+        }
+
+        try {
+            const emulator = nostalgist.getEmulator();
+            const sramPath = emulator?.sramFilePath;
+            if (typeof sramPath === 'string' && sramPath.toLowerCase().endsWith('.pure.zip')) {
+                return sramPath;
+            }
+        } catch {
+        }
+
+        return null;
+    }
+
+    #readDosPureSidecarByPath(filePath) {
+        if (typeof filePath !== 'string' || filePath.length === 0) {
+            return null;
+        }
+
+        const nostalgist = this.#nostalgist;
+        const FS = nostalgist?.getEmscriptenFS?.();
+        if (!FS) {
+            return null;
+        }
+
+        try {
+            const stats = FS.stat(filePath);
+            if (!stats || (typeof stats.size === 'number' && stats.size <= 0)) {
+                return null;
+            }
+            const bytes = FS.readFile(filePath);
+            return new Blob([bytes], { type: 'application/zip' });
+        } catch {
+            return null;
+        }
+    }
+
+    #logDosSidecarDebugInfo(expectedPath = null) {
+        const nostalgist = this.#nostalgist;
+        const FS = nostalgist?.getEmscriptenFS?.();
+        if (!FS) {
+            return;
+        }
+
+        const listDir = (dir) => {
+            try {
+                const entries = FS.readdir(dir) || [];
+                this.#warnDosDebug(`[DOS sidecar] ${dir}:`, entries);
+            } catch {
+            }
+        };
+
+        if (expectedPath) {
+            this.#warnDosDebug(`[DOS sidecar] expected path: ${expectedPath}`);
+        }
+        listDir('/home/web_user/retroarch/userdata/saves');
+        listDir('/home/web_user/retroarch/userdata/saves/DOSBox-pure');
+        listDir('/home/web_user/retroarch/userdata/content');
+    }
+
+    #scanForDosPureSidecars(rootDir, { maxDepth = 6, maxEntries = 2000 } = {}) {
+        const nostalgist = this.#nostalgist;
+        const FS = nostalgist?.getEmscriptenFS?.();
+        if (!FS) {
+            return [];
+        }
+
+        const results = [];
+        const queue = [{ dir: rootDir, depth: 0 }];
+        let visited = 0;
+
+        while (queue.length > 0 && visited < maxEntries) {
+            const current = queue.shift();
+            if (!current) {
+                break;
+            }
+
+            let entries;
+            try {
+                entries = FS.readdir(current.dir) || [];
+            } catch {
+                continue;
+            }
+
+            for (const name of entries) {
+                if (name === '.' || name === '..') {
+                    continue;
+                }
+                visited += 1;
+
+                const fullPath = `${current.dir}/${name}`;
+                let stats = null;
+                try {
+                    stats = FS.stat(fullPath);
+                } catch {
+                    continue;
+                }
+
+                const mode = stats?.mode || 0;
+                const isDir = typeof FS.isDir === 'function' ? FS.isDir(mode) : false;
+                if (isDir) {
+                    if (current.depth < maxDepth) {
+                        queue.push({ dir: fullPath, depth: current.depth + 1 });
+                    }
+                    continue;
+                }
+
+                if (!String(name).toLowerCase().endsWith('.pure.zip')) {
+                    continue;
+                }
+
+                const mtime = stats?.mtime;
+                const mtimeMs = typeof mtime === 'number' ? mtime : (mtime instanceof Date ? mtime.getTime() : 0);
+                const size = typeof stats?.size === 'number' ? stats.size : 0;
+                const rawBase = String(name).slice(0, -'.pure.zip'.length);
+                const baseName = this.#normalizeDosRomBaseName(rawBase);
+
+                results.push({
+                    name: String(name),
+                    path: fullPath,
+                    size,
+                    mtimeMs,
+                    baseName,
+                    baseNameLower: baseName.toLowerCase()
+                });
+            }
+        }
+
+        return results;
+    }
+
+    #listDosPureSidecars() {
+        const nostalgist = this.#nostalgist;
+        if (!nostalgist) {
+            return [];
+        }
+
+        const FS = nostalgist.getEmscriptenFS?.();
+        if (!FS) {
+            return [];
+        }
+
+        const savesDir = '/home/web_user/retroarch/userdata/saves/DOSBox-pure';
+        let entries = [];
+        try {
+            entries = FS.readdir(savesDir) || [];
+        } catch {
+            return [];
+        }
+
+        const sidecars = entries.filter((name) =>
+            name !== '.' && name !== '..' && String(name).toLowerCase().endsWith('.pure.zip')
+        );
+        if (sidecars.length === 0) {
+            return [];
+        }
+
+        return sidecars.map((name) => {
+            const path = `${savesDir}/${name}`;
+            let mtimeMs = 0;
+            let size = 0;
+            try {
+                const stats = FS.stat(path);
+                if (typeof stats?.size === 'number') {
+                    size = stats.size;
+                }
+                const mtime = stats?.mtime;
+                if (typeof mtime === 'number') {
+                    mtimeMs = mtime;
+                } else if (mtime instanceof Date) {
+                    mtimeMs = mtime.getTime();
+                }
+            } catch {
+            }
+
+            const lowerName = String(name).toLowerCase();
+            const baseName = lowerName.endsWith('.pure.zip')
+                ? String(name).slice(0, -'.pure.zip'.length)
+                : String(name);
+            const normalizedBaseName = this.#normalizeDosRomBaseName(baseName);
+
+            return {
+                name: String(name),
+                path,
+                size,
+                mtimeMs,
+                baseName: normalizedBaseName,
+                baseNameLower: normalizedBaseName.toLowerCase()
+            };
+        });
+    }
+
+    #readDosPureSidecarBlob(preferredBaseName = null, minMtimeMs = null) {
+        const sidecars = [
+            ...this.#listDosPureSidecars(),
+            ...this.#scanForDosPureSidecars('/home/web_user/retroarch/userdata/content')
+        ];
+        if (sidecars.length === 0) {
+            return null;
+        }
+
+        const preferredLower = this.#normalizeDosRomBaseName(preferredBaseName || '').toLowerCase();
+        let selected = null;
+
+        if (preferredLower) {
+            selected = sidecars.find((entry) => entry.baseNameLower === preferredLower) || null;
+        }
+
+        if (!selected) {
+            let candidates = sidecars;
+            if (Number.isFinite(minMtimeMs)) {
+                const fresh = sidecars.filter((entry) => entry.mtimeMs >= minMtimeMs);
+                if (fresh.length > 0) {
+                    candidates = fresh;
+                }
+            }
+            selected = candidates.sort((a, b) => {
+                if (b.mtimeMs !== a.mtimeMs) {
+                    return b.mtimeMs - a.mtimeMs;
+                }
+                return b.size - a.size;
+            })[0] || null;
+        }
+
+        if (!selected) {
+            return null;
+        }
+
+        const nostalgist = this.#nostalgist;
+        const FS = nostalgist?.getEmscriptenFS?.();
+        if (!FS) {
+            return null;
+        }
+
+        try {
+            const bytes = FS.readFile(selected.path);
+            return new Blob([bytes], { type: 'application/zip' });
+        } catch {
+            return null;
+        }
+    }
+
+    async #captureDosPureSidecar(options = {}) {
+        const nostalgist = this.#nostalgist;
+        if (!nostalgist) {
+            return null;
+        }
+
+        const {
+            maxWaitMs = PlatformManager.DOS_SIDECAR_QUICK_CAPTURE_MS,
+            allowSlowFallback = false
+        } = options;
+
+        const preferredBaseName = this.#normalizeDosRomBaseName(this.#program_name || '');
+        const expectedSramPath = this.#getDosPureSramPath();
+        const emModule = nostalgist.getEmscriptenModule?.();
+
+        // Ask core to flush savefiles (including *.pure.zip) if supported.
+        try {
+            if (emModule && typeof emModule._cmd_savefiles === 'function') {
+                emModule._cmd_savefiles();
+            }
+        } catch {
+        }
+
+        const commandAt = Date.now();
+        const deadline = commandAt + Math.max(0, maxWaitMs);
+
+        while (Date.now() <= deadline) {
+            const expectedBlob = this.#readDosPureSidecarByPath(expectedSramPath);
+            if (this.#isNonEmptyBlob(expectedBlob)) {
+                return expectedBlob;
+            }
+
+            const sidecar = this.#readDosPureSidecarBlob(preferredBaseName, commandAt - 1000);
+            if (this.#isNonEmptyBlob(sidecar)) {
+                return sidecar;
+            }
+            await this.sleep(PlatformManager.DOS_SIDECAR_POLL_INTERVAL_MS);
+        }
+
+        const expectedFallback = this.#readDosPureSidecarByPath(expectedSramPath);
+        if (this.#isNonEmptyBlob(expectedFallback)) {
+            return expectedFallback;
+        }
+
+        const fallback = this.#readDosPureSidecarBlob(preferredBaseName);
+        if (this.#isNonEmptyBlob(fallback)) {
+            return fallback;
+        }
+
+        if (!allowSlowFallback) {
+            return null;
+        }
+
+        // Slow fallback: let Nostalgist wait for SRAM file with its internal logic.
+        try {
+            const slowResult = await Promise.race([
+                nostalgist.saveSRAM?.() || Promise.resolve(null),
+                this.sleep(25000).then(() => null)
+            ]);
+            if (this.#isNonEmptyBlob(slowResult)) {
+                return slowResult;
+            }
+        } catch (error) {
+            this.#warnDosDebug('DOS sidecar saveSRAM fallback failed:', error);
+        }
+
+        const fullScan = this.#scanForDosPureSidecars('/home/web_user/retroarch/userdata');
+        if (fullScan.length > 0) {
+            const preferredLower = this.#normalizeDosRomBaseName(preferredBaseName).toLowerCase();
+            let selected = preferredLower
+                ? fullScan.find((entry) => entry.baseNameLower === preferredLower) || null
+                : null;
+
+            if (!selected) {
+                selected = fullScan.sort((a, b) => {
+                    if (b.mtimeMs !== a.mtimeMs) {
+                        return b.mtimeMs - a.mtimeMs;
+                    }
+                    return b.size - a.size;
+                })[0] || null;
+            }
+
+            if (selected) {
+                const deepFallback = this.#readDosPureSidecarByPath(selected.path);
+                if (this.#isNonEmptyBlob(deepFallback)) {
+                    return deepFallback;
+                }
+            }
+        }
+
+        this.#logDosSidecarDebugInfo(expectedSramPath);
+        return null;
+    }
+
     #isMultidiskEnabled() {
         return this.#selected_platform?.multidisk === true;
     }
@@ -1760,6 +2190,272 @@ export class PlatformManager {
         };
     }
 
+    #isDosExecutableFileName(fileName) {
+        if (typeof fileName !== 'string' || fileName.length === 0) {
+            return false;
+        }
+        const lower = fileName.toLowerCase();
+        return lower.endsWith('.exe') || lower.endsWith('.com') || lower.endsWith('.bat');
+    }
+
+    #isDosSystemExecutable(fileName) {
+        const systemExecutables = new Set([
+            'autoexec.bat',
+            'boot.com',
+            'command.com',
+            'config.com',
+            'dos4gw.exe',
+            'dos32a.exe',
+            'cwstub.exe',
+            'cwsdpmi.exe',
+            'imgmount.com',
+            'keyb.com',
+            'label.com',
+            'loadfix.com',
+            'loadrom.com',
+            'mem.com',
+            'mixer.com',
+            'puremenu.com',
+            'remount.com',
+            'windows.bat',
+            'xcopy.com'
+        ]);
+        return systemExecutables.has(String(fileName || '').toLowerCase());
+    }
+
+    async #listDosZipExecutables(zipBlob) {
+        if (!(zipBlob instanceof Blob)) {
+            return [];
+        }
+
+        let zipContent;
+        try {
+            const zip = new JSZip();
+            zipContent = await zip.loadAsync(zipBlob);
+        } catch {
+            return [];
+        }
+
+        const executables = [];
+        for (const [entryName, entry] of Object.entries(zipContent.files)) {
+            if (!entry || entry.dir || !this.#isDosExecutableFileName(entryName)) {
+                continue;
+            }
+            const normalizedPath = String(entryName).replace(/\\/g, '/');
+            const baseName = normalizedPath.split('/').pop() || normalizedPath;
+            executables.push({
+                path: normalizedPath,
+                pathLower: normalizedPath.toLowerCase(),
+                baseName,
+                baseLower: baseName.toLowerCase()
+            });
+        }
+
+        return executables;
+    }
+
+    async #guessDosExecutableHint(saveStateBlob, romBlob) {
+        if (!(saveStateBlob instanceof Blob)) {
+            return null;
+        }
+
+        const zipExecutables = await this.#listDosZipExecutables(romBlob);
+        const userExecutables = zipExecutables.filter((entry) => !this.#isDosSystemExecutable(entry.baseName));
+        if (userExecutables.length === 1) {
+            return userExecutables[0].path;
+        }
+
+        let stateText;
+        try {
+            const buffer = await saveStateBlob.arrayBuffer();
+            stateText = new TextDecoder('latin1').decode(buffer);
+        } catch {
+            return userExecutables[0]?.path || null;
+        }
+
+        const scoreByKey = new Map();
+        const bump = (key, score) => {
+            if (!key) {
+                return;
+            }
+            scoreByKey.set(key, (scoreByKey.get(key) || 0) + score);
+        };
+
+        const zipByPath = new Map(zipExecutables.map((entry) => [entry.pathLower, entry.path]));
+        const zipByBase = new Map();
+        for (const entry of zipExecutables) {
+            if (!zipByBase.has(entry.baseLower)) {
+                zipByBase.set(entry.baseLower, entry.path);
+            }
+        }
+
+        const pathRegex = /[A-Za-z]:\\[^\x00-\x1F\r\n]{1,220}\.(?:exe|com|bat)/gi;
+        const bareRegex = /\b[A-Za-z0-9][A-Za-z0-9 _.-]{0,80}\.(?:exe|com|bat)\b/gi;
+
+        const normalizeStatePath = (raw) => {
+            const replaced = String(raw || '').replace(/\\/g, '/').trim();
+            return replaced.replace(/^[A-Za-z]:\//, '').replace(/^\/+/, '');
+        };
+
+        let match;
+        while ((match = pathRegex.exec(stateText)) !== null) {
+            const normalized = normalizeStatePath(match[0]);
+            const lower = normalized.toLowerCase();
+            const base = normalized.split('/').pop() || normalized;
+            const baseLower = base.toLowerCase();
+            if (!this.#isDosExecutableFileName(base) || this.#isDosSystemExecutable(base)) {
+                continue;
+            }
+
+            if (zipByPath.has(lower)) {
+                bump(zipByPath.get(lower), 220);
+            } else if (zipByBase.has(baseLower)) {
+                bump(zipByBase.get(baseLower), 170);
+            } else {
+                bump(base, 80);
+            }
+        }
+
+        while ((match = bareRegex.exec(stateText)) !== null) {
+            const candidate = String(match[0] || '').trim();
+            const baseLower = candidate.toLowerCase();
+            if (!this.#isDosExecutableFileName(candidate) || this.#isDosSystemExecutable(candidate)) {
+                continue;
+            }
+            if (zipByBase.has(baseLower)) {
+                bump(zipByBase.get(baseLower), 40);
+            } else {
+                bump(candidate, 5);
+            }
+        }
+
+        let bestKey = null;
+        let bestScore = Number.NEGATIVE_INFINITY;
+        for (const [key, score] of scoreByKey.entries()) {
+            if (score > bestScore) {
+                bestScore = score;
+                bestKey = key;
+            }
+        }
+
+        if (bestKey) {
+            return bestKey;
+        }
+        return userExecutables[0]?.path || null;
+    }
+
+    async #buildDosExecutableLaunchPackage(archiveBlob, archiveName, executableHint) {
+        if (!(archiveBlob instanceof Blob) || !this.#isZipFile(archiveName)) {
+            return null;
+        }
+
+        let zipContent;
+        try {
+            const zip = new JSZip();
+            zipContent = await zip.loadAsync(archiveBlob);
+        } catch {
+            return null;
+        }
+
+        const entries = Object.entries(zipContent.files)
+            .filter(([, entry]) => entry && !entry.dir)
+            .map(([entryName]) => ({
+                path: String(entryName).replace(/\\/g, '/'),
+                pathLower: String(entryName).replace(/\\/g, '/').toLowerCase()
+            }));
+
+        if (entries.length === 0) {
+            return null;
+        }
+
+        const hintNormalized = String(executableHint || '').replace(/\\/g, '/').replace(/^[A-Za-z]:\//, '').replace(/^\/+/, '').toLowerCase();
+        const hintBase = hintNormalized.split('/').pop() || hintNormalized;
+
+        let target = entries.find((entry) => entry.pathLower === hintNormalized) || null;
+        if (!target && hintBase) {
+            target = entries.find((entry) => (entry.pathLower.split('/').pop() || '') === hintBase) || null;
+        }
+        if (!target) {
+            target = entries.find((entry) => {
+                const base = entry.path.split('/').pop() || entry.path;
+                return this.#isDosExecutableFileName(base) && !this.#isDosSystemExecutable(base);
+            }) || null;
+        }
+        if (!target) {
+            return null;
+        }
+
+        const targetPathParts = target.path.split('/');
+        const targetBaseName = targetPathParts.pop() || target.path;
+        const targetDirectory = targetPathParts.join('/');
+        const dosTargetDirectory = targetDirectory.replace(/\//g, '\\');
+        const dosTargetBaseName = targetBaseName.replace(/\//g, '\\');
+        const launchWrapperName = 'VMERUN.BAT';
+        const launchWrapperScript = targetDirectory
+            ? `@echo off\r\ncd "${dosTargetDirectory}"\r\n${dosTargetBaseName}\r\n`
+            : `@echo off\r\n${dosTargetBaseName}\r\n`;
+
+        const orderedEntries = [
+            target,
+            ...entries.filter((entry) => entry.pathLower !== target.pathLower)
+        ];
+
+        const launchFiles = [];
+        const addLaunchFile = (fileName, fileContent) => {
+            if (!fileName || launchFiles.some((file) => file.fileName === fileName)) {
+                return;
+            }
+            launchFiles.push({ fileName, fileContent });
+        };
+
+        addLaunchFile(launchWrapperName, new Blob([launchWrapperScript], { type: 'text/plain' }));
+
+        for (const entry of orderedEntries) {
+            const zipEntry = zipContent.files[entry.path];
+            if (!zipEntry || zipEntry.dir) {
+                continue;
+            }
+            const fileBlob = await zipEntry.async('blob');
+            addLaunchFile(entry.path, fileBlob);
+
+            // DOS paths are case-insensitive, while emscripten FS is case-sensitive.
+            // Add practical aliases so mixed-case lookups (e.g. data/GEN.dat) work.
+            const pathParts = entry.path.split('/');
+            const baseName = pathParts.pop() || entry.path;
+            const baseDir = pathParts.join('/');
+
+            const dirVariants = [...new Set([
+                baseDir,
+                baseDir.toLowerCase(),
+                baseDir.toUpperCase()
+            ])];
+            const fileVariants = [...new Set([
+                baseName,
+                baseName.toLowerCase(),
+                baseName.toUpperCase()
+            ])];
+
+            for (const dirVariant of dirVariants) {
+                for (const fileVariant of fileVariants) {
+                    const aliasPath = dirVariant ? `${dirVariant}/${fileVariant}` : fileVariant;
+                    addLaunchFile(aliasPath, fileBlob);
+                }
+            }
+        }
+
+        if (launchFiles.length === 0) {
+            return null;
+        }
+
+        return {
+            launchFiles,
+            primaryFileName: launchWrapperName,
+            programName: archiveName,
+            saveBlob: archiveBlob,
+            suppressDiskUi: true
+        };
+    }
+
     #normalizeLaunchRomInput(romInput, fallbackName) {
         if (romInput && typeof romInput === 'object' && Array.isArray(romInput.launchFiles)) {
             const files = romInput.launchFiles
@@ -1770,45 +2466,58 @@ export class PlatformManager {
                 }));
 
             if (files.length > 0) {
-                const diskNames = Array.isArray(romInput.selectedNames) && romInput.selectedNames.length > 0
-                    ? [...romInput.selectedNames]
-                    : files
-                        .map((file) => file.fileName)
-                        .filter((fileName) => !String(fileName).toLowerCase().endsWith('.m3u'));
-                const diskDisplayNames = Array.isArray(romInput.selectedDisplayNames) && romInput.selectedDisplayNames.length > 0
-                    ? [...romInput.selectedDisplayNames]
-                    : [...diskNames];
-                const diskLaunchNames = Array.isArray(romInput.selectedLaunchNames) && romInput.selectedLaunchNames.length > 0
-                    ? [...romInput.selectedLaunchNames]
-                    : files
-                        .map((file) => file.fileName)
-                        .filter((fileName) => !String(fileName).toLowerCase().endsWith('.m3u'));
-                const diskLaunchBlobs = Array.isArray(romInput.selectedDiskBlobs) && romInput.selectedDiskBlobs.length > 0
-                    ? [...romInput.selectedDiskBlobs]
-                    : files
-                        .filter((file) => !String(file.fileName).toLowerCase().endsWith('.m3u'))
-                        .map((file) => file.fileContent);
-                const diskIndex = Number.isInteger(romInput.diskIndex) && diskNames.length > 0
-                    ? Math.min(diskNames.length - 1, Math.max(0, romInput.diskIndex))
-                    : (diskNames.length > 0 ? 0 : null);
+                const suppressDiskUi = romInput.suppressDiskUi === true;
+                const diskNames = suppressDiskUi
+                    ? []
+                    : (Array.isArray(romInput.selectedNames) && romInput.selectedNames.length > 0
+                        ? [...romInput.selectedNames]
+                        : files
+                            .map((file) => file.fileName)
+                            .filter((fileName) => !String(fileName).toLowerCase().endsWith('.m3u')));
+                const diskDisplayNames = suppressDiskUi
+                    ? []
+                    : (Array.isArray(romInput.selectedDisplayNames) && romInput.selectedDisplayNames.length > 0
+                        ? [...romInput.selectedDisplayNames]
+                        : [...diskNames]);
+                const diskLaunchNames = suppressDiskUi
+                    ? []
+                    : (Array.isArray(romInput.selectedLaunchNames) && romInput.selectedLaunchNames.length > 0
+                        ? [...romInput.selectedLaunchNames]
+                        : files
+                            .map((file) => file.fileName)
+                            .filter((fileName) => !String(fileName).toLowerCase().endsWith('.m3u')));
+                const diskLaunchBlobs = suppressDiskUi
+                    ? []
+                    : (Array.isArray(romInput.selectedDiskBlobs) && romInput.selectedDiskBlobs.length > 0
+                        ? [...romInput.selectedDiskBlobs]
+                        : files
+                            .filter((file) => !String(file.fileName).toLowerCase().endsWith('.m3u'))
+                            .map((file) => file.fileContent));
+                const diskIndex = suppressDiskUi
+                    ? null
+                    : (Number.isInteger(romInput.diskIndex) && diskNames.length > 0
+                        ? Math.min(diskNames.length - 1, Math.max(0, romInput.diskIndex))
+                        : (diskNames.length > 0 ? 0 : null));
                 const diskFiles = [];
-                const diskCount = Math.min(diskDisplayNames.length, diskLaunchNames.length, diskLaunchBlobs.length);
-                for (let i = 0; i < diskCount; i++) {
-                    const blob = diskLaunchBlobs[i];
-                    if (!(blob instanceof Blob)) {
-                        continue;
+                if (!suppressDiskUi) {
+                    const diskCount = Math.min(diskDisplayNames.length, diskLaunchNames.length, diskLaunchBlobs.length);
+                    for (let i = 0; i < diskCount; i++) {
+                        const blob = diskLaunchBlobs[i];
+                        if (!(blob instanceof Blob)) {
+                            continue;
+                        }
+                        diskFiles.push({
+                            name: diskDisplayNames[i],
+                            launch_name: diskLaunchNames[i],
+                            blob
+                        });
                     }
-                    diskFiles.push({
-                        name: diskDisplayNames[i],
-                        launch_name: diskLaunchNames[i],
-                        blob
-                    });
                 }
 
                 return {
                     nostalgistRom: files,
                     saveBlob: romInput.saveBlob || romInput.primaryBlob || files[0].fileContent,
-                    programName: romInput.primaryFileName || files[0].fileName || fallbackName,
+                    programName: romInput.programName || romInput.primaryFileName || files[0].fileName || fallbackName,
                     diskNames: diskDisplayNames,
                     diskIndex,
                     diskFiles
@@ -1829,11 +2538,90 @@ export class PlatformManager {
         };
     }
 
+    async #prepareDosRestoreLaunch(launchBlob, launchProgramName, dosExecHint) {
+        let preparedLaunchBlob = launchBlob;
+        let preparedLaunchProgramName = launchProgramName;
+        let canAutoLoadState = false;
+
+        if (!(preparedLaunchBlob instanceof Blob) || !this.#isZipFile(preparedLaunchProgramName)) {
+            return {
+                launchBlob: preparedLaunchBlob,
+                launchProgramName: preparedLaunchProgramName,
+                canAutoLoadState: true
+            };
+        }
+
+        const normalizedHint = (typeof dosExecHint === 'string' && dosExecHint.trim().length > 0)
+            ? dosExecHint.trim()
+            : null;
+
+        if (!normalizedHint) {
+            return {
+                launchBlob: preparedLaunchBlob,
+                launchProgramName: preparedLaunchProgramName,
+                canAutoLoadState
+            };
+        }
+
+        try {
+            const dosExecutableLaunch = await this.#buildDosExecutableLaunchPackage(
+                preparedLaunchBlob,
+                preparedLaunchProgramName,
+                normalizedHint
+            );
+            if (dosExecutableLaunch) {
+                preparedLaunchBlob = dosExecutableLaunch;
+                preparedLaunchProgramName = dosExecutableLaunch.primaryFileName || preparedLaunchProgramName;
+                canAutoLoadState = true;
+                this.#logDosDebug('DOS restore using executable hint:', normalizedHint);
+            }
+        } catch (error) {
+            console.warn('Failed to prepare DOS executable launch package from save hint:', error);
+        }
+
+        return {
+            launchBlob: preparedLaunchBlob,
+            launchProgramName: preparedLaunchProgramName,
+            canAutoLoadState
+        };
+    }
+
+    async #captureDosSaveArtifacts(saveData, romData) {
+        let dosSram = null;
+        let dosExecHint = null;
+
+        try {
+            dosExecHint = await this.#guessDosExecutableHint(saveData, romData);
+            if (typeof dosExecHint === 'string' && dosExecHint.length > 0) {
+                this.#logDosDebug('DOS executable hint captured for savestate:', dosExecHint);
+            }
+        } catch (error) {
+            this.#warnDosDebug('Failed to detect DOS executable hint from savestate:', error);
+        }
+
+        try {
+            dosSram = await this.#captureDosPureSidecar({
+                maxWaitMs: PlatformManager.DOS_SIDECAR_QUICK_CAPTURE_MS,
+                allowSlowFallback: false
+            });
+            if (!this.#isNonEmptyBlob(dosSram)) {
+                this.#warnDosDebug('DOS sidecar (pure.zip) not found while saving state; restore may open executable chooser.');
+            }
+        } catch (error) {
+            this.#warnDosDebug('Failed to capture DOSBox Pure sidecar (pure.zip) for savestate:', error);
+        }
+
+        return {
+            dosSram: this.#isNonEmptyBlob(dosSram) ? dosSram : null,
+            dosExecHint
+        };
+    }
+
     #isZipFile(fileName) {
         return typeof fileName === 'string' && fileName.toLowerCase().endsWith('.zip');
     }
 
-    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null) {
+    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null) {
         if (closeCallback) {
             s("html").style.background = "#000000";
             s("body").style.background = "#000000";
@@ -1851,6 +2639,7 @@ export class PlatformManager {
 
         let launchBlob = blob;
         let launchProgramName = program_name;
+        let dosCanAutoLoadState = false;
 
         if (this.#isMultidiskEnabled() && Array.isArray(m3uDisks) && m3uDisks.length > 1) {
             try {
@@ -1877,7 +2666,20 @@ export class PlatformManager {
             }
         }
 
-        this.#state = state;
+        if (platform_id === 'dos') {
+            const prepared = await this.#prepareDosRestoreLaunch(launchBlob, launchProgramName, dosExecHint);
+            launchBlob = prepared.launchBlob;
+            launchProgramName = prepared.launchProgramName;
+            dosCanAutoLoadState = prepared.canAutoLoadState;
+        }
+
+        const isDos = platform_id === 'dos';
+        this.#state = isDos ? (dosCanAutoLoadState ? state : null) : state;
+        this.#pending_dos_state = isDos ? (dosCanAutoLoadState ? null : state) : null;
+        if (isDos && dosCanAutoLoadState) {
+            this.#logDosDebug('DOS restore mode: launch-time state autoload.');
+        }
+        this.#sram = dosSram instanceof Blob ? dosSram : null;
         await this.loadRomFile(launchBlob, launchProgramName, caption, true, 'save', closeCallback);
     }
 
@@ -1891,14 +2693,42 @@ export class PlatformManager {
         const program_name = this.#program_name;
         const caption = this.#caption;
         const rom_data = this.#current_rom;
+        let dosSram = null;
+        let dosExecHint = null;
+        if (platform_id === 'dos') {
+            const dosArtifacts = await this.#captureDosSaveArtifacts(save_data, rom_data);
+            dosSram = dosArtifacts.dosSram;
+            dosExecHint = dosArtifacts.dosExecHint;
+        }
         const m3uData = {
             diskNames: this.getCurrentM3uDisks(),
             diskIndex: this.getCurrentM3uDiskIndex(),
             diskFiles: this.getCurrentM3uDiskFiles()
         };
 
-        this.#storage_manager.storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave, m3uData).then(() => {
-            ToastManager.enqueueToast(isQuickSave ? 'Quicksave created.' : 'Savestate created.');
-        });
+        try {
+            const saved = await this.#storage_manager.storeState(
+                save_data,
+                rom_data,
+                screenshot,
+                platform_id,
+                program_name,
+                caption,
+                isQuickSave,
+                m3uData,
+                dosSram,
+                dosExecHint
+            );
+
+            if (saved) {
+                ToastManager.enqueueToast(isQuickSave ? 'Quicksave created.' : 'Savestate created.');
+            } else {
+                ToastManager.enqueueToast('Failed to create savestate.', false, null, null, 2000);
+                console.error('Savestate creation failed.');
+            }
+        } catch (error) {
+            ToastManager.enqueueToast('Failed to create savestate.', false, null, null, 2000);
+            console.error('Savestate creation failed with exception:', error);
+        }
     }
 }

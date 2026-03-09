@@ -59,6 +59,38 @@ export class StorageManager {
         });
     }
 
+    #isBlobLike(value) {
+        if (!value || typeof value !== 'object') {
+            return false;
+        }
+
+        const tag = Object.prototype.toString.call(value);
+        if (tag === '[object Blob]' || tag === '[object File]') {
+            return true;
+        }
+        return false;
+    }
+
+    #isArrayBufferLike(value) {
+        if (!value || typeof value !== 'object') {
+            return false;
+        }
+
+        return Object.prototype.toString.call(value) === '[object ArrayBuffer]';
+    }
+
+    #toBlobOrNull(value, type = 'application/octet-stream') {
+        if (this.#isBlobLike(value)) {
+            return value;
+        }
+
+        if (ArrayBuffer.isView(value) || this.#isArrayBufferLike(value)) {
+            return new Blob([value], { type });
+        }
+
+        return null;
+    }
+
     async #computeHash(blob) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -214,6 +246,10 @@ export class StorageManager {
         return await this.#db.romData.add({ rom_data: blob, hash, data_type: 'blob' });
     }
 
+    #extractDosSramRomId(saveMetaEntry) {
+        return Number.isInteger(saveMetaEntry?.dos_sram_data_id) ? saveMetaEntry.dos_sram_data_id : null;
+    }
+
     #extractM3uRomIds(saveMetaEntry) {
         if (!Array.isArray(saveMetaEntry?.m3u_disk_rom_ids)) {
             return [];
@@ -232,22 +268,52 @@ export class StorageManager {
             for (const romId of this.#extractM3uRomIds(saveMetaEntry)) {
                 referenced.add(romId);
             }
+            const dosSramRomId = this.#extractDosSramRomId(saveMetaEntry);
+            if (dosSramRomId !== null) {
+                referenced.add(dosSramRomId);
+            }
         }
 
         return referenced;
     }
 
-    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null) {
+    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null, dosSram = null, dosExecHint = null) {
+        save_data = this.#toBlobOrNull(save_data, 'application/octet-stream');
+        if (!save_data) {
+            throw new Error('Invalid savestate payload: expected Blob-compatible data.');
+        }
+
+        rom_data = this.#toBlobOrNull(rom_data, 'application/octet-stream');
+        if (!rom_data) {
+            throw new Error('Invalid ROM payload: expected Blob-compatible data.');
+        }
+
         const hash = await this.#computeHash(rom_data);
 
-        const screenshotFix = await this.#fixScreenshot(platform_id, screenshot);
-        const screenshotB64 = await this.blobToBase64(screenshotFix);
+        let screenshotB64 = null;
+        const screenshotBlob = this.#toBlobOrNull(screenshot, 'image/png');
+        if (screenshotBlob) {
+            try {
+                const screenshotFix = await this.#fixScreenshot(platform_id, screenshotBlob);
+                if (this.#isBlobLike(screenshotFix)) {
+                    screenshotB64 = await this.blobToBase64(screenshotFix);
+                }
+            } catch (error) {
+                console.warn('Failed to process savestate thumbnail, saving without screenshot:', error);
+            }
+        }
         const romB64 = rom_data;
         const saveB64 = await this.blobToBase64(save_data);
+        const dosSramBlob = this.#toBlobOrNull(dosSram, 'application/zip');
+        const hasDosSram = !!dosSramBlob;
+        const dosSramHash = hasDosSram ? await this.#computeHash(dosSramBlob) : null;
+        const dosExecHintValue = (typeof dosExecHint === 'string' && dosExecHint.trim().length > 0)
+            ? dosExecHint.trim()
+            : null;
         const diskNames = Array.isArray(m3uData?.diskNames) ? m3uData.diskNames.filter(Boolean) : [];
         const diskIndex = Number.isInteger(m3uData?.diskIndex) ? m3uData.diskIndex : null;
         const diskFiles = Array.isArray(m3uData?.diskFiles)
-            ? m3uData.diskFiles.filter((disk) => disk && disk.blob instanceof Blob)
+            ? m3uData.diskFiles.filter((disk) => disk && this.#isBlobLike(disk.blob))
             : [];
         const hasDiskSet = diskNames.length > 1;
         const hasLocalDiskSet = hasDiskSet && diskFiles.length === diskNames.length;
@@ -279,6 +345,11 @@ export class StorageManager {
                     }
                 }
 
+                let dosSramDataId;
+                if (hasDosSram && dosSramHash) {
+                    dosSramDataId = await this.#getOrCreateRomDataIdByHash(dosSramHash, dosSramBlob);
+                }
+
                 if (isQuickSave) {
                     const existingQuickSave = await this.#db.saveMeta
                         .where('rom_data_id')
@@ -299,7 +370,9 @@ export class StorageManager {
                             m3u_disks: hasDiskSet ? diskNames : undefined,
                             m3u_disk_index: hasDiskSet ? diskIndex : undefined,
                             m3u_disk_rom_ids: hasLocalDiskSet ? m3uDiskRomIds : undefined,
-                            m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined
+                            m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined,
+                            dos_sram_data_id: dosSramDataId,
+                            dos_exec_hint: dosExecHintValue
                         });
                     } else {
                         let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
@@ -316,7 +389,9 @@ export class StorageManager {
                             m3u_disks: hasDiskSet ? diskNames : undefined,
                             m3u_disk_index: hasDiskSet ? diskIndex : undefined,
                             m3u_disk_rom_ids: hasLocalDiskSet ? m3uDiskRomIds : undefined,
-                            m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined
+                            m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined,
+                            dos_sram_data_id: dosSramDataId,
+                            dos_exec_hint: dosExecHintValue
                         });
                     }
                 } else {
@@ -334,13 +409,16 @@ export class StorageManager {
                         m3u_disks: hasDiskSet ? diskNames : undefined,
                         m3u_disk_index: hasDiskSet ? diskIndex : undefined,
                         m3u_disk_rom_ids: hasLocalDiskSet ? m3uDiskRomIds : undefined,
-                        m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined
+                        m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined,
+                        dos_sram_data_id: dosSramDataId,
+                        dos_exec_hint: dosExecHintValue
                     });
                 }
             });
-
+            return true;
         } catch (error) {
             console.error("Failed to save state:", error);
+            return false;
         }
     }
 
@@ -412,6 +490,10 @@ export class StorageManager {
     }
 
     base64ToBlob(base64) {
+        if (typeof base64 !== 'string' || !base64.includes(',')) {
+            return null;
+        }
+
         const byteString = atob(base64.split(',')[1]);
         const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
         const ab = new ArrayBuffer(byteString.length);
@@ -425,8 +507,10 @@ export class StorageManager {
     async getAllSaveMeta() {
         const saveMetaArray = await this.#db.saveMeta.orderBy('timestamp').reverse().toArray();
         return saveMetaArray.map(item => {
-            if (item.screenshot) {
+            if (typeof item.screenshot === 'string') {
                 item.screenshot = this.base64ToBlob(item.screenshot);
+            } else if (!this.#isBlobLike(item.screenshot)) {
+                item.screenshot = null;
             }
             return item;
         });
@@ -434,7 +518,7 @@ export class StorageManager {
 
     async getSaveMetaScreenshot(id) {
         const saveMeta = await this.#db.saveMeta.get(id);
-        if (saveMeta && saveMeta.screenshot) {
+        if (saveMeta && typeof saveMeta.screenshot === 'string') {
             return this.base64ToBlob(saveMeta.screenshot);
         }
         return null;
@@ -472,12 +556,24 @@ export class StorageManager {
         }
 
         const saveBlob = this.base64ToBlob(saveData.save_data);
+        let dosSramBlob = null;
+        const dosSramDataId = this.#extractDosSramRomId(saveMeta);
+        if (dosSramDataId !== null) {
+            const dosSramData = await this.#db.romData.get(dosSramDataId);
+            if (dosSramData) {
+                dosSramBlob = dosSramData.data_type === 'base64'
+                    ? this.base64ToBlob(dosSramData.rom_data)
+                    : dosSramData.rom_data;
+            }
+        }
 
         return {
             platform_id: saveMeta.platform_id,
             program_name: saveMeta.program_name,
             save_data: saveBlob,
             rom_data: romBlob,
+            dos_sram: dosSramBlob,
+            dos_exec_hint: typeof saveMeta.dos_exec_hint === 'string' ? saveMeta.dos_exec_hint : null,
             timestamp: saveMeta.timestamp,
             caption: saveMeta.caption,
             m3u_disks: saveMeta.m3u_disks,
@@ -498,6 +594,10 @@ export class StorageManager {
                     }
                     for (const romId of this.#extractM3uRomIds(saveMetaEntry)) {
                         candidateRomIds.add(romId);
+                    }
+                    const dosSramRomId = this.#extractDosSramRomId(saveMetaEntry);
+                    if (dosSramRomId !== null) {
+                        candidateRomIds.add(dosSramRomId);
                     }
 
                     await this.#db.saveData.where('id').equals(saveMetaEntry.save_data_id).delete();

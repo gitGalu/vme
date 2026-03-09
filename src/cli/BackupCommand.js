@@ -76,13 +76,27 @@ export class BackupCommand extends CommandBase {
                     zip.file(`${romFilename}.bin`, romArrayBuffer);
                 }
 
+                if (saveData.dos_sram) {
+                    const dosPureFilename = `${programDir}/dos_pure_data`;
+                    if (!zip.file(`${dosPureFilename}.bin`)) {
+                        const dosPureMetadata = {
+                            program_name: saveData.program_name,
+                            platform_id: saveData.platform_id
+                        };
+                        zip.file(`${dosPureFilename}.json`, JSON.stringify(dosPureMetadata, null, 2));
+                        const dosPureArrayBuffer = await saveData.dos_sram.arrayBuffer();
+                        zip.file(`${dosPureFilename}.bin`, dosPureArrayBuffer);
+                    }
+                }
+
                 const saveFilename = `${programDir}/save_${saveTimestamp}`;
 
                 const saveMetadata = {
                     timestamp: saveData.timestamp,
                     caption: saveData.caption,
                     program_name: saveData.program_name,
-                    platform_id: saveData.platform_id
+                    platform_id: saveData.platform_id,
+                    dos_exec_hint: saveData.dos_exec_hint || null
                 };
                 zip.file(`${saveFilename}.json`, JSON.stringify(saveMetadata, null, 2));
 

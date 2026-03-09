@@ -183,12 +183,18 @@ export class SaveBrowser {
 
     #createPanelHTML(item) {
         if (item.platform_id == "md") item.platform_id = "smd"; //temp fix
-        const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
+        const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id)
+            || { platform_id: item.platform_id || 'unknown', short_name: (item.platform_id || 'UNKNOWN').toUpperCase() };
         this.#addFilterItem(platform.platform_id, platform.short_name);
 
-        let screenshotBlob = new Blob([item.screenshot], { type: 'image/png' });
-        const url = URL.createObjectURL(screenshotBlob);
-        this.#urlsToRevoke.add(url);
+        const fallbackImage = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'><rect width='640' height='480' fill='#141414'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#9b9b9b' font-family='monospace' font-size='30'>No Preview</text></svg>"
+        );
+        let url = fallbackImage;
+        if (item.screenshot instanceof Blob) {
+            url = URL.createObjectURL(item.screenshot);
+            this.#urlsToRevoke.add(url);
+        }
 
         const randomDegree = Math.random() * 20 - 10;
         if (item.caption == undefined) {
@@ -509,7 +515,9 @@ export class SaveBrowser {
                             data.m3u_disks,
                             data.m3u_disk_index,
                             data.m3u_disk_rom_ids,
-                            data.m3u_disk_launch_names
+                            data.m3u_disk_launch_names,
+                            data.dos_sram,
+                            data.dos_exec_hint
                         );
                     });
             }

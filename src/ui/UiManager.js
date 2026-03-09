@@ -69,6 +69,7 @@ export class UiManager {
         var fastuiContainer = document.createElement('div');
         fastuiContainer.id = 'fastui';
         fastuiContainer.style.display = 'none';
+        fastuiContainer.setAttribute('data-platform-id', UiManager.#platform_manager.getSelectedPlatform()?.platform_id || '');
 
         new MultiSelectTouchButton(fastuiContainer, ['QUIT', 'Confirm'], undefined, 'fastmenu', new QuitConfirmListener(), 0, FAST_BTN_RADIUS, false, null, 'QUIT');
 
@@ -109,6 +110,19 @@ export class UiManager {
         fastuiContainer.appendChild(fastuiMsg);
 
         document.body.appendChild(fastuiContainer);
+    }
+
+    #updateFastUiPlatformMarker() {
+        const fastUi = document.getElementById('fastui');
+        if (!fastUi) {
+            return;
+        }
+        const platformId = UiManager.#platform_manager.getSelectedPlatform()?.platform_id || '';
+        if (platformId) {
+            fastUi.setAttribute('data-platform-id', platformId);
+        } else {
+            fastUi.removeAttribute('data-platform-id');
+        }
     }
 
     initDesktopUI() {
@@ -417,6 +431,8 @@ export class UiManager {
     }
 
     initTouchControllerMenu() {
+        this.#updateFastUiPlatformMarker();
+
         if (UiManager.#keymapSelector) {
             UiManager.#keymapSelector.destroy();
             UiManager.#keymapSelector = undefined;
