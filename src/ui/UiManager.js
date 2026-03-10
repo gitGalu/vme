@@ -136,68 +136,95 @@ export class UiManager {
             document.getElementById('desktopUiRewind').style.display = "none";
         }
 
-        let timeout;
+        const TOP_ACTIVATION_Y = 100;
 
-        function addMouseMoveListenerToCanvas(observer) {
-            desktopUi.classList.add('visible');
+        if (!desktopUi.dataset.visibilityTrackingInitialized) {
+            desktopUi.dataset.visibilityTrackingInitialized = '1';
 
-            timeout = setTimeout(function() {
-                desktopUi.classList.remove('visible');
-            }, 3000);
+            let hideTimeout = null;
+            let isHoveringDesktopUi = false;
+            let lastMouseY = Number.POSITIVE_INFINITY;
 
-            // Listen for mouse movement near the top of the screen to show the UI
-            document.body.addEventListener('mousemove', function (e) {
-                // Show desktop UI when mouse is within 100px of the top
-                if (e.clientY < 100) {
-                    desktopUi.classList.add('visible');
-                    clearTimeout(timeout);
-
-                    // Set new timeout to hide it
-                    timeout = setTimeout(function () {
-                        desktopUi.classList.remove('visible');
-                    }, 3000);
+            const clearHideTimeout = () => {
+                if (hideTimeout) {
+                    clearTimeout(hideTimeout);
+                    hideTimeout = null;
                 }
-            });
+            };
 
-            desktopUi.addEventListener('mousemove', function () {
-                desktopUi.classList.add('visible');
-                clearTimeout(timeout);
-            });
+            const isTopContextHovered = () => {
+                if (isHoveringDesktopUi) {
+                    return true;
+                }
+                if (lastMouseY < TOP_ACTIVATION_Y) {
+                    return true;
+                }
+                return !!document.querySelector(
+                    '#desktopUi .dropdown-menu:hover, #desktopUi .custom-dropdown:hover, #desktopUi .custom-dropdown-options:hover'
+                );
+            };
 
-            desktopUi.addEventListener('mouseleave', function () {
-                timeout = setTimeout(function () {
-                    desktopUi.classList.remove('visible');
-                }, 1000);
-            });
-        }
-
-        function checkNodeForCanvas(node, observer) {
-            if (node.nodeName === 'CANVAS') {
-                addMouseMoveListenerToCanvas(observer);
-                return true;
-            }
-            if (node.querySelector && node.querySelector('canvas')) {
-                addMouseMoveListenerToCanvas(observer);
-                return true;
-            }
-            return false;
-        }
-
-        const observer = new MutationObserver(function (mutations) {
-            for (const mutation of mutations) {
-                if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-                    for (const node of mutation.addedNodes) {
-                        if (checkNodeForCanvas(node, observer)) {
-                            return;
-                        }
+            const scheduleHide = (delay = 3000) => {
+                clearHideTimeout();
+                hideTimeout = setTimeout(() => {
+                    if (isTopContextHovered()) {
+                        scheduleHide(350);
+                        return;
                     }
+                    desktopUi.classList.remove('visible');
+                }, delay);
+            };
+
+            const showDesktopUi = () => {
+                desktopUi.classList.add('visible');
+            };
+
+            const saveMenu = document.getElementById('saveMenu');
+            const controlsMenu = document.getElementById('controlsMenu');
+
+            showDesktopUi();
+            scheduleHide(3000);
+
+            document.body.addEventListener('mousemove', (e) => {
+                lastMouseY = e.clientY;
+                if (lastMouseY < TOP_ACTIVATION_Y) {
+                    showDesktopUi();
+                    scheduleHide(3000);
+                    return;
                 }
-            }
-        });
+                if (!isTopContextHovered()) {
+                    scheduleHide(400);
+                }
+            });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+            desktopUi.addEventListener('mouseenter', () => {
+                isHoveringDesktopUi = true;
+                showDesktopUi();
+                clearHideTimeout();
+            });
 
-        addMouseMoveListenerToCanvas(observer);
+            desktopUi.addEventListener('mousemove', () => {
+                isHoveringDesktopUi = true;
+                showDesktopUi();
+                clearHideTimeout();
+            });
+
+            desktopUi.addEventListener('mouseleave', () => {
+                isHoveringDesktopUi = false;
+                scheduleHide(250);
+            });
+
+            [saveMenu, controlsMenu].forEach((menu) => {
+                if (!menu) return;
+                menu.addEventListener('mouseenter', () => {
+                    showDesktopUi();
+                    clearHideTimeout();
+                });
+                menu.addEventListener('mouseleave', () => {
+                    scheduleHide(250);
+                });
+            });
+        }
 
         let intervalId = null;
         let self = this;
