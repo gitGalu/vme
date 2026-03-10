@@ -302,6 +302,97 @@ const DOS = {
                 ]
             },
             {
+                "id": "dos-qj-shift",
+                "name": "Quickjoy Arrows + Shift",
+                "description": "Prince of Persia",
+                "gameFocus": true,
+                "layout": {
+                    "landscape": {
+                        "columns": 50,
+                        "rows": 50
+                    },
+                    "portrait": {
+                        "columns": 50,
+                        "rows": 50
+                    }
+                },
+                "elements": [
+                    {
+                        "id": "lr",
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowLeft",
+                                "code": "ArrowLeft",
+                                "keyCode": "37"
+                            },
+                            "secondary": {
+                                "key": "ArrowRight",
+                                "code": "ArrowRight",
+                                "keyCode": "39"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "39 / 1 / span 14 / span 16",
+                            "portrait": "45 / 1 / span 6 / span 18"
+                        },
+                        "labels": [
+                            "LEFT",
+                            "RIGHT"
+                        ],
+                        "options": {
+                            "isHorizontal": true
+                        }
+                    },
+                    {
+                        "id": "ud",
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowUp",
+                                "code": "ArrowUp",
+                                "keyCode": "38"
+                            },
+                            "secondary": {
+                                "key": "ArrowDown",
+                                "code": "ArrowDown",
+                                "keyCode": "40"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 43 / span 24 / span 8",
+                            "portrait": "39 / 40 / span 12 / span 11"
+                        },
+                        "labels": [
+                            "UP",
+                            "DOWN"
+                        ],
+                        "options": {
+                            "isHorizontal": false
+                        }
+                    },
+                    {
+                        "id": "shift",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Shift",
+                                "code": "ShiftLeft",
+                                "keyCode": "16"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 35 / span 24 / span 8",
+                            "portrait": "39 / 29 / span 12 / span 11"
+                        },
+                        "label": "SHIFT"
+                    }
+                ]
+            },
+            {
                 "id": "dos-pinball-tristan",
                 "name": "Pinball 1",
                 "description": "Solid State Pinball Tristan",
