@@ -149,7 +149,7 @@ const Amiga = {
       'preset-test': false
     },
     presets: [
-      {
+     {
         "id": "amiga-pinball-1",
         "name": "Pinball 1",
         "description": "Pinball Dreams, Pinball Fantasies",
@@ -211,7 +211,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 43 / span 9 / span 8",
+              "landscape": "28 / 43 / span 8 / span 8",
               "portrait": "38 / 32 / span 5 / span 19"
             },
             "label": "PLUNGER"
@@ -228,7 +228,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 1 / span 9 / span 8",
+              "landscape": "28 / 1 / span 8 / span 8",
               "portrait": "38 / 1 / span 5 / span 19"
             },
             "label": "TILT"
@@ -399,7 +399,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 43 / span 9 / span 8",
+              "landscape": "28 / 43 / span 8 / span 8",
               "portrait": "38 / 32 / span 5 / span 19"
             },
             "label": "PLUNGER"
@@ -416,7 +416,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 1 / span 9 / span 4",
+              "landscape": "28 / 1 / span 8 / span 4",
               "portrait": "38 / 1 / span 5 / span 9"
             },
             "label": "TILT"
@@ -535,7 +535,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 5 / span 9 / span 4",
+              "landscape": "28 / 5 / span 8 / span 4",
               "portrait": "38 / 11 / span 5 / span 9"
             },
             "label": "TILT"
@@ -621,7 +621,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 1 / span 9 / span 4",
+              "landscape": "28 / 1 / span 8 / span 4",
               "portrait": "38 / 1 / span 5 / span 9"
             },
             "label": "TILT"
@@ -740,7 +740,7 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 5 / span 9 / span 4",
+              "landscape": "28 / 5 / span 8 / span 4",
               "portrait": "38 / 11 / span 5 / span 9"
             },
             "label": "TILT"
