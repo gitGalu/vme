@@ -68,6 +68,7 @@ const ST = {
       hatarib_show_welcome: 1,
       hatarib_statusbar: 0,
       hatarib_readonly_floppy: 1,
+      hatarib_driveb: 0,
       // hatarib_log_hatari: 5,
       // hatarib_save_floppy: 0,
       // hatarib_savestate_floppy_modify: 0
