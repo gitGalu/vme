@@ -684,7 +684,7 @@ a {
   }
 
   #fastui[data-platform-id="dos"] #fastspectrumjoy {
-    grid-area: 32 / 1 / span 2 / span 12;
+    grid-area: 32 / 1 / span 2 / span 9;
   }
 
   #qjlr {
@@ -790,6 +790,10 @@ a {
 
   #fastspectrumjoy {
     grid-area: 23 / 1 / span 4 / span 7;
+  }
+
+  #fastui[data-platform-id="dos"] #fastspectrumjoy {
+    grid-area: 13 / 1 / span 4 / span 4;
   }
 
   #qjlr {
@@ -962,6 +966,7 @@ a {
 #fastui {
   pointer-events: none;
   font-family: Helvetica, Arial, sans-serif !important;
+  white-space: pre-line;
 }
 
 #quickjoys .fast-button {
