@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.61] - 2026-03-10
+
+- DOS: fix save states
+- DOS: add more custom touch controllers
+- improve Atari ST multidisk swapping
+
 ## [0.60] - 2026-03-08
 
 -  add multi-disk game support (Amiga and Atari ST)
