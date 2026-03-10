@@ -799,7 +799,6 @@ export class UiManager {
 
         UiManager.#diskSwitchInProgress = true;
         try {
-            UiManager.osdMessage(`Switching to disk ${targetIndex + 1}/${names.length} ...`);
             nostalgist.sendCommand('DISK_EJECT_TOGGLE');
             await UiManager.#sleep(80);
 
