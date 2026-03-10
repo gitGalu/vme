@@ -61,6 +61,8 @@ export class PlatformManager {
     #state;
     #sram;
     #pending_dos_state;
+    #pending_st_state;
+    #pending_st_state_path;
     #current_rom;
     #current_m3u_disks;
     #current_m3u_disk_index;
@@ -77,6 +79,11 @@ export class PlatformManager {
     static DOS_RESTORE_DELAY_WITH_SIDECAR_MS = 900;
     static DOS_RESTORE_ATTEMPTS_WITHOUT_SIDECAR = 36;
     static DOS_RESTORE_DELAY_WITHOUT_SIDECAR_MS = 1500;
+    static ST_STATE_POLL_INTERVAL_MS = 150;
+    static ST_STATE_CAPTURE_TIMEOUT_MS = 12000;
+    static ST_STATE_ROOT = '/home/web_user/retroarch/userdata/states';
+    static ST_RESTORE_ATTEMPTS = 8;
+    static ST_RESTORE_DELAY_MS = 500;
 
     constructor(app, cli, storage_manager, network_manager, keyboard_manager) {
         this.#vme = app;
@@ -335,7 +342,9 @@ export class PlatformManager {
                 input_pause_toggle: false,
                 video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
                 video_smooth: (this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth,
-                savestate_thumbnail_enable: true,
+                savestate_thumbnail_enable: (typeof this.#selected_platform.savestate_thumbnail_enable === 'boolean')
+                    ? this.#selected_platform.savestate_thumbnail_enable
+                    : true,
                 video_font_enable: false,
                 input_menu_toggle: 'nul',
 
@@ -471,6 +480,8 @@ export class PlatformManager {
         this.#state = null;
         this.#sram = null;
         this.#pending_dos_state = null;
+        this.#pending_st_state = null;
+        this.#pending_st_state_path = null;
         let progressMessage;
         let coreConfigOverrides = null;
         const originalRomSource = romSource;
@@ -845,6 +856,8 @@ export class PlatformManager {
                 this.#state = state;
                 this.#sram = null;
                 this.#pending_dos_state = null;
+                this.#pending_st_state = null;
+                this.#pending_st_state_path = null;
                 this.loadRomFile(blob, program_name, caption, true, 'collection', closeCallback);
             });
     }
@@ -927,6 +940,9 @@ export class PlatformManager {
                     self.#caption = caption;
                     if (self.#selected_platform?.platform_id === 'dos' && self.#pending_dos_state instanceof Blob) {
                         void self.#restorePendingDosStatePostLaunch(nostalgist);
+                    }
+                    if (self.#selected_platform?.platform_id === 'st' && self.#pending_st_state instanceof Blob) {
+                        void self.#restorePendingStStatePostLaunch(nostalgist);
                     }
                 },
                 shader: (StorageManager.getValue("SHADER") == "0" || typeof platform.shader === 'function') ? undefined : '1',
@@ -2621,7 +2637,202 @@ export class PlatformManager {
         return typeof fileName === 'string' && fileName.toLowerCase().endsWith('.zip');
     }
 
-    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null) {
+    #getEmulatorStateFilePathSafe(nostalgist = null) {
+        const instance = nostalgist || this.#nostalgist;
+        if (!instance || typeof instance.getEmulator !== 'function') {
+            return null;
+        }
+        try {
+            const emulator = instance.getEmulator();
+            return (typeof emulator?.stateFilePath === 'string' && emulator.stateFilePath.length > 0)
+                ? emulator.stateFilePath
+                : null;
+        } catch {
+            return null;
+        }
+    }
+
+    #getStStateCandidates(expectedPath = null) {
+        const candidates = new Set();
+        if (typeof expectedPath === 'string' && expectedPath.length > 0) {
+            candidates.add(expectedPath);
+        }
+
+        const fileName = (typeof expectedPath === 'string' && expectedPath.includes('/'))
+            ? expectedPath.split('/').pop()
+            : null;
+        if (!fileName) {
+            return [...candidates];
+        }
+
+        const FS = this.#nostalgist?.getEmscriptenFS?.();
+        if (!FS) {
+            return [...candidates];
+        }
+
+        const stateRoot = PlatformManager.ST_STATE_ROOT;
+        const addCandidateDir = (dirName) => {
+            if (typeof dirName !== 'string' || dirName.length === 0) {
+                return;
+            }
+            candidates.add(`${stateRoot}/${dirName}/${fileName}`);
+        };
+
+        addCandidateDir(this.#selected_platform?.core);
+        addCandidateDir('Hatari');
+        addCandidateDir('hatarib');
+
+        try {
+            const entries = FS.readdir(stateRoot) || [];
+            for (const entry of entries) {
+                if (entry === '.' || entry === '..') {
+                    continue;
+                }
+                addCandidateDir(entry);
+            }
+        } catch {
+        }
+
+        return [...candidates];
+    }
+
+    #unlinkStateCandidates(paths) {
+        const FS = this.#nostalgist?.getEmscriptenFS?.();
+        if (!FS || !Array.isArray(paths)) {
+            return;
+        }
+        for (const filePath of paths) {
+            if (typeof filePath !== 'string' || filePath.length === 0) {
+                continue;
+            }
+            try {
+                FS.unlink(filePath);
+            } catch {
+            }
+        }
+    }
+
+    async #captureStStateFromFs() {
+        const nostalgist = this.#nostalgist;
+        const FS = nostalgist?.getEmscriptenFS?.();
+        if (!nostalgist || !FS) {
+            throw new Error('ST savestate capture failed: emulator filesystem is unavailable.');
+        }
+
+        const expectedPath = this.#getEmulatorStateFilePathSafe(nostalgist);
+        const candidates = this.#getStStateCandidates(expectedPath);
+        if (candidates.length === 0) {
+            throw new Error('ST savestate capture failed: no state file candidates.');
+        }
+
+        this.#unlinkStateCandidates(candidates);
+        nostalgist.sendCommand('SAVE_STATE');
+
+        const deadline = Date.now() + PlatformManager.ST_STATE_CAPTURE_TIMEOUT_MS;
+        while (Date.now() < deadline) {
+            for (const filePath of candidates) {
+                try {
+                    const stats = FS.stat(filePath);
+                    if (!stats || (typeof stats.size === 'number' && stats.size <= 0)) {
+                        continue;
+                    }
+                    const bytes = FS.readFile(filePath);
+                    let thumbnail;
+                    try {
+                        const thumbPath = `${filePath}.png`;
+                        const thumbStats = FS.stat(thumbPath);
+                        if (thumbStats && (typeof thumbStats.size !== 'number' || thumbStats.size > 0)) {
+                            const thumbBytes = FS.readFile(thumbPath);
+                            thumbnail = new Blob([thumbBytes], { type: 'image/png' });
+                        }
+                    } catch {
+                        thumbnail = undefined;
+                    }
+                    if (!thumbnail) {
+                        try {
+                            thumbnail = await nostalgist.screenshot();
+                        } catch {
+                            thumbnail = undefined;
+                        }
+                    }
+                    return {
+                        state: new Blob([bytes], { type: 'application/octet-stream' }),
+                        thumbnail,
+                        statePath: filePath
+                    };
+                } catch {
+                }
+            }
+            await new Promise((resolve) => setTimeout(resolve, PlatformManager.ST_STATE_POLL_INTERVAL_MS));
+        }
+
+        throw new Error(`ST savestate capture timed out after ${PlatformManager.ST_STATE_CAPTURE_TIMEOUT_MS}ms.`);
+    }
+
+    async #restorePendingStStatePostLaunch(nostalgist) {
+        if (this.#selected_platform?.platform_id !== 'st') {
+            return;
+        }
+
+        const pendingState = this.#pending_st_state;
+        const pendingPath = this.#pending_st_state_path;
+        if (!(pendingState instanceof Blob)) {
+            return;
+        }
+        this.#pending_st_state = null;
+        this.#pending_st_state_path = null;
+
+        const FS = nostalgist?.getEmscriptenFS?.();
+        if (!FS) {
+            return;
+        }
+
+        const expectedPath = this.#getEmulatorStateFilePathSafe(nostalgist);
+        const targetPaths = new Set();
+        if (typeof pendingPath === 'string' && pendingPath.length > 0) {
+            targetPaths.add(pendingPath);
+        }
+        for (const path of this.#getStStateCandidates(expectedPath || pendingPath || null)) {
+            targetPaths.add(path);
+        }
+
+        const stateBytes = new Uint8Array(await pendingState.arrayBuffer());
+
+        for (let i = 0; i < PlatformManager.ST_RESTORE_ATTEMPTS; i++) {
+            if (i > 0) {
+                await this.sleep(PlatformManager.ST_RESTORE_DELAY_MS);
+            }
+
+            if (this.#nostalgist !== nostalgist || this.#selected_platform?.platform_id !== 'st') {
+                return;
+            }
+
+            try {
+                for (const filePath of targetPaths) {
+                    if (typeof filePath !== 'string' || filePath.length === 0) {
+                        continue;
+                    }
+                    try {
+                        const slash = filePath.lastIndexOf('/');
+                        if (slash > 0) {
+                            FS.mkdirTree(filePath.substring(0, slash));
+                        }
+                        FS.writeFile(filePath, stateBytes);
+                        if (!filePath.endsWith('.auto')) {
+                            FS.writeFile(`${filePath}.auto`, stateBytes);
+                        }
+                    } catch {
+                    }
+                }
+
+                nostalgist.sendCommand('LOAD_STATE');
+            } catch (error) {
+                console.warn(`ST restore attempt ${i + 1} failed:`, error);
+            }
+        }
+    }
+
+    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null, stStatePath = null) {
         if (closeCallback) {
             s("html").style.background = "#000000";
             s("body").style.background = "#000000";
@@ -2674,8 +2885,11 @@ export class PlatformManager {
         }
 
         const isDos = platform_id === 'dos';
-        this.#state = isDos ? (dosCanAutoLoadState ? state : null) : state;
+        const isSt = platform_id === 'st';
+        this.#state = (isDos || isSt) ? (isDos ? (dosCanAutoLoadState ? state : null) : null) : state;
         this.#pending_dos_state = isDos ? (dosCanAutoLoadState ? null : state) : null;
+        this.#pending_st_state = isSt ? state : null;
+        this.#pending_st_state_path = isSt && typeof stStatePath === 'string' ? stStatePath : null;
         if (isDos && dosCanAutoLoadState) {
             this.#logDosDebug('DOS restore mode: launch-time state autoload.');
         }
@@ -2684,29 +2898,35 @@ export class PlatformManager {
     }
 
     async saveState(isQuickSave = false) {
-        let state = await this.#nostalgist.saveState();
-
-        const save_data = state.state;
-        const screenshot = state.thumbnail;
-
-        const platform_id = this.#selected_platform.platform_id;
-        const program_name = this.#program_name;
-        const caption = this.#caption;
-        const rom_data = this.#current_rom;
-        let dosSram = null;
-        let dosExecHint = null;
-        if (platform_id === 'dos') {
-            const dosArtifacts = await this.#captureDosSaveArtifacts(save_data, rom_data);
-            dosSram = dosArtifacts.dosSram;
-            dosExecHint = dosArtifacts.dosExecHint;
-        }
-        const m3uData = {
-            diskNames: this.getCurrentM3uDisks(),
-            diskIndex: this.getCurrentM3uDiskIndex(),
-            diskFiles: this.getCurrentM3uDiskFiles()
-        };
-
         try {
+            const platform_id = this.#selected_platform.platform_id;
+            const state = (platform_id === 'st')
+                ? await this.#captureStStateFromFs()
+                : await this.#nostalgist.saveState();
+            if (!state || !state.state) {
+                throw new Error('Savestate payload is empty.');
+            }
+
+            const save_data = state.state;
+            const screenshot = state.thumbnail;
+            const stStatePath = platform_id === 'st' && typeof state.statePath === 'string' ? state.statePath : null;
+
+            const program_name = this.#program_name;
+            const caption = this.#caption;
+            const rom_data = this.#current_rom;
+            let dosSram = null;
+            let dosExecHint = null;
+            if (platform_id === 'dos') {
+                const dosArtifacts = await this.#captureDosSaveArtifacts(save_data, rom_data);
+                dosSram = dosArtifacts.dosSram;
+                dosExecHint = dosArtifacts.dosExecHint;
+            }
+            const m3uData = {
+                diskNames: this.getCurrentM3uDisks(),
+                diskIndex: this.getCurrentM3uDiskIndex(),
+                diskFiles: this.getCurrentM3uDiskFiles()
+            };
+
             const saved = await this.#storage_manager.storeState(
                 save_data,
                 rom_data,
@@ -2717,7 +2937,8 @@ export class PlatformManager {
                 isQuickSave,
                 m3uData,
                 dosSram,
-                dosExecHint
+                dosExecHint,
+                stStatePath
             );
 
             if (saved) {

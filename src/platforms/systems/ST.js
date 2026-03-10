@@ -127,7 +127,8 @@ const ST = {
 
     return config;
   },
-  savestates_disabled: true,
+  savestates_disabled: false,
+  savestate_thumbnail_enable: true,
   shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
   force_scale: true,
   video_smooth: false,

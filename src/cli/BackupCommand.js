@@ -96,7 +96,8 @@ export class BackupCommand extends CommandBase {
                     caption: saveData.caption,
                     program_name: saveData.program_name,
                     platform_id: saveData.platform_id,
-                    dos_exec_hint: saveData.dos_exec_hint || null
+                    dos_exec_hint: saveData.dos_exec_hint || null,
+                    st_state_path: saveData.st_state_path || null
                 };
                 zip.file(`${saveFilename}.json`, JSON.stringify(saveMetadata, null, 2));
 
