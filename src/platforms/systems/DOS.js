@@ -300,6 +300,160 @@ const DOS = {
                         "label": "SPACE"
                     }
                 ]
+            },
+            {
+                "id": "dos-pinball-epic",
+                "name": "Pinball 2",
+                "description": "Epic Pinball",
+                "gameFocus": true,
+                "layout": {
+                    "landscape": {
+                        "columns": 50,
+                        "rows": 50
+                    },
+                    "portrait": {
+                        "columns": 50,
+                        "rows": 50
+                    }
+                },
+                "elements": [
+                    {
+                        "id": "pinball-left-shift",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Shift",
+                                "code": "ShiftLeft",
+                                "keyCode": 16
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "37 / 1 / span 14 / span 10",
+                            "portrait": "44 / 1 / span 7 / span 23"
+                        },
+                        "label": "LEFT"
+                    },
+                    {
+                        "id": "pinball-right-shift",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Shift",
+                                "code": "ShiftRight",
+                                "keyCode": 16
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "37 / 41 / span 14 / span 10",
+                            "portrait": "44 / 28 / span 7 / span 23"
+                        },
+                        "label": "RIGHT"
+                    },
+                    {
+                        "id": "pinball-plunger",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Space",
+                                "code": "Space",
+                                "keyCode": 32
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "28 / 43 / span 8 / span 8",
+                            "portrait": "38 / 32 / span 5 / span 19"
+                        },
+                        "label": "TILT<br/>PLUNGER"
+                    },
+                    {
+                        "id": "pinball-tilt",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Space",
+                                "code": "Space",
+                                "keyCode": 32
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "28 / 1 / span 8 / span 8",
+                            "portrait": "38 / 1 / span 5 / span 19"
+                        },
+                        "label": "TILT<br/>PLUNGER"
+                    },
+                    {
+                        "id": "pinball-y",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "y",
+                                "code": "KeyY",
+                                "keyCode": 89
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "3 / 5 / span 4 / span 4",
+                            "portrait": "26 / 11 / span 2 / span 9"
+                        },
+                        "label": "Y"
+                    },
+                    {
+                        "id": "pinball-n",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "n",
+                                "code": "KeyN",
+                                "keyCode": 78
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "8 / 5 / span 4 / span 4",
+                            "portrait": "29 / 11 / span 2 / span 9"
+                        },
+                        "label": "N"
+                    },
+                    {
+                        "id": "pinball-up",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "ArrowUp",
+                                "code": "ArrowUp",
+                                "keyCode": 38
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "13 / 5 / span 4 / span 4",
+                            "portrait": "32 / 11 / span 2 / span 9"
+                        },
+                        "label": "▲"
+                    },
+                    {
+                        "id": "pinball-down",
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "ArrowDown",
+                                "code": "ArrowDown",
+                                "keyCode": 40
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "18 / 5 / span 4 / span 4",
+                            "portrait": "35 / 11 / span 2 / span 9"
+                        },
+                        "label": "▼"
+                    }
+                ]
             }
         ]
     },
