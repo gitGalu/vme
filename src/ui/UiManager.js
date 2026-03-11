@@ -16,6 +16,10 @@ import { FileUtils } from '../utils/FileUtils.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { TOUCH_INPUT } from '../Constants.js';
 import { CustomDropdown } from '../components/CustomDropdown.js';
+import {
+    dispatchSyntheticKeyboardEvent,
+    getSyntheticKeyboardTarget
+} from '../keyboard/SyntheticKeyboard.js';
 
 function getJoystickModeName(mode) {
     switch (mode) {
@@ -590,7 +594,7 @@ export class UiManager {
                 menuOptions.push({
                     name: label, action: () => {
                         if (kbKey) {
-                            simulateKeypress(kbKey.key, kbKey.code, kbKey.key.keyCode);
+                            simulateKeypress(kbKey.key, kbKey.code, kbKey.keyCode);
                         } else {
                             nostalgist.press({ button: keyCode, player: 1, time: 100 });
                         }
@@ -603,29 +607,21 @@ export class UiManager {
         }
 
         function simulateKeydown(key, code, keyCode) {
-            let event = new KeyboardEvent('keydown', {
+            dispatchSyntheticKeyboardEvent('keydown', {
                 key: key,
                 code: code,
                 keyCode: keyCode,
-                charCode: keyCode,
-                bubbles: true,
-                cancelable: true
+                target: getSyntheticKeyboardTarget(document)
             });
-
-            document.dispatchEvent(event);
         }
 
         function simulateKeyup(key, code, keyCode) {
-            let event = new KeyboardEvent('keyup', {
+            dispatchSyntheticKeyboardEvent('keyup', {
                 key: key,
                 code: code,
                 keyCode: keyCode,
-                charCode: keyCode,
-                bubbles: true,
-                cancelable: true
+                target: getSyntheticKeyboardTarget(document)
             });
-
-            document.dispatchEvent(event);
         }
 
         function simulateKeypress(key, code, keyCode) {
@@ -923,6 +919,7 @@ export class UiManager {
         let counter = 1;
 
         let keys = Object.keys(UiManager.#platform_manager.getSelectedPlatform().additional_buttons);
+        const keyboardTarget = getSyntheticKeyboardTarget(document);
         keys.reverse();
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
@@ -932,7 +929,7 @@ export class UiManager {
 
             let listener;
             if (kbKey) {
-                listener = new SingleTouchButtonKbListener(kbKey.key, kbKey.code, kbKey.keyCode);
+                listener = new SingleTouchButtonKbListener(kbKey.key, kbKey.code, kbKey.keyCode, keyboardTarget);
             } else {
                 listener = new SingleTouchButtonJoyListener(UiManager.#platform_manager.getNostalgist(), keyCode);
             }

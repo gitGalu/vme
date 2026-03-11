@@ -1,4 +1,8 @@
 import { TouchButtonListener  } from "./TouchButtonListener";
+import {
+    dispatchSyntheticKeyboardEvent,
+    getSyntheticKeyboardTarget
+} from '../keyboard/SyntheticKeyboard.js';
 
 export class SingleTouchButtonKbListener extends TouchButtonListener {
     #target;
@@ -10,7 +14,7 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
     #altKey;
     #metaKey;
 
-    constructor(key, code, keyCode, target = document, modifiers = {}) {
+    constructor(key, code, keyCode, target = getSyntheticKeyboardTarget(document), modifiers = {}) {
         super();
         this.#key = key;
         this.#code = code;
@@ -40,36 +44,28 @@ export class SingleTouchButtonKbListener extends TouchButtonListener {
     }
 
     #simulateKeydown() {
-        let event = new KeyboardEvent('keydown', {
+        dispatchSyntheticKeyboardEvent('keydown', {
             key: this.#key,
             code: this.#code,
             keyCode: this.#keyCode,
-            charCode: this.#keyCode,
             shiftKey: this.#shiftKey,
             ctrlKey: this.#ctrlKey,
             altKey: this.#altKey,
             metaKey: this.#metaKey,
-            bubbles: true,
-            cancelable: true
+            target: this.#target
         });
-
-        this.#target.dispatchEvent(event);
     }
 
     #simulateKeyup() {
-        let event = new KeyboardEvent('keyup', {
+        dispatchSyntheticKeyboardEvent('keyup', {
             key: this.#key,
             code: this.#code,
             keyCode: this.#keyCode,
-            charCode: this.#keyCode,
             shiftKey: this.#shiftKey,
             ctrlKey: this.#ctrlKey,
             altKey: this.#altKey,
             metaKey: this.#metaKey,
-            bubbles: true,
-            cancelable: true
+            target: this.#target
         });
-
-        this.#target.dispatchEvent(event);
     }
 }

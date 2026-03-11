@@ -1,4 +1,8 @@
 import { TouchButtonListener } from './TouchButtonListener.js';
+import {
+    dispatchSyntheticKeyboardEvent,
+    getSyntheticKeyboardTarget
+} from '../keyboard/SyntheticKeyboard.js';
 
 export class DualTouchButtonKbListener extends TouchButtonListener {
     #target;
@@ -9,7 +13,7 @@ export class DualTouchButtonKbListener extends TouchButtonListener {
     #key2;
     #keyCode2;
 
-    constructor(key1, code1, keyCode1, key2, code2, keyCode2, target = document) {
+    constructor(key1, code1, keyCode1, key2, code2, keyCode2, target = getSyntheticKeyboardTarget(document)) {
         super();
         this.#target = target;
         this.#code1 = code1;
@@ -49,16 +53,12 @@ export class DualTouchButtonKbListener extends TouchButtonListener {
     }
 
     #simulateKeyEvent(key, code, keyCode, eventType) {
-        let event = new KeyboardEvent(eventType, {
+        dispatchSyntheticKeyboardEvent(eventType, {
             key: key,
             code: code,
             keyCode: keyCode,
-            charCode: keyCode,
-            bubbles: true,
-            cancelable: true
+            target: this.#target
         });
-    
-        this.#target.dispatchEvent(event);
     }
 
 }

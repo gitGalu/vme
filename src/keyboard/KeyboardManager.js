@@ -13,6 +13,7 @@ import { StorageManager } from '../storage/StorageManager.js';
 import { VME } from '../VME.js';
 import { UiManager } from '../ui/UiManager.js';
 import GameFocusManager from './GameFocusManager.js';
+import { dispatchSyntheticKeyboardEvent } from './SyntheticKeyboard.js';
 
 export class KeyboardManager {
     #mode;
@@ -623,28 +624,42 @@ export class KeyboardManager {
     }
 
     updateMode(mode) {
+        const keyboard = document.querySelector('#keyboard');
         const kbCtrlClear = document.querySelector('#kbCtrlClear');
+
+        if (!keyboard) {
+            return;
+        }
 
         switch (mode) {
             case VME.CURRENT_SCREEN.MENU:
                 this.#mute = false;
                 this.customEscLabel = null; 
-                document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound);
-                document.querySelector('#keyboard').addEventListener('touchstart', this.#handleCliInputBound, { passive: false });
-                document.querySelector('#keyboard').addEventListener('click', this.#handleCliInputBound);
+                keyboard.removeEventListener('touchstart', this.#handleEmulationInputBound);
+                keyboard.removeEventListener('touchend', this.#handleEmulationInputBound);
+                keyboard.removeEventListener('touchstart', this.#handleCliInputBound);
+                keyboard.removeEventListener('click', this.#handleCliInputBound);
+                kbCtrlClear?.removeEventListener('touchstart', this.#handleEmulationSpecialBound);
+                kbCtrlClear?.removeEventListener('touchend', this.#handleEmulationSpecialBound);
+                keyboard.addEventListener('touchstart', this.#handleCliInputBound, { passive: false });
+                keyboard.addEventListener('click', this.#handleCliInputBound);
                 if (kbCtrlClear) {
                     kbCtrlClear.textContent = 'Clear';
                 }
                 break;
             case VME.CURRENT_SCREEN.EMULATION:
                 this.#mute = true;
-                document.querySelector('#keyboard').removeEventListener('click', this.#handleCliInputBound);
-                document.querySelector('#keyboard').removeEventListener('touchstart', this.#handleCliInputBound);
-                document.querySelector('#keyboard').addEventListener('touchstart', this.#handleEmulationInputBound, { passive: false });
-                document.querySelector('#keyboard').addEventListener('touchend', this.#handleEmulationInputBound, { passive: false });
+                keyboard.removeEventListener('click', this.#handleCliInputBound);
+                keyboard.removeEventListener('touchstart', this.#handleCliInputBound);
+                keyboard.removeEventListener('touchstart', this.#handleEmulationInputBound);
+                keyboard.removeEventListener('touchend', this.#handleEmulationInputBound);
+                kbCtrlClear?.removeEventListener('touchstart', this.#handleEmulationSpecialBound);
+                kbCtrlClear?.removeEventListener('touchend', this.#handleEmulationSpecialBound);
+                keyboard.addEventListener('touchstart', this.#handleEmulationInputBound, { passive: false });
+                keyboard.addEventListener('touchend', this.#handleEmulationInputBound, { passive: false });
 
-                document.querySelector('#kbCtrlClear').addEventListener('touchstart', this.#handleEmulationSpecialBound, { passive: false });
-                document.querySelector('#kbCtrlClear').addEventListener('touchend', this.#handleEmulationSpecialBound, { passive: false });
+                kbCtrlClear?.addEventListener('touchstart', this.#handleEmulationSpecialBound, { passive: false });
+                kbCtrlClear?.addEventListener('touchend', this.#handleEmulationSpecialBound, { passive: false });
 
                 if (kbCtrlClear) {
                     // This preserves platform-specific customizations - TODO
@@ -680,17 +695,17 @@ export class KeyboardManager {
     }
 
     #simulateKeyEvent(key, code, type, options = {}) {
-        const event = new KeyboardEvent(type, {
-            key: key,
-            code: code,
-            keyCode: options.keyCode || key.charCodeAt(0),
-            which: options.which || key.charCodeAt(0),
+        dispatchSyntheticKeyboardEvent(type, {
+            key,
+            code,
+            keyCode: options.keyCode,
+            which: options.which,
             shiftKey: options.shiftKey || false,
-            location: options.location || 0,
-            bubbles: true,
-            cancelable: true
+            ctrlKey: options.ctrlKey || false,
+            altKey: options.altKey || false,
+            metaKey: options.metaKey || false,
+            location: options.location || 0
         });
-        document.dispatchEvent(event);
     }
 
     showTouchKeyboard() {
