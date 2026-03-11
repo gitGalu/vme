@@ -1056,6 +1056,7 @@ export class PlatformManager {
     updatePlatform() {
         s('#platformLabel').innerHTML = "(" + this.#selected_platform.short_name + ")";
         this.theme(this.#selected_platform.theme);
+        this.#keyboard_manager?.setTouchCapsEnabled(this.#selected_platform.keyboard?.touch_caps_toggle === true);
         this.#print_platform_status();
     }
 

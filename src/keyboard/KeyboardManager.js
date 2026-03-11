@@ -19,6 +19,8 @@ export class KeyboardManager {
     #mode;
     #layer;
     #cli;
+    #capsLocked = false;
+    #touchCapsEnabled = false;
     #audioContextInitialized = false;
     #mute
     audioContext;
@@ -82,6 +84,7 @@ export class KeyboardManager {
         window.addEventListener('keydown', this.#keyguardKeydownBound, true);
         window.addEventListener('keyup', this.#keyguardKeyupBound, true);
         window.addEventListener('keypress', this.#keyguardKeypressBound, true);
+        this.#refresh();
 
         const elements = document.querySelectorAll('.kbCtrl');
     }
@@ -233,6 +236,7 @@ export class KeyboardManager {
             this.loadAllAudioFiles();
         }
         this.#applyKeyboardConfig();
+        this.#refresh();
     }
 
     #refresh() {
@@ -277,6 +281,95 @@ export class KeyboardManager {
                 el.style.display = 'none';
             });
         }
+
+        this.#syncTouchCapsUi();
+    }
+
+    #syncTouchCapsUi() {
+        this.#syncLetterKeys();
+        this.#syncShiftKeyUi();
+    }
+
+    #syncLetterKeys() {
+        document.querySelectorAll('.key.layerA[data-code^="Key"]').forEach((keyEl) => {
+            const code = keyEl.getAttribute('data-code') || '';
+            if (!/^Key[A-Z]$/.test(code)) {
+                return;
+            }
+
+            if (!keyEl.dataset.capsOriginalValue) {
+                keyEl.dataset.capsOriginalValue = keyEl.getAttribute('data-value') || '';
+            }
+            if (!keyEl.dataset.capsOriginalLabel) {
+                keyEl.dataset.capsOriginalLabel = keyEl.textContent || '';
+            }
+
+            if (!this.#touchCapsEnabled) {
+                keyEl.setAttribute('data-value', keyEl.dataset.capsOriginalValue || '');
+                keyEl.textContent = keyEl.dataset.capsOriginalLabel || '';
+                keyEl.style.textTransform = '';
+                return;
+            }
+
+            const originalValue = keyEl.dataset.capsOriginalValue || '';
+            if (!/^[a-zA-Z]$/.test(originalValue)) {
+                return;
+            }
+
+            const nextValue = this.#capsLocked
+                ? originalValue.toUpperCase()
+                : originalValue.toLowerCase();
+
+            keyEl.setAttribute('data-value', nextValue);
+            keyEl.textContent = nextValue;
+            keyEl.style.textTransform = 'none';
+        });
+    }
+
+    #syncShiftKeyUi() {
+        const shiftKey = document.querySelector('#keyShift');
+        if (!shiftKey) {
+            return;
+        }
+
+        if (this.#layer == KeyboardManager.Layer.B || this.#layer == KeyboardManager.Layer.C) {
+            shiftKey.textContent = 'MORE';
+        } else {
+            shiftKey.textContent = 'CAPS';
+        }
+
+        shiftKey.classList.toggle('toggled', this.#touchCapsEnabled && this.#capsLocked && this.#layer == KeyboardManager.Layer.A);
+    }
+
+    #dispatchCapsLockToggle() {
+        this.#simulateKeyEvent('CapsLock', 'CapsLock', 'keydown', { keyCode: 20, which: 20 });
+        this.#simulateKeyEvent('CapsLock', 'CapsLock', 'keyup', { keyCode: 20, which: 20 });
+    }
+
+    #setCapsLocked(locked, syncEmulator = false) {
+        const next = locked === true;
+        const changed = this.#capsLocked !== next;
+        this.#capsLocked = next;
+
+        if (changed && syncEmulator) {
+            this.#dispatchCapsLockToggle();
+        }
+
+        this.#syncTouchCapsUi();
+    }
+
+    setTouchCapsEnabled(enabled) {
+        const next = enabled === true;
+        if (this.#touchCapsEnabled === next) {
+            this.#syncTouchCapsUi();
+            return;
+        }
+
+        this.#touchCapsEnabled = next;
+        if (!next) {
+            this.#capsLocked = false;
+        }
+        this.#syncTouchCapsUi();
     }
 
     initButtons() {
@@ -387,19 +480,24 @@ export class KeyboardManager {
             }
             e.stopPropagation();
             if (this.#layer == KeyboardManager.Layer.A) {
-                //todo caps
+                if (this.#touchCapsEnabled) {
+                    this.#setCapsLocked(!this.#capsLocked, this.#mute);
+                }
             } else if (this.#layer == KeyboardManager.Layer.B) {
                 this.#layer = KeyboardManager.Layer.C;
                 this.#visibility('.layerB', false);
                 this.#visibility('.layerC', true);
+                this.#syncShiftKeyUi();
             } else if (this.#layer == KeyboardManager.Layer.C) {
                 this.#layer = KeyboardManager.Layer.B;
                 this.#visibility('.layerC', false);
                 this.#visibility('.layerB', true);
+                this.#syncShiftKeyUi();
             } else if (this.#layer == KeyboardManager.Layer.F) {
                 this.#layer = KeyboardManager.Layer.F;
                 this.#visibility('.layerC', false);
                 this.#visibility('.layerB', true);
+                this.#syncShiftKeyUi();
             }
         };
 
@@ -413,19 +511,15 @@ export class KeyboardManager {
             }
             e.stopPropagation();
             if (this.#layer == KeyboardManager.Layer.A) {
-                document.querySelector('#keyShift').innerHTML = 'MORE';
                 this.#layer = KeyboardManager.Layer.B;
             } else if (this.#layer == KeyboardManager.Layer.B || this.#layer == KeyboardManager.Layer.C) {
                 if (this.#layers.includes(".layerF")) {
                     this.#layer = KeyboardManager.Layer.F;
-                    document.querySelector('#keyShift').innerHTML = 'CAPS';
                 } else {
                     this.#layer = KeyboardManager.Layer.A;
-                    document.querySelector('#keyShift').innerHTML = 'CAPS';
                 }
             } else if (this.#layer == KeyboardManager.Layer.F) {
                 this.#layer = KeyboardManager.Layer.A;
-                document.querySelector('#keyShift').innerHTML = 'CAPS';
             }
 
             this.#refresh();
@@ -633,6 +727,7 @@ export class KeyboardManager {
 
         switch (mode) {
             case VME.CURRENT_SCREEN.MENU:
+                this.#setCapsLocked(false, false);
                 this.#mute = false;
                 this.customEscLabel = null; 
                 keyboard.removeEventListener('touchstart', this.#handleEmulationInputBound);

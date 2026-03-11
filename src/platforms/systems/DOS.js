@@ -691,6 +691,7 @@ const DOS = {
     fire_buttons: 1,
     keyboard: {
         shiftKey: 2,
+        touch_caps_toggle: true,
         mode_labels: {
             retropad: 'Focus mode disabled',
             focusmode: 'Focus mode enabled'
