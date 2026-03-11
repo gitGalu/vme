@@ -2,9 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.62] - 2027-03-11
+
+- Atari ST: add save states support
+- DOS: fix save states
+- DOS: fix touch keyboard
+
 ## [0.61] - 2026-03-10
 
-- DOS: fix save states
 - DOS: add more custom touch controllers
 - improve Atari ST multidisk swapping
 
