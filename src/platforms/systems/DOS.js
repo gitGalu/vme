@@ -48,6 +48,7 @@ const DOS = {
         keyMap: {
             'Arrows+Space': KeyMaps.DOS_ARROWS_SPACE,
             'Arrows+Ctrl': KeyMaps.DOS_ARROWS_CTRL,
+            'Arrows+Enter': KeyMaps.DOS_ARROWS_ENTER,
             'Arrows+Alt+Space': KeyMaps.DOS_ARROWS_ALT_SPACE
         },
         default: KeyMaps.DOS_ARROWS_SPACE

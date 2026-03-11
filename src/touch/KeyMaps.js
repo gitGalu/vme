@@ -121,6 +121,14 @@ export class KeyMaps {
         a: { key: ' ', code: 'Space', keyCode: 32, label: 'SPACE' }
     }
 
+    static DOS_ARROWS_ENTER = {
+        up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+        down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+        left: { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+        right: { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+        a: { key: 'Enter', code: 'Enter', keyCode: 13, label: 'ENTER' }
+    }
+
     static DOS_ARROWS_ALT_SPACE = {
         up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
         down: { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
