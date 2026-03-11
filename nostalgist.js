@@ -826,7 +826,7 @@ class ResolvableFile {
   async loadObject(object) {
     let { fileContent, fileName } = object;
     [fileName, fileContent] = await Promise.all([getResult(fileName), getResult(fileContent)]);
-    this.name ||= extractValidFileName(fileName);
+    this.name ||= extractValidRelativeFilePath(fileName);
     await this.loadContent(fileContent);
   }
   loadPlainText(text) {
@@ -920,6 +920,34 @@ function extractValidFileName(url) {
     return baseName;
   }
   return "";
+}
+function extractValidRelativeFilePath(filePath) {
+  if (typeof filePath !== "string") {
+    return "";
+  }
+  let normalized = filePath.trim().replaceAll("\\", "/");
+  if (!normalized) {
+    return "";
+  }
+  normalized = normalized.replace(/^[A-Za-z]:\//, "").replace(/^\/+/, "");
+  const segments = normalized.split("/").filter(Boolean);
+  if (segments.length === 0) {
+    return "";
+  }
+  const sanitizedSegments = [];
+  for (const segment of segments) {
+    if (segment === "." || segment === "..") {
+      continue;
+    }
+    const sanitized = segment.replaceAll(/["%*:<>?\\|]/g, "-");
+    if (sanitized) {
+      sanitizedSegments.push(sanitized);
+    }
+  }
+  if (sanitizedSegments.length === 0) {
+    return "";
+  }
+  return sanitizedSegments.join("/");
 }
 function isAbsoluteUrl(string) {
   if (!string) {
