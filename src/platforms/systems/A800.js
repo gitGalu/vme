@@ -5,6 +5,7 @@ const A800 = {
     ...PlatformBase,
     platform_id: 'atari800',
     core: 'atari800',
+    core_asset_version: 'direct-frame-rwebaudio-1',
     bios: ['ATARIXL.ROM', 'ATARIBAS.ROM'],
     platform_name: 'Atari 800 / XE / XL',
     short_name: 'A800',

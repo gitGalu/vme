@@ -112,8 +112,32 @@ export class PlatformManager {
     }
 
     #getLibretroUrl(core, extension) {
-        const filename = `${core}_libretro.${extension}`;
+        const filename = `${this.#getCoreAssetName(core)}_libretro.${extension}`;
         return new URL(`./libretro/${filename}`, window.location.href).href;
+    }
+
+    #getCoreAssetName(core) {
+        return core;
+    }
+
+    #getCoreAssetVersion(core) {
+        if (this.#selected_platform?.core === core && this.#selected_platform?.core_asset_version) {
+            return this.#selected_platform.core_asset_version;
+        }
+        return null;
+    }
+
+    #getCoreAssetPath(core, extension) {
+        const path = `./libretro/${this.#getCoreAssetName(core)}_libretro.${extension}`;
+        return path;
+    }
+
+    #appendAssetVersion(url, version) {
+        if (!version) {
+            return url;
+        }
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}v=${encodeURIComponent(version)}`;
     }
 
     #applyGamepadFilter(filter) {
@@ -474,7 +498,7 @@ export class PlatformManager {
 
     async loadRom(romSource, caption, isLocal = true, romName = caption) {
         let core = this.#selected_platform.core;
-        let coreWasm = `./libretro/${core}_libretro.wasm`;
+        let coreWasm = this.#getCoreAssetPath(core, 'wasm');
 
         let self = this;
         this.#state = null;
@@ -881,8 +905,14 @@ export class PlatformManager {
         let storageManager = this.#storage_manager;
         let platform = this.#selected_platform;
         let core = this.#selected_platform.core;
-        const coreJsUrl = this.#getLibretroUrl(core, 'js');
-        const coreWasmUrl = this.#getLibretroUrl(core, 'wasm');
+        const coreAssetVersion = this.#getCoreAssetVersion(core);
+        const coreJsUrl = this.#appendAssetVersion(this.#getLibretroUrl(core, 'js'), coreAssetVersion);
+        const coreWasmUrl = this.#appendAssetVersion(this.#getLibretroUrl(core, 'wasm'), coreAssetVersion);
+        const nostalgistCore = {
+            name: core,
+            js: coreJsUrl,
+            wasm: coreWasmUrl
+        };
         const platformEmscriptenModule = this.#selected_platform.emscripten_module;
         const defaultLocateFile = (path) => {
             if (path.endsWith('.wasm')) {
@@ -893,13 +923,12 @@ export class PlatformManager {
             }
             return path;
         };
-        const emscriptenModule = this.#selected_platform.uses_pthreads
-            ? {
-                mainScriptUrlOrBlob: coreJsUrl,
-                locateFile: defaultLocateFile,
-                ...(platformEmscriptenModule || {})
-            }
-            : platformEmscriptenModule;
+        const emscriptenModuleBase = {
+            locateFile: defaultLocateFile,
+            ...(this.#selected_platform.uses_pthreads ? { mainScriptUrlOrBlob: coreJsUrl } : {}),
+            ...(platformEmscriptenModule || {})
+        };
+        const emscriptenModule = emscriptenModuleBase;
 
         let errored = false;
         self.#program_name = launchRom.programName;
@@ -915,7 +944,7 @@ export class PlatformManager {
 
         try {
             this.#nostalgist = await Nostalgist.launch({
-                core: core,
+                core: nostalgistCore,
                 rom: launchRom.nostalgistRom,
                 async beforeLaunch(nostalgist) {
                     GameFocusManager.initialize(nostalgist);
