@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.62] - 2027-03-11
+## [0.63] - 2026-03-19
+
+- A800: add libretro-atari800 workarounds to avoid Safari crashes in macOS26 & iOS26
+
+## [0.62] - 2026-03-11
 
 - Atari ST: add save states support
 - DOS: fix save states
