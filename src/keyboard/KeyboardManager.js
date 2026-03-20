@@ -810,9 +810,11 @@ export class KeyboardManager {
         s('#keyboardContainer').classList.add('visible');
     }
 
-    hideTouchKeyboard() {
+    hideTouchKeyboard(notifyUi = true) {
         UiManager.keyboardVisible = false;
-        UiManager.keyboardClosed();
+        if (notifyUi) {
+            UiManager.keyboardClosed();
+        }
 
         s('#keyboardContainer').classList.remove('visible');
 

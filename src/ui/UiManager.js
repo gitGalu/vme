@@ -884,6 +884,11 @@ export class UiManager {
                 config,
                 {
                     onPresetActivated: (preset) => {
+                        if (UiManager.#currentInputMethod === TOUCH_INPUT.KEYBOARD) {
+                            UiManager.#kb_manager.hideTouchKeyboard(false);
+                            UiManager.hideKeyboard();
+                        }
+
                         const focusManager = GameFocusManager.getInstance();
                         const wantsGameFocus = UiManager.#customControllerManager.isGameFocusEnabled();
                         if (wantsGameFocus) {
@@ -1099,6 +1104,8 @@ export class UiManager {
 
         switch (UiManager.#currentInputMethod) {
             case TOUCH_INPUT.KEYBOARD:
+                UiManager.#kb_manager.hideTouchKeyboard(false);
+                UiManager.hideKeyboard();
                 GameFocusManager.getInstance().disable();
                 break;
             case TOUCH_INPUT.CURSORS:
