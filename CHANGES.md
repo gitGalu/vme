@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.64] - 2026-03-20
+
+- DOS: fix save states
+- DOS: add Worms custom touch controller
+
 ## [0.63] - 2026-03-19
 
 - A800: add libretro-atari800 workarounds to avoid Safari crashes in macOS26 & iOS26
@@ -9,7 +14,6 @@ All notable changes to this project will be documented in this file.
 ## [0.62] - 2026-03-11
 
 - Atari ST: add save states support
-- DOS: fix save states
 - DOS: fix touch keyboard
 
 ## [0.61] - 2026-03-10
