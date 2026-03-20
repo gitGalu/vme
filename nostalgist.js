@@ -843,7 +843,10 @@ class ResolvableFile {
     if (!response.ok) {
       throw new Error("Failed to load response", { cause: response });
     }
-    this.blob = await response.blob();
+    const contentType = response.headers.get("Content-Type") || this.blobType;
+    const arrayBuffer = await response.arrayBuffer();
+    this.arrayBuffer = arrayBuffer;
+    this.blob = new Blob([arrayBuffer], { type: contentType });
     this.name ||= extractValidFileName(response.url);
   }
   loadUint8Array(uint8Array) {
@@ -925,29 +928,19 @@ function extractValidRelativeFilePath(filePath) {
   if (typeof filePath !== "string") {
     return "";
   }
-  let normalized = filePath.trim().replaceAll("\\", "/");
+  let normalized = filePath.replaceAll("\\", "/").trim();
   if (!normalized) {
     return "";
   }
-  normalized = normalized.replace(/^[A-Za-z]:\//, "").replace(/^\/+/, "");
-  const segments = normalized.split("/").filter(Boolean);
+  if (isAbsoluteUrl(normalized)) {
+    return extractValidFileName(normalized);
+  }
+  normalized = normalized.replace(/^[A-Za-z]:\/+/, "").replace(/^\/+/, "");
+  const segments = normalized.split("/").filter((segment) => segment && segment !== "." && segment !== "..").map((segment) => segment.replaceAll(/["%*:<>?\\|]/g, "-"));
   if (segments.length === 0) {
     return "";
   }
-  const sanitizedSegments = [];
-  for (const segment of segments) {
-    if (segment === "." || segment === "..") {
-      continue;
-    }
-    const sanitized = segment.replaceAll(/["%*:<>?\\|]/g, "-");
-    if (sanitized) {
-      sanitizedSegments.push(sanitized);
-    }
-  }
-  if (sanitizedSegments.length === 0) {
-    return "";
-  }
-  return sanitizedSegments.join("/");
+  return segments.join("/");
 }
 function isAbsoluteUrl(string) {
   if (!string) {
@@ -996,7 +989,7 @@ async function patchCoreJs({ js, name }) {
          }
       }`;
   } else if (isEsmScript(jsContent)) {
-    jsContent = `${jsContent.replace("var setImmediate", "").replace(
+    jsContent = `${jsContent.replace("var setImmediate", "").replace(/var Module\s*=\s*Object\.assign\(\{\},\s*moduleArg\s*\);/, "var Module=moduleArg;").replace(
       "readyPromiseResolve(Module)",
       `readyPromiseResolve({
         AL: typeof AL === 'undefined' ? null: AL,
@@ -1005,6 +998,9 @@ async function patchCoreJs({ js, name }) {
         Module,
         exit: _emscripten_force_exit
       })`
+    ).replace(
+      /new Worker\(new URL\("([^"]+\.worker\.js)"/g,
+      'new Worker(Module["pthreadWorkerUrl"] ?? new URL("$1"'
     ).replace(
       /new Worker\(new URL\("/g,
       'new Worker(Module["mainScriptUrlOrBlob"] ?? new URL("'
@@ -1026,15 +1022,19 @@ async function importCoreJsAsESM({ js, name }) {
   const jsResolvable = await ResolvableFile.create({ blobType: "application/javascript", raw: jsContent });
   const jsObjectUrl = jsResolvable.getObjectUrl();
   try {
-    return await import(
+    return {
+      module: await import(
       /* @vite-ignore */
       /* webpackIgnore: true */
       jsObjectUrl
-    );
+      ),
+      dispose: () => jsResolvable.dispose()
+    };
   } catch {
-    return await new Function(`return import('${jsObjectUrl}')`)();
-  } finally {
-    jsResolvable.dispose();
+    return {
+      module: await new Function(`return import('${jsObjectUrl}')`)(),
+      dispose: () => jsResolvable.dispose()
+    };
   }
 }
 function isNil(obj) {
@@ -1371,6 +1371,7 @@ class EmulatorOptions {
   sramType;
   state;
   waitForInteraction;
+  debug;
   /**
    * RetroArch config.
    * Not all options can make effects in browser.
@@ -1420,6 +1421,7 @@ class EmulatorOptions {
     this.size = options.size ?? "auto";
     this.sramType = options.sramType ?? "srm";
     this.waitForInteraction = options.waitForInteraction;
+    this.debug = options.debug;
     this.element = this.getElement();
     if (typeof options.cache === "boolean") {
       for (const key in this.cache) {
@@ -1690,7 +1692,6 @@ const coreInfoMap = {
   gw: { corename: "GW" },
   handy: { corename: "Handy", savestate: true },
   hatari: { corename: "Hatari", savestate: true },
-  hatarib: { corename: "HatariB", savestate: true },
   hbmame: { corename: "HBMAME (Git)" },
   higan_sfc: { corename: "nSide (Super Famicom Accuracy)", savestate: true },
   higan_sfc_balanced: { corename: "nSide (Super Famicom Balanced)", savestate: true },
@@ -2241,7 +2242,14 @@ class Emulator {
   resize({ height, width }) {
     const { Module } = this.getEmscripten();
     if (typeof width === "number" && typeof height === "number") {
-      Module.setCanvasSize(width, height);
+      try {
+        Module.setCanvasSize(width, height);
+      } catch (error) {
+        if (error && error.name === "InvalidStateError") {
+          return;
+        }
+        throw error;
+      }
     }
   }
   restart() {
@@ -2326,11 +2334,66 @@ class Emulator {
     for (const { eventListenerFunc, eventTypeString } of JSEvents.eventHandlers) {
       if (eventTypeString === type) {
         try {
-          eventListenerFunc({ code, target: this.options.element });
+          const keyCode = this.getKeyboardCodeValue(code);
+          eventListenerFunc({
+            type,
+            code,
+            keyCode,
+            which: keyCode,
+            charCode: keyCode,
+            location: 0,
+            ctrlKey: false,
+            shiftKey: false,
+            altKey: false,
+            metaKey: false,
+            repeat: false,
+            target: this.options.element
+          });
         } catch {
         }
       }
     }
+  }
+  getKeyboardCodeValue(code) {
+    if (!code) return 0;
+    if (code.startsWith("Key") && code.length === 4) {
+      return code.charCodeAt(3);
+    }
+    if (code.startsWith("Digit") && code.length === 6) {
+      return code.charCodeAt(5);
+    }
+    if (code.startsWith("Numpad") && code.length === 7) {
+      return 96 + Number(code[6]);
+    }
+    const fnMatch = code.match(/^F(\\d{1,2})$/);
+    if (fnMatch) {
+      const fn = Number(fnMatch[1]);
+      if (fn >= 1 && fn <= 24) return 111 + fn;
+    }
+    const map = {
+      Enter: 13,
+      Escape: 27,
+      Backspace: 8,
+      Tab: 9,
+      Space: 32,
+      ShiftLeft: 16,
+      ShiftRight: 16,
+      ControlLeft: 17,
+      ControlRight: 17,
+      AltLeft: 18,
+      AltRight: 18,
+      ArrowUp: 38,
+      ArrowDown: 40,
+      ArrowLeft: 37,
+      ArrowRight: 39,
+      Home: 36,
+      End: 35,
+      PageUp: 33,
+      PageDown: 34,
+      Insert: 45,
+      Delete: 46
+    };
+    return map[code] ?? 0;
   }
   getCurrentRetroarchConfig() {
     const configContent = this.fs.readFile(EmulatorFileSystem.configPath);
@@ -2344,6 +2407,9 @@ class Emulator {
     const config = this.getCurrentRetroarchConfig();
     const configName = `input_player${player}_${button}`;
     const key = config[configName];
+    if (this.options?.debug?.input) {
+      console.log("[nostalgist] input mapping", { configName, key, button, player });
+    }
     if (!key || key === "nul") {
       return;
     }
@@ -2450,14 +2516,19 @@ class Emulator {
     }
     const initialModule = getEmscriptenModuleOverrides(moduleOptions);
     initialModule.preRun?.push(() => initialModule.FS.init(() => this.stdin()));
-    const { getEmscripten } = await importCoreJsAsESM(core);
-    checkIsAborted(this.options.signal);
-    const emscripten = await getEmscripten({ Module: initialModule });
-    checkIsAborted(this.options.signal);
-    const Module = emscripten.Module ?? emscripten;
-    this.emscripten = { ...emscripten, Module };
-    await Module.monitorRunDependencies();
-    checkIsAborted(this.options.signal);
+    const { module: importedCoreModule, dispose } = await importCoreJsAsESM(core);
+    try {
+      const { getEmscripten } = importedCoreModule;
+      checkIsAborted(this.options.signal);
+      const emscripten = await getEmscripten({ Module: initialModule });
+      checkIsAborted(this.options.signal);
+      const Module = emscripten.Module ?? emscripten;
+      this.emscripten = { ...emscripten, Module };
+      await Module.monitorRunDependencies();
+      checkIsAborted(this.options.signal);
+    } finally {
+      dispose();
+    }
   }
   async setupFileSystem() {
     const { Module } = this.getEmscripten();

@@ -908,6 +908,9 @@ export class PlatformManager {
         const coreAssetVersion = this.#getCoreAssetVersion(core);
         const coreJsUrl = this.#appendAssetVersion(this.#getLibretroUrl(core, 'js'), coreAssetVersion);
         const coreWasmUrl = this.#appendAssetVersion(this.#getLibretroUrl(core, 'wasm'), coreAssetVersion);
+        const coreWorkerUrl = this.#selected_platform.uses_pthreads
+            ? this.#appendAssetVersion(this.#getLibretroUrl(core, 'worker.js'), coreAssetVersion)
+            : null;
         const nostalgistCore = {
             name: core,
             js: coreJsUrl,
@@ -915,6 +918,9 @@ export class PlatformManager {
         };
         const platformEmscriptenModule = this.#selected_platform.emscripten_module;
         const defaultLocateFile = (path) => {
+            if (path.endsWith('.worker.js') && coreWorkerUrl) {
+                return coreWorkerUrl;
+            }
             if (path.endsWith('.wasm')) {
                 return coreWasmUrl;
             }
@@ -925,7 +931,10 @@ export class PlatformManager {
         };
         const emscriptenModuleBase = {
             locateFile: defaultLocateFile,
-            ...(this.#selected_platform.uses_pthreads ? { mainScriptUrlOrBlob: coreJsUrl } : {}),
+            ...(this.#selected_platform.uses_pthreads ? {
+                mainScriptUrlOrBlob: coreJsUrl,
+                pthreadWorkerUrl: coreWorkerUrl
+            } : {}),
             ...(platformEmscriptenModule || {})
         };
         const emscriptenModule = emscriptenModuleBase;
@@ -1548,6 +1557,57 @@ export class PlatformManager {
             }
             const bytes = FS.readFile(filePath);
             return new Blob([bytes], { type: 'application/zip' });
+        } catch {
+            return null;
+        }
+    }
+
+    #normalizeDosRecordedExecutable(rawPath) {
+        if (typeof rawPath !== 'string') {
+            return null;
+        }
+
+        const normalized = rawPath
+            .replace(/\0/g, '')
+            .replace(/\\/g, '/')
+            .replace(/^[A-Za-z]:\//, '')
+            .replace(/^\/+/, '')
+            .trim();
+
+        if (!normalized) {
+            return null;
+        }
+
+        const baseName = normalized.split('/').pop() || normalized;
+        return this.#isDosExecutableFileName(baseName) ? normalized : null;
+    }
+
+    async #extractDosLastRunExecFromSidecar(sidecarBlob) {
+        if (!(sidecarBlob instanceof Blob) || sidecarBlob.size <= 0) {
+            return null;
+        }
+
+        let zipContent;
+        try {
+            const zip = new JSZip();
+            zipContent = await zip.loadAsync(sidecarBlob);
+        } catch {
+            return null;
+        }
+
+        const lastRunEntryName = Object.keys(zipContent.files).find((entryName) => {
+            const entry = zipContent.files[entryName];
+            return entry && !entry.dir && String(entryName).toUpperCase() === 'LASTRUN.DBP';
+        });
+        if (!lastRunEntryName) {
+            return null;
+        }
+
+        try {
+            const buffer = await zipContent.files[lastRunEntryName].async('arraybuffer');
+            const text = new TextDecoder('latin1').decode(buffer);
+            const firstLine = text.split(/\r\n|\n|\0/, 1)[0] || '';
+            return this.#normalizeDosRecordedExecutable(firstLine);
         } catch {
             return null;
         }
@@ -2637,15 +2697,6 @@ export class PlatformManager {
         let dosExecHint = null;
 
         try {
-            dosExecHint = await this.#guessDosExecutableHint(saveData, romData);
-            if (typeof dosExecHint === 'string' && dosExecHint.length > 0) {
-                this.#logDosDebug('DOS executable hint captured for savestate:', dosExecHint);
-            }
-        } catch (error) {
-            this.#warnDosDebug('Failed to detect DOS executable hint from savestate:', error);
-        }
-
-        try {
             dosSram = await this.#captureDosPureSidecar({
                 maxWaitMs: PlatformManager.DOS_SIDECAR_QUICK_CAPTURE_MS,
                 allowSlowFallback: false
@@ -2655,6 +2706,28 @@ export class PlatformManager {
             }
         } catch (error) {
             this.#warnDosDebug('Failed to capture DOSBox Pure sidecar (pure.zip) for savestate:', error);
+        }
+
+        if (this.#isNonEmptyBlob(dosSram)) {
+            try {
+                dosExecHint = await this.#extractDosLastRunExecFromSidecar(dosSram);
+                if (typeof dosExecHint === 'string' && dosExecHint.length > 0) {
+                    this.#logDosDebug('DOS executable hint captured from sidecar LASTRUN.DBP:', dosExecHint);
+                }
+            } catch (error) {
+                this.#warnDosDebug('Failed to read LASTRUN.DBP from DOSBox Pure sidecar:', error);
+            }
+        }
+
+        if (!dosExecHint) {
+            try {
+                dosExecHint = await this.#guessDosExecutableHint(saveData, romData);
+                if (typeof dosExecHint === 'string' && dosExecHint.length > 0) {
+                    this.#logDosDebug('DOS executable hint captured heuristically from savestate:', dosExecHint);
+                }
+            } catch (error) {
+                this.#warnDosDebug('Failed to detect DOS executable hint from savestate:', error);
+            }
         }
 
         return {
@@ -2908,7 +2981,20 @@ export class PlatformManager {
         }
 
         if (platform_id === 'dos') {
-            const prepared = await this.#prepareDosRestoreLaunch(launchBlob, launchProgramName, dosExecHint);
+            let dosRestoreExec = this.#normalizeDosRecordedExecutable(dosExecHint);
+            if (dosSram instanceof Blob) {
+                try {
+                    const sidecarExec = await this.#extractDosLastRunExecFromSidecar(dosSram);
+                    if (sidecarExec) {
+                        dosRestoreExec = sidecarExec;
+                        this.#logDosDebug('DOS restore using sidecar LASTRUN.DBP:', sidecarExec);
+                    }
+                } catch (error) {
+                    this.#warnDosDebug('Failed to read LASTRUN.DBP while restoring DOS savestate:', error);
+                }
+            }
+
+            const prepared = await this.#prepareDosRestoreLaunch(launchBlob, launchProgramName, dosRestoreExec);
             launchBlob = prepared.launchBlob;
             launchProgramName = prepared.launchProgramName;
             dosCanAutoLoadState = prepared.canAutoLoadState;
