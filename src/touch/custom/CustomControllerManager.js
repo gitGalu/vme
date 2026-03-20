@@ -13,6 +13,7 @@ import { DualTouchButtonJoyListener } from '../DualTouchButtonJoyListener.js';
 import { TripleTouchButtonJoyListener } from '../TripleTouchButtonJoyListener.js';
 import { QuadrupleTouchButtonJoyListener } from '../QuadrupleTouchButtonJoyListener.js';
 import { SextupleTouchButtonJoyListener } from '../SextupleTouchButtonJoyListener.js';
+import { SingleTouchMouseButtonListener } from '../SingleTouchMouseButtonListener.js';
 import { SingleTouchButtonKbListener } from '../SingleTouchButtonKbListener.js';
 import { DualTouchButtonKbListener } from '../DualTouchButtonKbListener.js';
 
@@ -32,6 +33,7 @@ export class CustomControllerManager extends TouchControllerBase {
     #onPresetActivated;
     #onPickerDismissed;
     #modal;
+    #modalScrollHintHandler;
     #resizeHandler;
     #isGameFocusEnabledForActivePreset = true;
 
@@ -75,6 +77,12 @@ export class CustomControllerManager extends TouchControllerBase {
 
         const list = document.createElement('div');
         list.className = 'custom-controller-dialog__list';
+        const listShell = document.createElement('div');
+        listShell.className = 'custom-controller-dialog__list-shell';
+        const moreHint = document.createElement('div');
+        moreHint.className = 'custom-controller-dialog__more';
+        moreHint.setAttribute('aria-hidden', 'true');
+        moreHint.textContent = 'Scroll for more';
 
         this.#config.presets.forEach((preset) => {
             const item = document.createElement('button');
@@ -102,12 +110,31 @@ export class CustomControllerManager extends TouchControllerBase {
             list.appendChild(item);
         });
 
-        dialog.appendChild(list);
+        const updateScrollHint = () => {
+            const maxScrollTop = Math.max(0, list.scrollHeight - list.clientHeight);
+            listShell.dataset.hasOverflow = maxScrollTop > 1 ? 'true' : 'false';
+            listShell.dataset.showTopFade = list.scrollTop > 2 ? 'true' : 'false';
+            listShell.dataset.showBottomFade = list.scrollTop < maxScrollTop - 2 ? 'true' : 'false';
+            dialog.dataset.showMore = maxScrollTop > 1 && list.scrollTop < maxScrollTop - 2 ? 'true' : 'false';
+        };
+        const handleViewportChange = () => {
+            requestAnimationFrame(updateScrollHint);
+        };
+
+        list.addEventListener('scroll', updateScrollHint, { passive: true });
+        window.addEventListener('resize', handleViewportChange);
+        window.visualViewport?.addEventListener('resize', handleViewportChange);
+
+        listShell.appendChild(list);
+        dialog.appendChild(listShell);
+        dialog.appendChild(moreHint);
 
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
         this.#modal = overlay;
+        this.#modalScrollHintHandler = handleViewportChange;
+        requestAnimationFrame(updateScrollHint);
     }
 
     setActivePreset(presetId) {
@@ -395,12 +422,16 @@ export class CustomControllerManager extends TouchControllerBase {
                 break;
             }
             case 'QuickshotComponent': {
+                const componentOptions = {
+                    ...(elementDef.options || {}),
+                    target: elementDef.options?.target ?? canvas
+                };
                 instance = new QuickshotComponent(
                     this.#gridHost,
                     gridArea,
                     elementDef.id,
                     this.#platformManager,
-                    elementDef.options
+                    componentOptions
                 );
                 releaseFn = () => {
                     if (instance && typeof instance.destroy === 'function') {
@@ -410,12 +441,16 @@ export class CustomControllerManager extends TouchControllerBase {
                 break;
             }
             case 'CursorKeysComponent': {
+                const componentOptions = {
+                    ...(elementDef.options || {}),
+                    target: elementDef.options?.target ?? canvas
+                };
                 instance = new CursorKeysComponent(
                     this.#gridHost,
                     gridArea,
                     elementDef.id,
                     this.#platformManager,
-                    elementDef.options
+                    componentOptions
                 );
                 releaseFn = () => {
                     if (instance && typeof instance.destroy === 'function') {
@@ -454,6 +489,8 @@ export class CustomControllerManager extends TouchControllerBase {
                     metaKey: binding.key.metaKey ?? false
                 };
                 return new SingleTouchButtonKbListener(binding.key.key, binding.key.code, binding.key.keyCode, target ?? document, modifiers);
+            case 'mouse':
+                return new SingleTouchMouseButtonListener(target ?? document, binding.button ?? 0);
             default:
                 return new SingleTouchButtonJoyListener(nostalgist, 'b');
         }
@@ -502,6 +539,12 @@ export class CustomControllerManager extends TouchControllerBase {
     }
 
     #closeModal(canceled = false) {
+        if (this.#modalScrollHintHandler) {
+            window.removeEventListener('resize', this.#modalScrollHintHandler);
+            window.visualViewport?.removeEventListener('resize', this.#modalScrollHintHandler);
+            this.#modalScrollHintHandler = null;
+        }
+
         if (this.#modal) {
             const modalEl = this.#modal;
             const handleAnimationEnd = () => {

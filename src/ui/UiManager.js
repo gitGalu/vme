@@ -892,6 +892,7 @@ export class UiManager {
                             focusManager.disable();
                         }
                         UiManager.#currentInputMethod = TOUCH_INPUT.CUSTOM;
+                        UiManager.#updateAdditionalFastButtonsVisibility();
                         UiManager.showTouchOnly(UiManager.#customControllerManager);
                     },
                     onPickerDismissed: () => {
@@ -912,6 +913,8 @@ export class UiManager {
         } else if (UiManager.#specialButton) {
             UiManager.#specialButton.el.style.display = 'none';
         }
+
+        UiManager.#updateAdditionalFastButtonsVisibility();
     }
 
     #placeItems(container) {
@@ -937,6 +940,25 @@ export class UiManager {
 
             cell += 6;
             counter += 1;
+        }
+
+        UiManager.#updateAdditionalFastButtonsVisibility();
+    }
+
+    static #updateAdditionalFastButtonsVisibility() {
+        const additionalButtons = UiManager.#platform_manager?.getSelectedPlatform()?.additional_buttons || {};
+        const buttonCount = Object.keys(additionalButtons).length;
+        const isKeyboardWithCustomPreset = UiManager.#currentInputMethod === TOUCH_INPUT.KEYBOARD &&
+            UiManager.#previousInputMethod === TOUCH_INPUT.CUSTOM &&
+            !!UiManager.#customControllerManager?.getActivePreset();
+        const shouldHide = UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM || isKeyboardWithCustomPreset;
+
+        for (let i = 1; i <= buttonCount; i++) {
+            const button = document.getElementById(`fast${i}`);
+            if (!button) {
+                continue;
+            }
+            button.style.display = shouldHide ? 'none' : 'flex';
         }
     }
 
@@ -1093,6 +1115,7 @@ export class UiManager {
 
         const previousInputMethod = UiManager.#currentInputMethod;
         UiManager.#currentInputMethod = inputMethod;
+        UiManager.#updateAdditionalFastButtonsVisibility();
 
         switch (inputMethod) {
             case TOUCH_INPUT.JOYSTICK:
@@ -1118,7 +1141,13 @@ export class UiManager {
         UiManager.hideJoystick();
         UiManager.hideCursors();
         UiManager.hideMousepad();
-        UiManager.hideCustomControllers();
+        const keepCustomControllerVisible = UiManager.#previousInputMethod === TOUCH_INPUT.CUSTOM &&
+            !!UiManager.#customControllerManager?.getActivePreset();
+        if (keepCustomControllerVisible) {
+            UiManager.#customControllerManager.show();
+        } else {
+            UiManager.hideCustomControllers();
+        }
         UiManager.showKeyboard();
         UiManager.#kb_manager.showTouchKeyboard();
     }

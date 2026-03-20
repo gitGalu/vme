@@ -2306,6 +2306,7 @@ a {
   animation: custom-controller-fade-in 120ms ease-out forwards;
   backdrop-filter: blur(12px) brightness(0.3);
   -webkit-backdrop-filter: blur(12px) brightness(0.3);
+  overflow: hidden;
 }
 
 .custom-controller-modal[data-state="closing"] {
@@ -2319,7 +2320,9 @@ a {
   border: 1px solid rgba(220, 230, 255, 0.24);
   padding: 28px;
   width: min(420px, 90vw);
+  max-height: min(80vh, 560px);
   color: #f2f5ff;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -2352,10 +2355,92 @@ a {
   color: rgba(242, 245, 255, 0.76);
 }
 
+.custom-controller-dialog__list-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.custom-controller-dialog__list-shell::before,
+.custom-controller-dialog__list-shell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 4px;
+  height: 36px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+  z-index: 1;
+}
+
+.custom-controller-dialog__list-shell::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(10, 12, 20, 0.94), rgba(10, 12, 20, 0));
+}
+
+.custom-controller-dialog__list-shell::after {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(10, 12, 20, 0.96), rgba(10, 12, 20, 0));
+}
+
+.custom-controller-dialog__more {
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  transform: translateX(-50%) translateY(6px);
+  padding: 0;
+  background: transparent;
+  color: rgba(245, 248, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 10px rgba(5, 8, 18, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 2;
+}
+
+.custom-controller-dialog__more::after {
+  content: '';
+  font-size: inherit;
+  opacity: 0.72;
+}
+
+.custom-controller-dialog[data-show-more="true"] .custom-controller-dialog__more {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.custom-controller-dialog__list-shell[data-has-overflow="true"][data-show-top-fade="true"]::before {
+  opacity: 1;
+}
+
+.custom-controller-dialog__list-shell[data-has-overflow="true"][data-show-bottom-fade="true"]::after {
+  opacity: 1;
+}
+
 .custom-controller-dialog__list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+.custom-controller-dialog__list::after {
+  content: '';
+  display: block;
+  height: max(4px, env(safe-area-inset-bottom));
+  flex: 0 0 auto;
 }
 
 .custom-controller-dialog__item {
