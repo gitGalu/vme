@@ -160,6 +160,10 @@ export class CustomControllerManager extends TouchControllerBase {
         return this.#isGameFocusEnabledForActivePreset;
     }
 
+    shouldHideAdditionalButtons() {
+        return this.getActivePreset()?.hideAdditionalButtons === true;
+    }
+
     show() {
         if (!this.#container) {
             return;

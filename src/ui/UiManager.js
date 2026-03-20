@@ -953,10 +953,12 @@ export class UiManager {
     static #updateAdditionalFastButtonsVisibility() {
         const additionalButtons = UiManager.#platform_manager?.getSelectedPlatform()?.additional_buttons || {};
         const buttonCount = Object.keys(additionalButtons).length;
+        const hideRequestedByCustomPreset = UiManager.#customControllerManager?.shouldHideAdditionalButtons?.() === true;
         const isKeyboardWithCustomPreset = UiManager.#currentInputMethod === TOUCH_INPUT.KEYBOARD &&
             UiManager.#previousInputMethod === TOUCH_INPUT.CUSTOM &&
-            !!UiManager.#customControllerManager?.getActivePreset();
-        const shouldHide = UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM || isKeyboardWithCustomPreset;
+            hideRequestedByCustomPreset;
+        const shouldHide = (UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM && hideRequestedByCustomPreset) ||
+            isKeyboardWithCustomPreset;
 
         for (let i = 1; i <= buttonCount; i++) {
             const button = document.getElementById(`fast${i}`);
