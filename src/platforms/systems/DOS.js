@@ -228,7 +228,6 @@ const DOS = {
                 },
                 "elements": [
                     {
-                        "id": "lr",
                         "component": "DualTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -256,7 +255,6 @@ const DOS = {
                         }
                     },
                     {
-                        "id": "ud",
                         "component": "DualTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -284,7 +282,6 @@ const DOS = {
                         }
                     },
                     {
-                        "id": "space",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -319,7 +316,6 @@ const DOS = {
                 },
                 "elements": [
                     {
-                        "id": "lr",
                         "component": "DualTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -347,7 +343,6 @@ const DOS = {
                         }
                     },
                     {
-                        "id": "ud",
                         "component": "DualTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -375,7 +370,6 @@ const DOS = {
                         }
                     },
                     {
-                        "id": "shift",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -410,7 +404,6 @@ const DOS = {
                 },
                 "elements": [
                     {
-                        "id": "pinball-left-shift",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -427,7 +420,6 @@ const DOS = {
                         "label": "LEFT"
                     },
                     {
-                        "id": "pinball-up",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -444,7 +436,6 @@ const DOS = {
                         "label": "▲"
                     },
                     {
-                        "id": "pinball-ok",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -461,7 +452,6 @@ const DOS = {
                         "label": "OK"
                     },
                     {
-                        "id": "pinball-down",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -478,7 +468,6 @@ const DOS = {
                         "label": "▼"
                     },
                     {
-                        "id": "pinball-right-shift",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -495,7 +484,6 @@ const DOS = {
                         "label": "RIGHT"
                     },
                     {
-                        "id": "pinball-plunger",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -512,7 +500,6 @@ const DOS = {
                         "label": "PLUNGER"
                     },
                     {
-                        "id": "pinball-tilt",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -547,7 +534,6 @@ const DOS = {
                 },
                 "elements": [
                     {
-                        "id": "pinball-left-shift",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -564,7 +550,6 @@ const DOS = {
                         "label": "LEFT"
                     },
                     {
-                        "id": "pinball-right-shift",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -581,7 +566,6 @@ const DOS = {
                         "label": "RIGHT"
                     },
                     {
-                        "id": "pinball-plunger",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -598,7 +582,6 @@ const DOS = {
                         "label": "TILT<br/>PLUNGER"
                     },
                     {
-                        "id": "pinball-tilt",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -615,7 +598,6 @@ const DOS = {
                         "label": "TILT<br/>PLUNGER"
                     },
                     {
-                        "id": "pinball-y",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -632,7 +614,6 @@ const DOS = {
                         "label": "Y"
                     },
                     {
-                        "id": "pinball-n",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -649,7 +630,6 @@ const DOS = {
                         "label": "N"
                     },
                     {
-                        "id": "pinball-up",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -666,7 +646,6 @@ const DOS = {
                         "label": "▲"
                     },
                     {
-                        "id": "pinball-down",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -702,7 +681,6 @@ const DOS = {
                 },
                 "elements": [
                     {
-                        "id": "worms-pad",
                         "component": "TouchpadComponent",
                         "binding": {
                             "type": "joy"
@@ -760,7 +738,6 @@ const DOS = {
                         }
                     },
                     {
-                        "id": "worms-jump",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -777,7 +754,6 @@ const DOS = {
                         "label": "JUMP"
                     },
                     {
-                        "id": "worms-esc",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -794,7 +770,6 @@ const DOS = {
                         "label": "ESC"
                     },
                     {
-                        "id": "worms-p",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -811,7 +786,6 @@ const DOS = {
                         "label": "PAUSE"
                     },
                     {
-                        "id": "worms-tab",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -828,7 +802,6 @@ const DOS = {
                         "label": "CENTER"
                     },
                     {
-                        "id": "worms-tilde",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -845,7 +818,6 @@ const DOS = {
                         "label": "ZOOM"
                     },
                     {
-                        "id": "worms-fire",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -862,7 +834,6 @@ const DOS = {
                         "label": "FIRE"
                     },
                     {
-                        "id": "worms-f1",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -879,7 +850,6 @@ const DOS = {
                         "label": "F1"
                     },
                     {
-                        "id": "worms-f2",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -896,7 +866,6 @@ const DOS = {
                         "label": "F2"
                     },
                     {
-                        "id": "worms-f3",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -913,7 +882,6 @@ const DOS = {
                         "label": "F3"
                     },
                     {
-                        "id": "worms-f4",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -930,7 +898,6 @@ const DOS = {
                         "label": "F4"
                     },
                     {
-                        "id": "worms-f5",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -947,7 +914,6 @@ const DOS = {
                         "label": "F5"
                     },
                     {
-                        "id": "worms-f6",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -964,7 +930,6 @@ const DOS = {
                         "label": "F6"
                     },
                     {
-                        "id": "worms-f7",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -981,7 +946,6 @@ const DOS = {
                         "label": "F7"
                     },
                     {
-                        "id": "worms-f8",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -998,7 +962,6 @@ const DOS = {
                         "label": "F8"
                     },
                     {
-                        "id": "worms-f9",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1015,7 +978,6 @@ const DOS = {
                         "label": "F9"
                     },
                     {
-                        "id": "worms-f10",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1032,7 +994,6 @@ const DOS = {
                         "label": "F10"
                     },
                     {
-                        "id": "worms-f11",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1049,7 +1010,6 @@ const DOS = {
                         "label": "F11"
                     },
                     {
-                        "id": "worms-f12",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1066,7 +1026,6 @@ const DOS = {
                         "label": "F12"
                     },
                     {
-                        "id": "worms-right",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "mouse",
@@ -1079,7 +1038,6 @@ const DOS = {
                         "label": "ARMS"
                     },
                     {
-                        "id": "worms-1",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1096,7 +1054,6 @@ const DOS = {
                         "label": "1"
                     },
                     {
-                        "id": "worms-2",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1113,7 +1070,6 @@ const DOS = {
                         "label": "2"
                     },
                     {
-                        "id": "worms-3",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1130,7 +1086,6 @@ const DOS = {
                         "label": "3"
                     },
                     {
-                        "id": "worms-4",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1147,7 +1102,6 @@ const DOS = {
                         "label": "4"
                     },
                     {
-                        "id": "worms-5",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1164,7 +1118,6 @@ const DOS = {
                         "label": "5"
                     },
                     {
-                        "id": "worms-minus",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1181,7 +1134,6 @@ const DOS = {
                         "label": "LO"
                     },
                     {
-                        "id": "worms-plus",
                         "component": "SingleTouchButton",
                         "binding": {
                             "type": "keyboard",
@@ -1197,6 +1149,147 @@ const DOS = {
                             "portrait": "24 / 33 / span 1 / span 3"
                         },
                         "label": "HI"
+                    }
+                ]
+            },
+            {
+                "id": "dos-qj-stunts",
+                "name": "Stunts",
+                "description": "4D Sports: Driving",
+                "gameFocus": true,
+                "hideAdditionalButtons": true,
+                "defaultLayoutId": "layout-1",
+                "currentLayoutId": "layout-1",
+                "layouts": [
+                ],
+                "layout": {
+                    "landscape": {
+                        "columns": 50,
+                        "rows": 50
+                    },
+                    "portrait": {
+                        "columns": 50,
+                        "rows": 50
+                    }
+                },
+                "elements": [
+                    {
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowLeft",
+                                "code": "ArrowLeft",
+                                "keyCode": "37"
+                            },
+                            "secondary": {
+                                "key": "ArrowRight",
+                                "code": "ArrowRight",
+                                "keyCode": "39"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "39 / 1 / span 14 / span 16",
+                            "portrait": "45 / 1 / span 6 / span 18"
+                        },
+                        "labels": [
+                            "LEFT",
+                            "RIGHT"
+                        ],
+                        "options": {
+                            "isHorizontal": true
+                        }
+                    },
+                    {
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowUp",
+                                "code": "ArrowUp",
+                                "keyCode": "38"
+                            },
+                            "secondary": {
+                                "key": "ArrowDown",
+                                "code": "ArrowDown",
+                                "keyCode": "40"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 43 / span 24 / span 8",
+                            "portrait": "39 / 40 / span 12 / span 11"
+                        },
+                        "labels": [
+                            "ACC",
+                            "BRAKE"
+                        ],
+                        "options": {
+                            "isHorizontal": false
+                        }
+                    },
+                    {
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Enter",
+                                "code": "Enter",
+                                "keyCode": 13
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 35 / span 24 / span 8",
+                            "portrait": "39 / 29 / span 12 / span 11"
+                        },
+                        "label": "ENTER"
+                    },
+                    {
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "Escape",
+                                "code": "Escape",
+                                "keyCode": "27"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "3 / 47 / span 4 / span 4",
+                            "portrait": "26 / 42 / span 2 / span 9"
+                        },
+                        "label": "ESC"
+                    },
+                    {
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "c",
+                                "code": "KeyC",
+                                "keyCode": "67"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "8 / 47 / span 4 / span 4",
+                            "portrait": "29 / 42 / span 2 / span 9"
+                        },
+                        "label": "CAM"
+                    },
+                    {
+                        "component": "SingleTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "key": {
+                                "key": "d",
+                                "code": "KeyD",
+                                "keyCode": "68"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "13 / 47 / span 4 / span 4",
+                            "portrait": "32 / 42 / span 2 / span 9"
+                        },
+                        "label": "DASH"
                     }
                 ]
             }
