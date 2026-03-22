@@ -1453,8 +1453,7 @@ const DOS = {
                 "code": 'Escape'
             }
         }
-    },
-    message: ["PC emulation is work-in-progress."]
+    }
 };
 
 export default DOS;
