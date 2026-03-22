@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.70] - 2026-03-22
+
+- VM/E Autoconfig: added a machine configuration override UI
+- ZX Spectrum: added Autoconfig options for machine model override and real-time tape loading
+- Atari 800: added Autoconfig options for machine model override, BASIC on/off, and PAL/NTSC selection
+- Atari ST: added Autoconfig options for machine model override, RAM size, and monitor type
+- Atari ST: added a custom touch controller for Pinball Obsession
+- DOS: added custom touch controllers for Stunts (4D Sports Driving) and Prince of Persia 2
+
 ## [0.64] - 2026-03-20
 
 - DOS: fix save states
