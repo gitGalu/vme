@@ -277,7 +277,7 @@ export class StorageManager {
         return referenced;
     }
 
-    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null, dosSram = null, dosExecHint = null, stStatePath = null) {
+    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null, dosSram = null, dosExecHint = null, stStatePath = null, launchBios = null, launchCoreConfig = null) {
         save_data = this.#toBlobOrNull(save_data, 'application/octet-stream');
         if (!save_data) {
             throw new Error('Invalid savestate payload: expected Blob-compatible data.');
@@ -312,6 +312,12 @@ export class StorageManager {
             : null;
         const stStatePathValue = (typeof stStatePath === 'string' && stStatePath.trim().length > 0)
             ? stStatePath.trim()
+            : null;
+        const launchBiosValue = Array.isArray(launchBios)
+            ? launchBios.map((entry) => `${entry}`.trim()).filter(Boolean)
+            : null;
+        const launchCoreConfigValue = (launchCoreConfig && typeof launchCoreConfig === 'object' && !Array.isArray(launchCoreConfig))
+            ? { ...launchCoreConfig }
             : null;
         const diskNames = Array.isArray(m3uData?.diskNames) ? m3uData.diskNames.filter(Boolean) : [];
         const diskIndex = Number.isInteger(m3uData?.diskIndex) ? m3uData.diskIndex : null;
@@ -376,7 +382,9 @@ export class StorageManager {
                             m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined,
                             dos_sram_data_id: dosSramDataId,
                             dos_exec_hint: dosExecHintValue,
-                            st_state_path: stStatePathValue
+                            st_state_path: stStatePathValue,
+                            launch_bios: launchBiosValue,
+                            launch_core_config: launchCoreConfigValue
                         });
                     } else {
                         let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
@@ -396,7 +404,9 @@ export class StorageManager {
                             m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined,
                             dos_sram_data_id: dosSramDataId,
                             dos_exec_hint: dosExecHintValue,
-                            st_state_path: stStatePathValue
+                            st_state_path: stStatePathValue,
+                            launch_bios: launchBiosValue,
+                            launch_core_config: launchCoreConfigValue
                         });
                     }
                 } else {
@@ -417,7 +427,9 @@ export class StorageManager {
                         m3u_disk_launch_names: hasLocalDiskSet ? m3uDiskLaunchNames : undefined,
                         dos_sram_data_id: dosSramDataId,
                         dos_exec_hint: dosExecHintValue,
-                        st_state_path: stStatePathValue
+                        st_state_path: stStatePathValue,
+                        launch_bios: launchBiosValue,
+                        launch_core_config: launchCoreConfigValue
                     });
                 }
             });
@@ -581,6 +593,10 @@ export class StorageManager {
             dos_sram: dosSramBlob,
             dos_exec_hint: typeof saveMeta.dos_exec_hint === 'string' ? saveMeta.dos_exec_hint : null,
             st_state_path: typeof saveMeta.st_state_path === 'string' ? saveMeta.st_state_path : null,
+            launch_bios: Array.isArray(saveMeta.launch_bios) ? [...saveMeta.launch_bios] : null,
+            launch_core_config: (saveMeta.launch_core_config && typeof saveMeta.launch_core_config === 'object' && !Array.isArray(saveMeta.launch_core_config))
+                ? { ...saveMeta.launch_core_config }
+                : null,
             timestamp: saveMeta.timestamp,
             caption: saveMeta.caption,
             m3u_disks: saveMeta.m3u_disks,

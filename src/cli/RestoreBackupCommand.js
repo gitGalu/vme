@@ -144,7 +144,9 @@ export class RestoreBackupCommand extends CommandBase {
                         null,
                         op.dosSramBlob,
                         op.saveMetadata.dos_exec_hint || null,
-                        op.saveMetadata.st_state_path || null
+                        op.saveMetadata.st_state_path || null,
+                        op.saveMetadata.launch_bios || null,
+                        op.saveMetadata.launch_core_config || null
                     );
 
                     importedSaves++;

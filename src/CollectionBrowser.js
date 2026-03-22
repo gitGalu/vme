@@ -507,7 +507,6 @@ export class CollectionBrowser {
                     const saveIntId = parseInt(saveId, 10);
                     const state = await this.#db.getSaveData(saveIntId);
                     const item = filteredItems[0];
-                    const rom = await this.#db.getRomData(item.rom_data_id);
 
                     document.getElementById('collectionBrowserUi').style.display = "none";
                     const flickingElement = document.querySelector('#collection-flicking');
@@ -516,7 +515,23 @@ export class CollectionBrowser {
                     }
 
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, state.save_data, () => this.close(true));
+                    this.#platform_manager.loadState(
+                        state.platform_id,
+                        state.save_data,
+                        state.rom_data,
+                        state.program_name,
+                        state.caption || item.title,
+                        () => this.close(true),
+                        state.m3u_disks,
+                        state.m3u_disk_index,
+                        state.m3u_disk_rom_ids,
+                        state.m3u_disk_launch_names,
+                        state.dos_sram,
+                        state.dos_exec_hint,
+                        state.st_state_path,
+                        state.launch_bios,
+                        state.launch_core_config
+                    );
                 } else {
                     throw new Error("Cannot load selected program.");
                 }

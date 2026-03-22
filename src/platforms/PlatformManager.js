@@ -39,6 +39,7 @@ import { DiskSetBuilder } from '../utils/DiskSetBuilder.js';
 import { ToastManager } from '../ui/ToastManager.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
+import { ConfigOverrideDropdown } from '../components/ConfigOverrideDropdown.js';
 
 export const SelectedPlatforms = {
     NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST
@@ -57,6 +58,13 @@ export class PlatformManager {
     #resolved_deps;
     #program_name;
     #caption;
+    #launch_bios;
+    #launch_core_config;
+    #launch_override_values;
+    #pending_launch_bios;
+    #pending_launch_core_config;
+    #launch_settings_modal;
+    #skip_launch_settings_prompt_once;
 
     #state;
     #sram;
@@ -138,6 +146,189 @@ export class PlatformManager {
         }
         const separator = url.includes('?') ? '&' : '?';
         return `${url}${separator}v=${encodeURIComponent(version)}`;
+    }
+
+    #cloneLaunchBios(bios) {
+        return Array.isArray(bios) ? bios.map(item => `${item}`) : null;
+    }
+
+    #cloneLaunchCoreConfig(config) {
+        if (!config || typeof config !== 'object' || Array.isArray(config)) {
+            return null;
+        }
+        return { ...config };
+    }
+
+    #cloneLaunchOverrideValues(values) {
+        if (!values || typeof values !== 'object' || Array.isArray(values)) {
+            return null;
+        }
+        return { ...values };
+    }
+
+    #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null) {
+        const clonedSavedBios = this.#cloneLaunchBios(savedLaunchBios);
+        const clonedSavedCoreConfig = this.#cloneLaunchCoreConfig(savedLaunchCoreConfig);
+
+        if (clonedSavedBios || clonedSavedCoreConfig) {
+            const fallbackBios = (typeof this.#selected_platform.guessBIOS === 'function')
+                ? this.#selected_platform.guessBIOS(romName)
+                : this.#selected_platform.bios;
+            const fallbackCoreConfig = (typeof this.#selected_platform.guessConfig === 'function')
+                ? this.#selected_platform.guessConfig(romName)
+                : {};
+
+            return {
+                bios: clonedSavedBios || this.#cloneLaunchBios(fallbackBios) || [],
+                coreConfig: clonedSavedCoreConfig || this.#cloneLaunchCoreConfig(fallbackCoreConfig) || {},
+                overrideValues: null,
+                guessedOverrides: null,
+                overrideSchema: null,
+                source: 'saved'
+            };
+        }
+
+        if (typeof this.#selected_platform.resolveLaunchSettings === 'function') {
+            const resolved = this.#selected_platform.resolveLaunchSettings(romName, overrides);
+            return {
+                bios: this.#cloneLaunchBios(resolved?.bios) || [],
+                coreConfig: this.#cloneLaunchCoreConfig(resolved?.coreConfig) || {},
+                overrideValues: this.#cloneLaunchOverrideValues(resolved?.overrideValues),
+                guessedOverrides: this.#cloneLaunchOverrideValues(resolved?.guessedOverrides),
+                overrideSchema: Array.isArray(resolved?.overrideSchema) ? resolved.overrideSchema : null,
+                source: overrides ? 'override' : 'guess'
+            };
+        }
+
+        return {
+            bios: this.#cloneLaunchBios(
+                (typeof this.#selected_platform.guessBIOS === 'function')
+                    ? this.#selected_platform.guessBIOS(romName)
+                    : this.#selected_platform.bios
+            ) || [],
+            coreConfig: this.#cloneLaunchCoreConfig(
+                (typeof this.#selected_platform.guessConfig === 'function')
+                    ? this.#selected_platform.guessConfig(romName)
+                    : {}
+            ) || {},
+            overrideValues: null,
+            guessedOverrides: null,
+            overrideSchema: null,
+            source: 'guess'
+        };
+    }
+
+    #applyLaunchSettings(launchSettings) {
+        this.#launch_bios = this.#cloneLaunchBios(launchSettings?.bios) || [];
+        this.#launch_core_config = this.#cloneLaunchCoreConfig(launchSettings?.coreConfig) || {};
+        this.#launch_override_values = this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
+    }
+
+    async #showLaunchSettingsDialog(title, launchSettings) {
+        if (!Array.isArray(launchSettings?.overrideSchema) || launchSettings.overrideSchema.length === 0) {
+            return this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
+        }
+
+        if (this.#launch_settings_modal) {
+            this.#launch_settings_modal.remove();
+            this.#launch_settings_modal = null;
+        }
+
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'launch-settings-modal';
+
+            const dialog = document.createElement('div');
+            dialog.className = 'launch-settings-dialog';
+            dialog.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+
+            const header = document.createElement('div');
+            header.className = 'launch-settings-dialog__header';
+            header.textContent = 'VM/E Autoconfig will use these settings';
+
+            const form = document.createElement('div');
+            form.className = 'launch-settings-dialog__form';
+
+            const dropdowns = new Map();
+            for (const field of launchSettings.overrideSchema) {
+                const row = document.createElement('div');
+                row.className = 'launch-settings-dialog__field';
+
+                const label = document.createElement('span');
+                label.className = 'launch-settings-dialog__label';
+                label.textContent = field.label;
+                row.appendChild(label);
+
+                const dropdownContainer = document.createElement('div');
+                dropdownContainer.className = 'launch-settings-dialog__dropdown';
+                dropdownContainer.setAttribute('aria-label', field.label);
+
+                const dropdown = new ConfigOverrideDropdown(
+                    dropdownContainer,
+                    (field.options || []).map(option => ({
+                        value: option.value,
+                        label: option.label
+                    })),
+                    launchSettings.overrideValues?.[field.id]
+                );
+
+                dropdowns.set(field.id, dropdown);
+                row.appendChild(dropdownContainer);
+                form.appendChild(row);
+            }
+            dialog.appendChild(header);
+            dialog.appendChild(form);
+
+            let finished = false;
+            const handleLaunchKey = (event) => {
+                if (finished) {
+                    return;
+                }
+
+                if (event.key === 'Tab'
+                    || event.key === 'Shift'
+                    || event.key === 'Control'
+                    || event.key === 'Alt'
+                    || event.key === 'Meta') {
+                    return;
+                }
+
+                if (dialog.contains(event.target)) {
+                    return;
+                }
+
+                event.preventDefault();
+                finish();
+            };
+            const finish = () => {
+                if (finished) {
+                    return;
+                }
+                finished = true;
+                document.removeEventListener('keydown', handleLaunchKey, true);
+                const overrides = {};
+                for (const [id, dropdown] of dropdowns.entries()) {
+                    overrides[id] = dropdown.getValue();
+                }
+                this.#launch_settings_modal = null;
+                overlay.remove();
+                resolve(overrides);
+            };
+            overlay.addEventListener('click', finish);
+            overlay.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' || event.code === 'Escape') {
+                    event.preventDefault();
+                    finish();
+                }
+            });
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            this.#launch_settings_modal = overlay;
+            document.addEventListener('keydown', handleLaunchKey, true);
+        });
     }
 
     #applyGamepadFilter(filter) {
@@ -354,8 +545,13 @@ export class PlatformManager {
             this.#applyGamepadFilter(hasGamepad ? this.#selected_platform.gamepad_filter : null);
         }
 
+        const launchBios = this.#cloneLaunchBios(this.#launch_bios)
+            || ((typeof this.#selected_platform.guessBIOS === 'function') ? this.#selected_platform.guessBIOS(romName) : this.#selected_platform.bios);
+        const launchCoreConfig = this.#cloneLaunchCoreConfig(this.#launch_core_config)
+            || ((typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(romName) : {});
+
         Nostalgist.configure({
-            bios: (typeof this.#selected_platform.guessBIOS === 'function') ? this.#selected_platform.guessBIOS(romName) : this.#selected_platform.bios,
+            bios: launchBios,
             ...(this.#selected_platform.platform_id === 'dos' ? { sramType: 'pure.zip' } : {}),
             retroarchConfig: {
                 rewind_enable: true,
@@ -379,7 +575,7 @@ export class PlatformManager {
                 video_vsync: true,
                 ...retroarchConfigOverrides
             },
-            retroarchCoreConfig: (typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(romName) : {},
+            retroarchCoreConfig: launchCoreConfig,
             resolveBios(file) {
                 let key = self.#selected_platform.platform_id + "." + file;
                 let fileContent = self.#resolved_deps[key];
@@ -619,7 +815,7 @@ export class PlatformManager {
 
                 const isDisk = lower.endsWith(".stx") || lower.endsWith(".st") || lower.endsWith(".msa") || lower.endsWith(".dim");
 
-                if (isDisk) { 
+                if (isDisk) {
                     romName = firstFileName;
                     caption = firstFileName;
                     const firstFile = zipContent.files[firstFileName];
@@ -643,18 +839,32 @@ export class PlatformManager {
                 }
             }
 
-            this.#prepareNostalgist(romName, caption);
-            if (coreConfigOverrides) {
-                const baseCoreConfig = (typeof this.#selected_platform.guessConfig === 'function')
-                    ? this.#selected_platform.guessConfig(romName)
-                    : {};
+            let launchSettings = this.#resolveLaunchSettings(
+                romName,
+                null,
+                this.#pending_launch_bios,
+                this.#pending_launch_core_config
+            );
+            this.#pending_launch_bios = null;
+            this.#pending_launch_core_config = null;
+            const shouldPromptLaunchSettings = !this.#skip_launch_settings_prompt_once
+                && launchSettings.source !== 'saved'
+                && Array.isArray(launchSettings.overrideSchema)
+                && launchSettings.overrideSchema.length > 0;
+            this.#skip_launch_settings_prompt_once = false;
+            const applyLaunchSettingsToCore = (resolvedLaunchSettings) => {
+                this.#applyLaunchSettings(resolvedLaunchSettings);
                 Nostalgist.configure({
+                    bios: this.#cloneLaunchBios(resolvedLaunchSettings.bios) || [],
                     retroarchCoreConfig: {
-                        ...baseCoreConfig,
-                        ...coreConfigOverrides
+                        ...(this.#cloneLaunchCoreConfig(resolvedLaunchSettings.coreConfig) || {}),
+                        ...(coreConfigOverrides || {})
                     }
                 });
-            }
+            };
+
+            this.#prepareNostalgist(romName, caption);
+            applyLaunchSettingsToCore(launchSettings);
 
             const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...", false);
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
@@ -665,6 +875,8 @@ export class PlatformManager {
 
             self.#cli.clear();
             self.#cli.print("Loading complete.");
+            self.#cli.print("&nbsp;");
+
             if (autoDiskSetInfo) {
                 self.#cli.print(`Auto M3U prepared (${autoDiskSetInfo.selectedNames.length}/${autoDiskSetInfo.totalDisks}):`);
                 autoDiskSetInfo.selectedNames.forEach((name) => self.#cli.print(`- ${name}`));
@@ -690,7 +902,15 @@ export class PlatformManager {
                 }
             }
 
-            const launch = () => {
+            if (shouldPromptLaunchSettings) {
+                const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
+                launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                applyLaunchSettingsToCore(launchSettings);
+                self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
+                return;
+            }
+
+            const launch = async () => {
                 // Remove all launch listeners
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
@@ -735,7 +955,29 @@ export class PlatformManager {
     }
 
     async loadRomFile(blob, romName, caption, fromBrowser = false, browserType = null, closeCallback = null) {
+        let launchSettings = this.#resolveLaunchSettings(
+            romName,
+            null,
+            this.#pending_launch_bios,
+            this.#pending_launch_core_config
+        );
+        this.#pending_launch_bios = null;
+        this.#pending_launch_core_config = null;
+        const shouldPromptLaunchSettings = !this.#skip_launch_settings_prompt_once
+            && launchSettings.source !== 'saved'
+            && Array.isArray(launchSettings.overrideSchema)
+            && launchSettings.overrideSchema.length > 0;
+        this.#skip_launch_settings_prompt_once = false;
+        const applyLaunchSettingsToCore = (resolvedLaunchSettings) => {
+            this.#applyLaunchSettings(resolvedLaunchSettings);
+            Nostalgist.configure({
+                bios: this.#cloneLaunchBios(resolvedLaunchSettings.bios) || [],
+                retroarchCoreConfig: this.#cloneLaunchCoreConfig(resolvedLaunchSettings.coreConfig) || {}
+            });
+        };
+
         this.#prepareNostalgist(romName, caption);
+        applyLaunchSettingsToCore(launchSettings);
 
         const gamepadManager = this.#vme.getGamepadManager();
         if (gamepadManager) {
@@ -780,7 +1022,7 @@ export class PlatformManager {
                         backgroundEl.classList.add('zoom-out');
                     }
 
-                    messageEl.innerHTML = 'Loading complete.<br><span class="blinking2">Press any key or click to start.</span>';
+                    messageEl.innerHTML = 'Loading complete.<br><br><span class="blinking2">Press any key or click to start.</span>';
 
                     if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
                         let controlsMap = self.#selected_platform.keyboard_controller_info;
@@ -799,7 +1041,26 @@ export class PlatformManager {
 
                     self.#keyboard_manager.hideTouchKeyboard();
 
-                    const launch = () => {
+                    if (shouldPromptLaunchSettings) {
+                        const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
+                        launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                        applyLaunchSettingsToCore(launchSettings);
+
+                        if (backgroundEl) {
+                            backgroundEl.classList.remove('zoom-out');
+                        }
+
+                        overlay.style.display = 'none';
+
+                        if (closeCallback) {
+                            closeCallback();
+                        }
+
+                        self.startEmulation(blob, caption, romName);
+                        return;
+                    }
+
+                    const launch = async () => {
                         document.body.removeEventListener('click', launch);
                         document.body.removeEventListener('keydown', launch);
 
@@ -824,6 +1085,16 @@ export class PlatformManager {
                     document.body.addEventListener('keydown', launch, { once: true });
                 }
             } else {
+                if (shouldPromptLaunchSettings) {
+                    const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
+                    launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                    applyLaunchSettingsToCore(launchSettings);
+                    if (closeCallback) {
+                        closeCallback();
+                    }
+                    self.startEmulation(blob, caption, romName);
+                    return;
+                }
                 if (closeCallback) {
                     closeCallback();
                 }
@@ -834,6 +1105,7 @@ export class PlatformManager {
 
             self.#cli.clear();
             self.#cli.print("Loading complete.");
+            self.#cli.print("&nbsp;");
             self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
 
             hide('#cors_interface');
@@ -853,7 +1125,15 @@ export class PlatformManager {
                 }
             }
 
-            const launch = () => {
+            if (shouldPromptLaunchSettings) {
+                const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
+                launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                applyLaunchSettingsToCore(launchSettings);
+                self.startEmulation(blob, caption, romName);
+                return;
+            }
+
+            const launch = async () => {
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
                 self.startEmulation(blob, caption, romName);
@@ -864,7 +1144,7 @@ export class PlatformManager {
         }
     }
 
-    async loadRomFromCollection(platform_id, blob, program_name, caption, state, closeCallback = null) {
+    async loadRomFromCollection(platform_id, blob, program_name, caption, state, closeCallback = null, launchBios = null, launchCoreConfig = null) {
         if (closeCallback) {
             s("html").style.background = "#000000";
             s("body").style.background = "#000000";
@@ -882,6 +1162,9 @@ export class PlatformManager {
                 this.#pending_dos_state = null;
                 this.#pending_st_state = null;
                 this.#pending_st_state_path = null;
+                this.#pending_launch_bios = this.#cloneLaunchBios(launchBios);
+                this.#pending_launch_core_config = this.#cloneLaunchCoreConfig(launchCoreConfig);
+                this.#skip_launch_settings_prompt_once = true;
                 this.loadRomFile(blob, program_name, caption, true, 'collection', closeCallback);
             });
     }
@@ -2761,9 +3044,16 @@ export class PlatformManager {
             candidates.add(expectedPath);
         }
 
-        const fileName = (typeof expectedPath === 'string' && expectedPath.includes('/'))
+        let fileName = (typeof expectedPath === 'string' && expectedPath.includes('/'))
             ? expectedPath.split('/').pop()
             : null;
+        if (!fileName && typeof this.#program_name === 'string' && this.#program_name.length > 0) {
+            const programFileName = this.#program_name.split('/').pop() || this.#program_name;
+            const baseName = FileUtils.getFilenameWithoutExtension(programFileName) || programFileName;
+            if (baseName) {
+                fileName = `${baseName}.state`;
+            }
+        }
         if (!fileName) {
             return [...candidates];
         }
@@ -2935,7 +3225,7 @@ export class PlatformManager {
         }
     }
 
-    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null, stStatePath = null) {
+    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null, stStatePath = null, launchBios = null, launchCoreConfig = null) {
         if (closeCallback) {
             s("html").style.background = "#000000";
             s("body").style.background = "#000000";
@@ -3006,6 +3296,9 @@ export class PlatformManager {
         this.#pending_dos_state = isDos ? (dosCanAutoLoadState ? null : state) : null;
         this.#pending_st_state = isSt ? state : null;
         this.#pending_st_state_path = isSt && typeof stStatePath === 'string' ? stStatePath : null;
+        this.#pending_launch_bios = this.#cloneLaunchBios(launchBios);
+        this.#pending_launch_core_config = this.#cloneLaunchCoreConfig(launchCoreConfig);
+        this.#skip_launch_settings_prompt_once = true;
         if (isDos && dosCanAutoLoadState) {
             this.#logDosDebug('DOS restore mode: launch-time state autoload.');
         }
@@ -3030,6 +3323,8 @@ export class PlatformManager {
             const program_name = this.#program_name;
             const caption = this.#caption;
             const rom_data = this.#current_rom;
+            const launchBios = this.#cloneLaunchBios(this.#launch_bios);
+            const launchCoreConfig = this.#cloneLaunchCoreConfig(this.#launch_core_config);
             let dosSram = null;
             let dosExecHint = null;
             if (platform_id === 'dos') {
@@ -3054,7 +3349,9 @@ export class PlatformManager {
                 m3uData,
                 dosSram,
                 dosExecHint,
-                stStatePath
+                stStatePath,
+                launchBios,
+                launchCoreConfig
             );
 
             if (saved) {

@@ -2474,6 +2474,253 @@ a {
   color: #d3d6ec;
 }
 
+.launch-settings-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding:
+    24px
+    0
+    max(0px, env(safe-area-inset-bottom))
+    0;
+  background: transparent;
+  z-index: 5000;
+}
+
+.launch-settings-dialog {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 24px;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+  padding-left: max(2em, env(safe-area-inset-left));
+  padding-right: max(2em, env(safe-area-inset-right));
+  border-radius: 0;
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.28);
+  background: #f3f3ef;
+  box-shadow:
+    0 -10px 24px rgba(0, 0, 0, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  color: #000000;
+  text-shadow: none;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  animation: launch-settings-sheet-in 180ms ease-out forwards;
+}
+
+.launch-settings-dialog__header {
+  width: 100%;
+  color: #444444;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+@keyframes launch-settings-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.launch-settings-dialog__form {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.launch-settings-dialog__field {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.launch-settings-dialog__label {
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #444444;
+}
+
+.launch-settings-dialog__dropdown {
+  width: 100%;
+}
+
+.config-override-dropdown {
+  position: relative;
+  width: 100%;
+  outline: none;
+}
+
+.config-override-dropdown__selected {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 34px 9px 17px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+  background: #f3f3ef;
+  color: #444444;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  appearance: none;
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.config-override-dropdown__selected::after {
+  content: "";
+}
+
+.config-override-dropdown__selected::before {
+  content: "";
+}
+
+.config-override-dropdown::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"%3E%3Cpath fill="%23444444" d="M2 0L0 2h4L2 0zM2 5L0 3h4l-2 2z"/%3E%3C/svg%3E');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: opacity 140ms ease;
+  opacity: 0.72;
+}
+
+.config-override-dropdown__selected:hover {
+  border-color: rgba(0, 0, 0, 0.34);
+  background: #f3f3ef;
+  color: #444444;
+}
+
+.config-override-dropdown:focus-visible .config-override-dropdown__selected,
+.config-override-dropdown__selected:focus-visible {
+  border-color: rgba(0, 0, 0, 0.42);
+  background: #f3f3ef;
+  color: #444444;
+  outline: none;
+}
+
+.config-override-dropdown--open .config-override-dropdown__selected {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-color: rgba(0, 0, 0, 0.42);
+  background: #f3f3ef;
+  color: #444444;
+}
+
+.config-override-dropdown__options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  display: none;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: #f3f3ef;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+  z-index: 2;
+}
+
+.config-override-dropdown--open .config-override-dropdown__options {
+  display: flex;
+  flex-direction: column;
+  max-height: min(42vh, 240px);
+  overflow-y: auto;
+  opacity: 1;
+}
+
+.config-override-dropdown__option {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.9);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.config-override-dropdown__option:hover,
+.config-override-dropdown__option--focused {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #000000;
+}
+
+.config-override-dropdown__option--selected {
+  background-color: rgba(0, 0, 0, 0.10);
+  color: #000000;
+}
+
+@media (max-width: 640px) {
+  .launch-settings-dialog {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .launch-settings-dialog__header {
+    font-size: 0.74rem;
+  }
+
+  .launch-settings-dialog__form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .launch-settings-dialog__field {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .config-override-dropdown__selected {
+    min-height: 40px;
+    font-size: 14px;
+  }
+}
+
 #desktopUi {
   position: fixed;
   top: 0;
@@ -2681,13 +2928,15 @@ a {
   -webkit-backface-visibility: hidden;
 }
 
-.flicking-panel[data-platform-id="dos"] img {
+.flicking-panel[data-platform-id="dos"] img,
+.flicking-panel[data-platform-id="st"] img {
   max-height: min(56vh, 520px);
   object-fit: contain;
 }
 
 @media (orientation: portrait) {
-  .flicking-panel[data-platform-id="dos"] img {
+  .flicking-panel[data-platform-id="dos"] img,
+  .flicking-panel[data-platform-id="st"] img {
     max-height: min(42vh, 360px);
     max-width: min(92vw, 520px);
   }

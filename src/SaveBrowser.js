@@ -518,7 +518,9 @@ export class SaveBrowser {
                             data.m3u_disk_launch_names,
                             data.dos_sram,
                             data.dos_exec_hint,
-                            data.st_state_path
+                            data.st_state_path,
+                            data.launch_bios,
+                            data.launch_core_config
                         );
                     });
             }
