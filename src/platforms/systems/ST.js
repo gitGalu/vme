@@ -526,8 +526,7 @@ const ST = {
         "code": 'Space',
       }
     }
-  },
-  message: ["ST/TT/STE/Falcon support is under development and mostly broken or non-functional."]
+  }
 };
 
 export default ST;
