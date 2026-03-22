@@ -276,6 +276,215 @@ const ST = {
     input_player1_r2: 'nul', //rmb
     input_player1_b: 'F15' //fire
   },
+  custom_controllers: {
+    special_button: {
+      label: 'CUSTOM'
+    },
+    fastui_area: {
+      landscape: '1 / 1 / span 50 / span 50',
+      portrait: '1 / 1 / span 50 / span 50'
+    },
+    focus_defaults: {
+      'pinball-1': true
+    },
+    presets: [
+      {
+        "id": "pinball-1",
+        "name": "Pinball 1",
+        "description": "Pinball Obsession",
+        "gameFocus": true,
+        "hideAdditionalButtons": true,
+        "layout": {
+          "landscape": {
+            "columns": 50,
+            "rows": 50
+          },
+          "portrait": {
+            "columns": 50,
+            "rows": 50
+          }
+        },
+        "elements": [
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Shift",
+                "code": "ShiftLeft",
+                "keyCode": 16
+              }
+            },
+            "gridArea": {
+              "landscape": "37 / 1 / span 14 / span 10",
+              "portrait": "44 / 1 / span 7 / span 23"
+            },
+            "label": "LEFT"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Shift",
+                "code": "ShiftRight",
+                "keyCode": 16
+              }
+            },
+            "gridArea": {
+              "landscape": "37 / 41 / span 14 / span 10",
+              "portrait": "44 / 28 / span 7 / span 23"
+            },
+            "label": "RIGHT"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "ArrowDown",
+                "code": "ArrowDown",
+                "keyCode": 40
+              }
+            },
+            "gridArea": {
+              "landscape": "28 / 43 / span 8 / span 8",
+              "portrait": "38 / 32 / span 5 / span 19"
+            },
+            "label": "PLUNGER"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "X",
+                "code": "Space",
+                "keyCode": 32
+              }
+            },
+            "gridArea": {
+              "landscape": "28 / 1 / span 8 / span 8",
+              "portrait": "38 / 1 / span 5 / span 19"
+            },
+            "label": "TILT"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F1",
+                "code": "F1",
+                "keyCode": 112
+              }
+            },
+            "gridArea": {
+              "landscape": "3 / 5 / span 4 / span 4",
+              "portrait": "26 / 11 / span 2 / span 9"
+            },
+            "label": "F1"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F2",
+                "code": "F2",
+                "keyCode": 113
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 5 / span 4 / span 4",
+              "portrait": "29 / 11 / span 2 / span 9"
+            },
+            "label": "F2"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F3",
+                "code": "F3",
+                "keyCode": 114
+              }
+            },
+            "gridArea": {
+              "landscape": "13 / 5 / span 4 / span 4",
+              "portrait": "32 / 11 / span 2 / span 9"
+            },
+            "label": "F3"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "F4",
+                "code": "F4",
+                "keyCode": 115
+              }
+            },
+            "gridArea": {
+              "landscape": "18 / 5 / span 4 / span 4",
+              "portrait": "35 / 11 / span 2 / span 9"
+            },
+            "label": "F4"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "Escape",
+                "code": "Escape",
+                "keyCode": 27
+              }
+            },
+            "gridArea": {
+              "landscape": "3 / 47 / span 4 / span 4",
+              "portrait": "26 / 42 / span 2 / span 9"
+            },
+            "label": "ESC"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "y",
+                "code": "KeyY",
+                "keyCode": 89
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 47 / span 4 / span 4",
+              "portrait": "29 / 42 / span 2 / span 9"
+            },
+            "label": "Y"
+          },
+          {
+            "component": "SingleTouchButton",
+            "binding": {
+              "type": "keyboard",
+              "key": {
+                "key": "m",
+                "code": "KeyM",
+                "keyCode": 77
+              }
+            },
+            "gridArea": {
+              "landscape": "8 / 47 / span 4 / span 4",
+              "portrait": "29 / 42 / span 2 / span 9"
+            },
+            "label": "Y"
+          }
+        ]
+      }
+    ]
+  },
   fire_buttons: 1,
   keyboard: {
     shiftKey: 2,
