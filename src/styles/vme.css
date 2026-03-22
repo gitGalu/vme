@@ -2480,11 +2480,7 @@ a {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding:
-    24px
-    0
-    max(0px, env(safe-area-inset-bottom))
-    0;
+  padding: 24px 0 0 0;
   background: transparent;
   z-index: 5000;
 }
