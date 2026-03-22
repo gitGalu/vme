@@ -1292,6 +1292,109 @@ const DOS = {
                         "label": "DASH"
                     }
                 ]
+            },
+            {
+                "id": "dos-qj-pop2",
+                "name": "Prince of Persia 2",
+                "description": "The Shadow and the Flame",
+                "gameFocus": true,
+                "defaultLayoutId": "layout-1",
+                "currentLayoutId": "layout-1",
+                "layouts": [
+                ],
+                "layout": {
+                    "landscape": {
+                        "columns": 50,
+                        "rows": 50
+                    },
+                    "portrait": {
+                        "columns": 50,
+                        "rows": 50
+                    }
+                },
+                "elements": [
+                    {
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowLeft",
+                                "code": "ArrowLeft",
+                                "keyCode": "37"
+                            },
+                            "secondary": {
+                                "key": "ArrowRight",
+                                "code": "ArrowRight",
+                                "keyCode": "39"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "39 / 1 / span 14 / span 16",
+                            "portrait": "45 / 1 / span 6 / span 18"
+                        },
+                        "labels": [
+                            "LEFT",
+                            "RIGHT"
+                        ],
+                        "options": {
+                            "isHorizontal": true
+                        }
+                    },
+                    {
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "ArrowUp",
+                                "code": "ArrowUp",
+                                "keyCode": "38"
+                            },
+                            "secondary": {
+                                "key": "ArrowDown",
+                                "code": "ArrowDown",
+                                "keyCode": "40"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 43 / span 24 / span 8",
+                            "portrait": "39 / 40 / span 12 / span 11"
+                        },
+                        "labels": [
+                            "JUMP",
+                            "DOWN"
+                        ],
+                        "options": {
+                            "isHorizontal": false
+                        }
+                    },
+                    {
+                        "component": "DualTouchButton",
+                        "binding": {
+                            "type": "keyboard",
+                            "primary": {
+                                "key": "Control",
+                                "code": "ControlLeft",
+                                "keyCode": "17"
+                            },
+                            "secondary": {
+                                "key": "Shift",
+                                "code": "ShiftLeft",
+                                "keyCode": "16"
+                            }
+                        },
+                        "gridArea": {
+                            "landscape": "27 / 35 / span 24 / span 8",
+                            "portrait": "39 / 29 / span 12 / span 11"
+                        },
+                        "labels": [
+                            "SWORD",
+                            "ACTION"
+                        ],
+                        "options": {
+                            "isHorizontal": false
+                        }
+                    }
+                ]
             }
         ]
     },
