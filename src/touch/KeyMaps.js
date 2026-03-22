@@ -32,11 +32,11 @@ export class KeyMaps {
     }
 
     static ZX_ULTIMATE = {
-        up: { key: 'r', code: 'KeyR', keyCode: 84 },
-        down: { key: 'e', code: 'KeyE', keyCode: 83 },
+        up: { key: 'r', code: 'KeyR', keyCode: 82 },
+        down: { key: 'e', code: 'KeyE', keyCode: 69 },
         left: { key: 'q', code: 'KeyQ', keyCode: 81 },
-        right: { key: 'w', code: 'KeyW', keyCode: 82 },
-        a: { key: 't', code: 'Space', keyCode: 84 }
+        right: { key: 'w', code: 'KeyW', keyCode: 87 },
+        a: { key: 't', code: 'KeyT', keyCode: 84 }
     }
 
     static ZX_DEATHCHASE = {
