@@ -1,6 +1,158 @@
 import PlatformBase from '../PlatformBase.js';
 import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 
+const A800_MODEL_OPTIONS = Object.freeze([
+    { value: '800XL (64K)', label: 'Atari 800XL (64KB RAM)' },
+    { value: '130XE (128K)', label: 'Atari 130XE (128KB RAM)' },
+    { value: 'Modern XL/XE(320K CS)', label: 'Atari 130XE (Compy Shop 320KB)' },
+    { value: 'Modern XL/XE(1088K)', label: 'Atari 130XE (1MB RAM)' },
+    { value: '400/800 (OS A)', label: 'Atari 400/800 OS A (48KB RAM)' },
+    { value: '400/800 (OS B)', label: 'Atari 400/800 OS B (48KB RAM)' }
+]);
+
+const A800_BASIC_OPTIONS = Object.freeze([
+    { value: 'off', label: 'BASIC disabled' },
+    { value: 'on', label: 'BASIC enabled' }
+]);
+
+const A800_VIDEO_STANDARD_OPTIONS = Object.freeze([
+    { value: 'PAL', label: 'PAL' },
+    { value: 'NTSC', label: 'NTSC' }
+]);
+
+const A800_MODEL_VALUES = new Set(A800_MODEL_OPTIONS.map(option => option.value));
+const A800_BASIC_VALUES = new Set(A800_BASIC_OPTIONS.map(option => option.value));
+const A800_VIDEO_STANDARD_VALUES = new Set(A800_VIDEO_STANDARD_OPTIONS.map(option => option.value));
+
+function guessA800Model(fileName) {
+    const nameU = String(fileName ?? '').toUpperCase();
+
+    if (
+        nameU.includes('(130XE)') ||
+        nameU.includes('[130XE]') ||
+        nameU.includes('[128K]') ||
+        nameU.includes('(128)')
+    ) {
+        return '130XE (128K)';
+    }
+
+    if (
+        nameU.includes('[192K]') ||
+        nameU.includes('[REQ 256K]') ||
+        nameU.includes('[256K]') ||
+        nameU.includes('[320K]')
+    ) {
+        return 'Modern XL/XE(320K CS)';
+    }
+
+    if (nameU.includes('[1MB]')) {
+        return 'Modern XL/XE(1088K)';
+    }
+
+    if (nameU.includes('[REQ OSA]')) {
+        return '400/800 (OS A)';
+    }
+
+    if (nameU.includes('[400-800]') || nameU.includes('[REQ OSB]')) {
+        return '400/800 (OS B)';
+    }
+
+    return '800XL (64K)';
+}
+
+function getA800BiosForModel(model) {
+    switch (model) {
+        case '400/800 (OS A)':
+            return ['ATARIOSA.ROM', 'ATARIBAS.ROM'];
+        case '400/800 (OS B)':
+            return ['ATARIOSB.ROM', 'ATARIBAS.ROM'];
+        default:
+            return ['ATARIXL.ROM', 'ATARIBAS.ROM'];
+    }
+}
+
+function normalizeA800Model(value, fallback = '800XL (64K)') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+
+    const normalized = value.trim();
+    return A800_MODEL_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeA800Basic(value, fallback = 'off') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    return A800_BASIC_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeA800VideoStandard(value, fallback = 'PAL') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+
+    const normalized = value.trim().toUpperCase();
+    return A800_VIDEO_STANDARD_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function buildA800LaunchSettings(fileName, overrides = null) {
+    const nameU = String(fileName ?? '').toUpperCase();
+    const guessedModel = guessA800Model(fileName);
+    const guessedBasic = nameU.includes('[BASIC]') ? 'on' : 'off';
+    const guessedVideoStandard = nameU.includes('[REQ OSB]') ? 'NTSC' : 'PAL';
+    const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
+    const model = normalizeA800Model(overrideInput.model, guessedModel);
+    const basic = normalizeA800Basic(overrideInput.basic, guessedBasic);
+    const ntscpal = normalizeA800VideoStandard(overrideInput.ntscpal, guessedVideoStandard);
+
+    const coreConfig = {
+        atari800_f10: 'disabled',
+        atari800_ntscpal: ntscpal,
+        atari800_resolution: '336x240',
+        atari800_system: model,
+        atari800_internalbasic: basic === 'on' ? 'enabled' : 'disabled'
+    };
+
+    if (nameU.includes('.CAS')) {
+        coreConfig.atari800_cassboot = 'enabled';
+    }
+
+    return {
+        bios: getA800BiosForModel(model),
+        coreConfig,
+        overrideValues: {
+            model,
+            basic,
+            ntscpal
+        },
+        guessedOverrides: {
+            model: guessedModel,
+            basic: guessedBasic,
+            ntscpal: guessedVideoStandard
+        },
+        overrideSchema: [
+            {
+                id: 'model',
+                label: 'Model',
+                options: A800_MODEL_OPTIONS
+            },
+            {
+                id: 'basic',
+                label: 'BASIC',
+                options: A800_BASIC_OPTIONS
+            },
+            {
+                id: 'ntscpal',
+                label: 'Video',
+                options: A800_VIDEO_STANDARD_OPTIONS
+            }
+        ]
+    };
+}
+
 const A800 = {
     ...PlatformBase,
     platform_id: 'atari800',
@@ -20,89 +172,9 @@ const A800 = {
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     force_scale: true,
     video_smooth: false,
-    guessBIOS: (fileName) => {
-        let defaultBios = ['ATARIXL.ROM', 'ATARIBAS.ROM'];
-
-        const biosTags = {
-            "[400-800]": ['ATARIOSB.ROM', 'ATARIBAS.ROM'],
-            "[REQ OSA]": ['ATARIOSA.ROM', 'ATARIBAS.ROM'],
-            "[REQ OSB]": ['ATARIOSB.ROM', 'ATARIBAS.ROM']
-        };
-
-        for (let tag in biosTags) {
-            if (fileName.toUpperCase().includes(tag)) {
-                return biosTags[tag];
-            }
-        }
-
-        return defaultBios;
-    },
-    guessConfig: (fileName) => {
-        const tagRules = {
-            "[BASIC]": {
-                atari800_internalbasic: "enabled"
-            },
-            "(130XE)": {
-                atari800_system: "130XE (128K)"
-            },
-            "[130XE]": {
-                atari800_system: "130XE (128K)"
-            },
-            "[128K]": {
-                atari800_system: "130XE (128K)"
-            },
-            "(128)": {
-                atari800_system: "130XE (128K)"
-            },
-            "[192K]": {
-                atari800_system: "Modern XL/XE(320K CS)"
-            },
-            "[REQ 256K]": {
-                atari800_system: "Modern XL/XE(320K CS)"
-            },
-            "[256K]": {
-                atari800_system: "Modern XL/XE(320K CS)"
-            },
-            "[320K]": {
-                atari800_system: "Modern XL/XE(320K CS)"
-            },
-            "[1MB]": {
-                atari800_system: "Modern XL/XE(1088K)"
-            },
-            "[400-800]": {
-                atari800_system: "400/800 (OS B)",
-            },
-            "[REQ OSA]": {
-                atari800_system: "400/800 (OS A)",
-            },
-            "[REQ OSB]": {
-                atari800_system: "400/800 (OS B)",
-                atari800_ntscpal: 'NTSC'
-            },
-            "[STEREO]": {
-            },
-            ".CAS": {
-                atari800_cassboot: "enabled",
-                // atari800_sioaccel: "disabled"
-            }
-        };
-        const defaultOptions = {
-            atari800_f10: 'disabled',
-            atari800_ntscpal: 'PAL',
-            atari800_resolution: '336x240',
-            atari800_system: '800XL (64K)'
-        };
-
-        let config = { ...defaultOptions };
-
-        Object.keys(tagRules).forEach(tag => {
-            if (fileName.toUpperCase().includes(tag)) {
-                Object.assign(config, tagRules[tag]);
-            }
-        });
-
-        return config;
-    },
+    guessBIOS: (fileName) => buildA800LaunchSettings(fileName).bios,
+    resolveLaunchSettings: (fileName, overrides = null) => buildA800LaunchSettings(fileName, overrides),
+    guessConfig: (fileName) => buildA800LaunchSettings(fileName).coreConfig,
     dependencies: [
         {
             key: "ATARIXL.ROM",
