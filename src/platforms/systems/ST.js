@@ -2,6 +2,147 @@ import PlatformBase from '../PlatformBase.js';
 import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../../Constants.js';
 import { FileUtils } from '../../utils/FileUtils.js';
 
+const ST_MACHINE_OPTIONS = Object.freeze([
+  { value: 'st', label: 'ST' },
+  { value: 'ste', label: 'STE' },
+  { value: 'falcon', label: 'Falcon' }
+]);
+
+const ST_MEMORY_OPTIONS = Object.freeze([
+  { value: '1024', label: '1 MB' },
+  { value: '2048', label: '2 MB' },
+  { value: '4096', label: '4 MB' },
+  { value: '14336', label: '14 MB' }
+]);
+
+const ST_MONITOR_OPTIONS = Object.freeze([
+  { value: 'color', label: 'Color' },
+  { value: 'mono', label: 'Mono' },
+  { value: 'vga', label: 'VGA' }
+]);
+
+const ST_MACHINE_VALUES = new Set(ST_MACHINE_OPTIONS.map(option => option.value));
+const ST_MEMORY_VALUES = new Set(ST_MEMORY_OPTIONS.map(option => option.value));
+const ST_MONITOR_VALUES = new Set(ST_MONITOR_OPTIONS.map(option => option.value));
+
+function normalizeStMachine(value, fallback = 'st') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  return ST_MACHINE_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeStMemory(value, fallback = '1024') {
+  const normalized = String(value ?? '').trim();
+  return ST_MEMORY_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeStMonitor(value, fallback = 'color') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  return ST_MONITOR_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function guessStLaunchOverrides(fileName) {
+  const nameU = String(fileName ?? '').toUpperCase();
+  const guessed = {
+    machine: 'st',
+    memory: '1024',
+    monitor: 'color'
+  };
+
+  if (nameU.includes('(STE)')) {
+    guessed.machine = 'ste';
+  }
+
+  if (
+    nameU.includes('(FALCON030)') ||
+    nameU.includes('(FALCON)') ||
+    nameU.includes('[FALCON ONLY]') ||
+    nameU.includes('[FALCON VERSION]')
+  ) {
+    guessed.machine = 'falcon';
+    guessed.memory = '14336';
+    guessed.monitor = 'vga';
+  }
+
+  if (nameU.includes('[1MB]')) {
+    guessed.memory = '1024';
+  } else if (nameU.includes('[2MB]')) {
+    guessed.memory = '2048';
+  } else if (nameU.includes('[4MB]')) {
+    guessed.memory = '4096';
+  }
+
+  if (nameU.includes('[MONOCHROME]')) {
+    guessed.monitor = 'mono';
+  }
+
+  return guessed;
+}
+
+function buildStLaunchSettings(fileName, overrides = null) {
+  const guessedOverrides = guessStLaunchOverrides(fileName);
+  const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
+  const machine = normalizeStMachine(overrideInput.machine, guessedOverrides.machine);
+  const memory = normalizeStMemory(overrideInput.memory, guessedOverrides.memory);
+  const monitor = normalizeStMonitor(overrideInput.monitor, guessedOverrides.monitor);
+
+  const coreConfig = {
+    hatarib_show_welcome: 1,
+    hatarib_statusbar: 0,
+    hatarib_readonly_floppy: 1,
+    hatarib_driveb: 0,
+    hatarib_memory: Number.parseInt(memory, 10),
+    hatarib_monitor: monitor === 'mono' ? 0 : (monitor === 'vga' ? 2 : 1)
+  };
+
+  let bios = ['tos.img'];
+
+  if (machine === 'ste') {
+    bios = ['ste.img'];
+    Object.assign(coreConfig, {
+      hatarib_machine: 2,
+      hatarib_tos: 'hatarib/ste.img'
+    });
+  } else if (machine === 'falcon') {
+    bios = ['hatarib/falcon.img'];
+    Object.assign(coreConfig, {
+      hatarib_machine: 5,
+      hatarib_cpu: 3,
+      hatarib_cpu_clock: 16,
+      hatarib_tos: 'hatarib/falcon.img'
+    });
+  }
+
+  return {
+    bios,
+    coreConfig,
+    overrideValues: { machine, memory, monitor },
+    guessedOverrides,
+    overrideSchema: [
+      {
+        id: 'machine',
+        label: 'Machine',
+        options: ST_MACHINE_OPTIONS
+      },
+      {
+        id: 'memory',
+        label: 'Memory',
+        options: ST_MEMORY_OPTIONS
+      },
+      {
+        id: 'monitor',
+        label: 'Monitor',
+        options: ST_MONITOR_OPTIONS
+      }
+    ]
+  };
+}
+
 const ST = {
   ...PlatformBase,
   platform_id: 'st',
@@ -21,7 +162,6 @@ const ST = {
     '--cursorwidth': '0.5em',
     '--portrait-fontsize': '100%'
   },
-
   startup_beforelaunch: async function (nostalgist, storageManager) {
     const FS = nostalgist.getEmscriptenFS();
     FS.mkdirTree('/home/web_user/retroarch/userdata/system/hatarib');
@@ -44,88 +184,11 @@ const ST = {
     FS.writeFile('/home/web_user/retroarch/userdata/system/hatarib/falcon.img', await new Uint8Array(falcon));
   },
   guessBIOS: (fileName) => {
-    let defaultBios = ['tos.img'];
-    let nameU = fileName.toUpperCase();
-
-    const biosTags = {
-      "(STE)": ['ste.img'],
-
-      "(FALCON030)": ['hatarib/falcon.img'],
-      "(FALCON)": ['hatarib/falcon.img'],
-      "[FALCON ONLY]": ['hatarib/falcon.img'],
-      "[FALCON VERSION]": ['hatarib/falcon.img']
-    };
-
-    for (let tag in biosTags) {
-      if (nameU.includes(tag)) {
-        return biosTags[tag];
-      }
-    }
-    return defaultBios;
+    return buildStLaunchSettings(fileName).bios;
   },
+  resolveLaunchSettings: (fileName, overrides = null) => buildStLaunchSettings(fileName, overrides),
   guessConfig: (fileName) => {
-    const defaultOptions = {
-      hatarib_show_welcome: 1,
-      hatarib_statusbar: 0,
-      hatarib_readonly_floppy: 1,
-      hatarib_driveb: 0,
-      // hatarib_log_hatari: 5,
-      // hatarib_save_floppy: 0,
-      // hatarib_savestate_floppy_modify: 0
-      // hatarib_emutos_region: 1,
-      // hatarib_emutos_framerate: 1,
-    };
-
-    const canonicalRules = {
-      STE: {
-        hatarib_machine: 2,
-        hatarib_tos: "hatarib/ste.img",
-      },
-      FALCON: {
-        hatarib_machine: 5,
-        hatarib_cpu: 3,
-        hatarib_cpu_clock: 16,
-        hatarib_tos: "hatarib/falcon.img",
-        hatarib_memory: 14336,
-        hatarib_monitor: 2
-      },
-      MEM1: {
-        hatarib_memory: 1024,
-      },
-      MEM2: {
-        hatarib_memory: 2048,
-      },
-      MEM4: {
-        hatarib_memory: 4096,
-      },
-      MONO: {
-        hatarib_monitor: 0
-      }
-    };
-    const tagAliases = {
-      // TODO (Mega ST), (Mega-STE), (TT)
-      "(STE)": "STE",
-
-      "(FALCON030)": "FALCON",
-      "(FALCON)": "FALCON",
-      "[FALCON ONLY]": "FALCON",
-      "[FALCON VERSION]": "FALCON",
-
-      "[1MB]": "MEM1",
-      "[2MB]": "MEM2",
-      "[4MB]": "MEM4",
-
-      "[MONOCHROME]": "MONO"
-    };
-
-    const nameU = fileName.toUpperCase();
-    const config = { ...defaultOptions };
-
-    for (const [tag, key] of Object.entries(tagAliases)) {
-      if (nameU.includes(tag)) Object.assign(config, canonicalRules[key]);
-    }
-
-    return config;
+    return buildStLaunchSettings(fileName).coreConfig;
   },
   savestates_disabled: false,
   savestate_thumbnail_enable: true,
