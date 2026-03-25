@@ -158,11 +158,27 @@ export class CLI {
 
     process_input(value) {
         let is_enter = false;
+        const currentQuery = CLI.#corsQuery.textContent.trim().toLowerCase();
+        const activeCommandConsumesSpace = Boolean(
+            value === ' ' || value === 'space'
+        ) && this.selected_command
+            && this.selected_command.consumes_space instanceof Function
+            && this.selected_command.consumes_space()
+            && this.selected_command.get_keywords().includes(currentQuery);
+
         if (value.length === 1) {
+            if (value === ' ' && activeCommandConsumesSpace) {
+                this.parse_input(CLI.#corsQuery.textContent, false, { advanceBySpace: true });
+                return;
+            }
             if (this.#currentIndex == -1) CLI.#corsQuery.textContent += value;
         } else if (value === 'Backspace' || value === 'backspace') {
             if (this.#currentIndex == -1) CLI.#corsQuery.textContent = CLI.#corsQuery.textContent.slice(0, -1);
         } else if (value === ' ' || value === 'space') {
+            if (activeCommandConsumesSpace) {
+                this.parse_input(CLI.#corsQuery.textContent, false, { advanceBySpace: true });
+                return;
+            }
             if (this.#currentIndex == -1) CLI.#corsQuery.textContent += ' ';
         } else if (value === 'clear') {
             if (this.#currentIndex == -1) CLI.#corsQuery.textContent = '';
@@ -252,9 +268,11 @@ export class CLI {
         this.parse_input(input, is_enter);
     }
 
-    parse_input(input, is_enter) {
-        input = input.trim().toLowerCase();
-        const tokens = input.split(/\s+/);
+    parse_input(input, is_enter, extraContext = {}) {
+        const rawInput = String(input ?? '');
+        const trailingWhitespaceCount = rawInput.match(/\s+$/)?.[0].length ?? 0;
+        input = rawInput.trim().toLowerCase();
+        const tokens = input.length > 0 ? input.split(/\s+/) : [''];
         const [command, ...parameters] = tokens;
 
         this.#clearPrefix();
@@ -287,7 +305,12 @@ export class CLI {
         if (selected_command != null) {
             this.is_command_selectable = selected_command.is_selection_enabled();
             this.selected_command = selected_command;
-            selected_command.process_input(params, is_enter);
+            selected_command.process_input(params, is_enter, {
+                rawInput,
+                normalizedInput: input,
+                trailingWhitespaceCount,
+                advanceBySpace: extraContext.advanceBySpace === true
+            });
         } else {
             this.selected_command = null;
             this.#showDefaultFindHint(input);

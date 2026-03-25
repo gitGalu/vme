@@ -37,6 +37,10 @@ export class CommandBase {
         return false;
     }
 
+    consumes_space() {
+        return false;
+    }
+
     exit_selection() {
         return false;
     }

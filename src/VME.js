@@ -13,6 +13,7 @@ import { SetCommand } from './cli/SetCommand.js';
 import { OpenCommand } from './cli/OpenCommand.js';
 import { AboutCommand } from './cli/AboutCommand.js';
 import { LastCommand } from './cli/LastCommand.js';
+import { NextCommand } from './cli/NextCommand.js';
 import { WikiCommand } from './cli/WikiCommand.js';
 import { SaveBrowserCommand } from './cli/SaveBrowserCommand.js';
 import { BackupCommand } from './cli/BackupCommand.js';
@@ -108,6 +109,7 @@ export class VME {
         this.#cli.register_command(new SaveBrowserCommand(this.#save_browser));
         this.#cli.register_command(new BrowseCommand(this.#collection_browser));
         this.#cli.register_command(new LastCommand(this.#pl));
+        this.#cli.register_command(new NextCommand(this.#pl));
         this.#cli.register_command(new HelpCommand());
         this.#cli.register_command(new WikiCommand());
         this.#cli.register_command(new ClearallCommand());
