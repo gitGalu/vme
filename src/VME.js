@@ -228,7 +228,12 @@ export class VME {
         EnvironmentManager.updateDeviceType();
 
         this.#ui.initTouchControllerMenu();
+        this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
+    }
+
+    applyCurrentAutoGameProfile() {
+        this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
     }
 
     toggleScreen(mode) {

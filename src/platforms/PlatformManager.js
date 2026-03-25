@@ -36,6 +36,8 @@ import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
 import { DiskSetBuilder } from '../utils/DiskSetBuilder.js';
+import { resolveGameProfile } from '../utils/GameProfileMatcher.js';
+import { computeBlobSha256 } from '../utils/HashUtils.js';
 import { ToastManager } from '../ui/ToastManager.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
 import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
@@ -75,6 +77,9 @@ export class PlatformManager {
     #current_m3u_disks;
     #current_m3u_disk_index;
     #current_m3u_disk_files;
+    #current_game_profile;
+    #current_game_profile_context;
+    #dos_exec_profile_refresh_token;
     #original_get_gamepads;
     #gamepad_filter;
     #handleGamepadConnectionBound;
@@ -87,6 +92,10 @@ export class PlatformManager {
     static DOS_RESTORE_DELAY_WITH_SIDECAR_MS = 900;
     static DOS_RESTORE_ATTEMPTS_WITHOUT_SIDECAR = 36;
     static DOS_RESTORE_DELAY_WITHOUT_SIDECAR_MS = 1500;
+    static DOS_PROFILE_REFRESH_ATTEMPTS = 45;
+    static DOS_PROFILE_REFRESH_DELAY_MS = 1000;
+    static DOS_PROFILE_REFRESH_CAPTURE_INTERVAL = 5;
+    static DOS_PROFILE_REFRESH_CAPTURE_MS = 400;
     static ST_STATE_POLL_INTERVAL_MS = 150;
     static ST_STATE_CAPTURE_TIMEOUT_MS = 12000;
     static ST_STATE_ROOT = '/home/web_user/retroarch/userdata/states';
@@ -164,6 +173,216 @@ export class PlatformManager {
             return null;
         }
         return { ...values };
+    }
+
+    #normalizeGameProfileBaseName(rawName) {
+        if (typeof rawName !== 'string' || rawName.length === 0) {
+            return null;
+        }
+
+        const leafName = rawName.split(/[\\/]/).pop() || rawName;
+        const dotIndex = leafName.lastIndexOf('.');
+        return (dotIndex > 0 ? leafName.substring(0, dotIndex) : leafName).trim() || null;
+    }
+
+    async #logPreparedRomHashes(launchRom, caption = null) {
+        if (!launchRom || typeof launchRom !== 'object') {
+            return;
+        }
+
+        const baseContext = {
+            platformId: this.#selected_platform?.platform_id || null,
+            programName: launchRom.programName || null,
+            caption: caption || null
+        };
+
+        const diskFiles = Array.isArray(launchRom.diskFiles)
+            ? launchRom.diskFiles.filter((disk) => disk?.blob instanceof Blob)
+            : [];
+
+        if (diskFiles.length > 0) {
+            await Promise.all(diskFiles.map(async (disk, index) => {
+                try {
+                    const romHash = await computeBlobSha256(disk.blob);
+                    console.info('[VM/E][ROMHASH]', {
+                        ...baseContext,
+                        mediaType: 'm3u-disk',
+                        diskIndex: index,
+                        diskName: disk.name || null,
+                        launchName: disk.launch_name || null,
+                        romHash
+                    });
+                } catch (error) {
+                    console.warn('[VM/E][ROMHASH] Failed to compute M3U disk hash.', {
+                        ...baseContext,
+                        diskIndex: index,
+                        diskName: disk.name || null,
+                        launchName: disk.launch_name || null
+                    }, error);
+                }
+            }));
+            return;
+        }
+
+        if (Array.isArray(launchRom.nostalgistRom)) {
+            return;
+        }
+
+        if (!(launchRom.saveBlob instanceof Blob) || launchRom.saveBlob.size <= 0) {
+            return;
+        }
+
+        try {
+            const romHash = await computeBlobSha256(launchRom.saveBlob);
+            console.info('[VM/E][ROMHASH]', {
+                ...baseContext,
+                mediaType: 'single',
+                fileName: launchRom.programName || null,
+                romHash
+            });
+        } catch (error) {
+            console.warn('[VM/E][ROMHASH] Failed to compute ROM hash.', {
+                ...baseContext,
+                fileName: launchRom.programName || null
+            }, error);
+        }
+    }
+
+    #getProfileHashBlob(launchRom) {
+        if (!launchRom || typeof launchRom !== 'object') {
+            return null;
+        }
+
+        const diskFiles = Array.isArray(launchRom.diskFiles)
+            ? launchRom.diskFiles.filter((disk) => disk?.blob instanceof Blob)
+            : [];
+
+        if (diskFiles.length > 0) {
+            const safeIndex = Number.isInteger(launchRom.diskIndex)
+                ? Math.min(diskFiles.length - 1, Math.max(0, launchRom.diskIndex))
+                : 0;
+            return diskFiles[safeIndex]?.blob || diskFiles[0]?.blob || null;
+        }
+
+        return launchRom.saveBlob instanceof Blob ? launchRom.saveBlob : null;
+    }
+
+    #buildGameProfileContext({
+        programName = null,
+        caption = null,
+        dosExec = null,
+        romHash = null,
+        archiveHash = null,
+        execHash = null
+    } = {}) {
+        const normalizedRomHash = typeof romHash === 'string' && romHash.trim().length > 0
+            ? romHash.trim().toLowerCase()
+            : null;
+        const normalizedArchiveHash = typeof archiveHash === 'string' && archiveHash.trim().length > 0
+            ? archiveHash.trim().toLowerCase()
+            : null;
+        const normalizedExecHash = typeof execHash === 'string' && execHash.trim().length > 0
+            ? execHash.trim().toLowerCase()
+            : null;
+        const normalizedProgramName = typeof programName === 'string' && programName.trim().length > 0
+            ? programName.trim()
+            : null;
+        const normalizedCaption = typeof caption === 'string' && caption.trim().length > 0
+            ? caption.trim()
+            : null;
+        const normalizedDosExec = typeof dosExec === 'string' && dosExec.trim().length > 0
+            ? dosExec.trim()
+            : null;
+
+        return {
+            platformId: this.#selected_platform?.platform_id || null,
+            programName: normalizedProgramName,
+            programNameBase: this.#normalizeGameProfileBaseName(normalizedProgramName),
+            caption: normalizedCaption,
+            captionBase: this.#normalizeGameProfileBaseName(normalizedCaption),
+            dosExec: normalizedDosExec,
+            dosExecBase: this.#normalizeGameProfileBaseName(normalizedDosExec),
+            romHash: normalizedRomHash,
+            archiveHash: normalizedArchiveHash,
+            execHash: normalizedExecHash
+        };
+    }
+
+    #setCurrentGameProfileContext(contextInput = {}) {
+        const context = this.#buildGameProfileContext(contextInput);
+        this.#current_game_profile_context = context;
+        this.#current_game_profile = resolveGameProfile(this.#selected_platform?.game_profiles, context);
+
+        const logPayload = {
+            platformId: context.platformId,
+            programName: context.programName,
+            caption: context.caption,
+            dosExec: context.dosExec,
+            romHash: context.romHash,
+            archiveHash: context.archiveHash,
+            execHash: context.execHash,
+            profileId: this.#current_game_profile?.id || null
+        };
+
+        if (this.#current_game_profile) {
+            console.info('[VM/E][PROFILE] Matched game profile.', logPayload);
+        } else {
+            console.info('[VM/E][PROFILE] No game profile matched.', logPayload);
+        }
+    }
+
+    #refreshCurrentGameProfileContext(contextPatch = {}) {
+        const previousContext = this.#current_game_profile_context
+            ? { ...this.#current_game_profile_context }
+            : {};
+        const previousProfileId = this.#current_game_profile?.id || null;
+
+        this.#setCurrentGameProfileContext({
+            ...previousContext,
+            ...contextPatch
+        });
+
+        const nextProfileId = this.#current_game_profile?.id || null;
+        const nextContext = this.#current_game_profile_context
+            ? { ...this.#current_game_profile_context }
+            : {};
+
+        return {
+            previousProfileId,
+            nextProfileId,
+            profileChanged: previousProfileId !== nextProfileId,
+            contextChanged: JSON.stringify(previousContext) !== JSON.stringify(nextContext)
+        };
+    }
+
+    #platformUsesHashBasedProfiles() {
+        const profiles = this.#selected_platform?.game_profiles;
+        if (!Array.isArray(profiles) || profiles.length === 0) {
+            return false;
+        }
+
+        const ruleUsesHashField = (rule) => {
+            if (!rule || typeof rule !== 'object' || Array.isArray(rule)) {
+                return false;
+            }
+            return Object.keys(rule).some((key) => key.toLowerCase().endsWith('hash'));
+        };
+
+        return profiles.some((profile) => {
+            if (!profile || profile.enabled === false) {
+                return false;
+            }
+
+            if (ruleUsesHashField(profile.match)) {
+                return true;
+            }
+
+            if (Array.isArray(profile.matchAny) && profile.matchAny.some(ruleUsesHashField)) {
+                return true;
+            }
+
+            return false;
+        });
     }
 
     #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null) {
@@ -1187,12 +1406,24 @@ export class PlatformManager {
 
         this.#clearSoftwareDirCache();
         this.#vme.clearCollectionCache();
+        this.#dos_exec_profile_refresh_token = (this.#dos_exec_profile_refresh_token || 0) + 1;
 
         const launchRom = this.#normalizeLaunchRomInput(blob, romName);
+        void this.#logPreparedRomHashes(launchRom, caption);
         this.#current_rom = launchRom.saveBlob;
         this.#current_m3u_disks = launchRom.diskNames;
         this.#current_m3u_disk_index = launchRom.diskIndex;
         this.#current_m3u_disk_files = launchRom.diskFiles;
+        const shouldComputeRomHash = this.#platformUsesHashBasedProfiles();
+        const profileHashBlob = shouldComputeRomHash ? this.#getProfileHashBlob(launchRom) : null;
+        const romHash = shouldComputeRomHash && profileHashBlob instanceof Blob
+            ? await computeBlobSha256(profileHashBlob)
+            : null;
+        const archiveHash = shouldComputeRomHash
+            && this.#selected_platform?.platform_id === 'dos'
+            && this.#current_rom instanceof Blob
+            ? await computeBlobSha256(this.#current_rom)
+            : null;
 
         let storageManager = this.#storage_manager;
         let platform = this.#selected_platform;
@@ -1233,6 +1464,15 @@ export class PlatformManager {
 
         let errored = false;
         self.#program_name = launchRom.programName;
+        this.#setCurrentGameProfileContext({
+            programName: launchRom.programName,
+            caption,
+            romHash,
+            archiveHash,
+            dosExec: this.#selected_platform?.platform_id === 'dos'
+                ? this.#normalizeDosRecordedExecutable(launchRom.programName)
+                : null
+        });
 
         if (this.getSelectedPlatform().touch_keyboard_reconfig != undefined) {
             this.#keyboard_manager.updateConfig(this.getSelectedPlatform().touch_keyboard_reconfig);
@@ -1314,6 +1554,9 @@ export class PlatformManager {
                 Debug.clearMessages();
                 this.#setBgColor('#000000', false);
                 this.#vme.emulationStarted();
+                if (this.#selected_platform?.platform_id === 'dos') {
+                    void this.#refreshDosGameProfileFromLastRun();
+                }
             } else {
             }
         }
@@ -1325,6 +1568,17 @@ export class PlatformManager {
 
     getProgramName() {
         return this.#program_name;
+    }
+
+    getCurrentGameProfile() {
+        return this.#current_game_profile || null;
+    }
+
+    getCurrentGameProfileContext() {
+        if (!this.#current_game_profile_context) {
+            return null;
+        }
+        return { ...this.#current_game_profile_context };
     }
 
     getCurrentM3uDisks() {
@@ -2652,6 +2906,73 @@ export class PlatformManager {
         return executables;
     }
 
+    #selectDosExecutableEntry(entries, executableHint) {
+        if (!Array.isArray(entries) || entries.length === 0) {
+            return null;
+        }
+
+        const hintNormalized = String(executableHint || '')
+            .replace(/\\/g, '/')
+            .replace(/^[A-Za-z]:\//, '')
+            .replace(/^\/+/, '')
+            .toLowerCase();
+        const hintBase = hintNormalized.split('/').pop() || hintNormalized;
+
+        let target = entries.find((entry) => entry.pathLower === hintNormalized) || null;
+        if (!target && hintBase) {
+            target = entries.find((entry) => (entry.pathLower.split('/').pop() || '') === hintBase) || null;
+        }
+        if (!target) {
+            target = entries.find((entry) => {
+                const base = entry.path.split('/').pop() || entry.path;
+                return this.#isDosExecutableFileName(base) && !this.#isDosSystemExecutable(base);
+            }) || null;
+        }
+
+        return target;
+    }
+
+    async #computeDosExecutableHash(romBlob, executableHint) {
+        if (!(romBlob instanceof Blob)) {
+            return null;
+        }
+
+        const normalizedHint = this.#normalizeDosRecordedExecutable(executableHint);
+        if (!normalizedHint) {
+            return null;
+        }
+
+        try {
+            const zip = new JSZip();
+            const zipContent = await zip.loadAsync(romBlob);
+            const entries = Object.entries(zipContent.files)
+                .filter(([, entry]) => entry && !entry.dir)
+                .map(([entryName]) => ({
+                    path: String(entryName).replace(/\\/g, '/'),
+                    pathLower: String(entryName).replace(/\\/g, '/').toLowerCase()
+                }));
+
+            const target = this.#selectDosExecutableEntry(entries, normalizedHint);
+            if (!target) {
+                return null;
+            }
+
+            const zipEntry = zipContent.files[target.path];
+            if (!zipEntry || zipEntry.dir) {
+                return null;
+            }
+
+            const executableBlob = await zipEntry.async('blob');
+            return await computeBlobSha256(executableBlob);
+        } catch {
+            const hintBase = normalizedHint.split('/').pop() || normalizedHint;
+            if (this.#isDosExecutableFileName(hintBase)) {
+                return await computeBlobSha256(romBlob);
+            }
+            return null;
+        }
+    }
+
     async #guessDosExecutableHint(saveStateBlob, romBlob) {
         if (!(saveStateBlob instanceof Blob)) {
             return null;
@@ -2766,19 +3087,7 @@ export class PlatformManager {
             return null;
         }
 
-        const hintNormalized = String(executableHint || '').replace(/\\/g, '/').replace(/^[A-Za-z]:\//, '').replace(/^\/+/, '').toLowerCase();
-        const hintBase = hintNormalized.split('/').pop() || hintNormalized;
-
-        let target = entries.find((entry) => entry.pathLower === hintNormalized) || null;
-        if (!target && hintBase) {
-            target = entries.find((entry) => (entry.pathLower.split('/').pop() || '') === hintBase) || null;
-        }
-        if (!target) {
-            target = entries.find((entry) => {
-                const base = entry.path.split('/').pop() || entry.path;
-                return this.#isDosExecutableFileName(base) && !this.#isDosSystemExecutable(base);
-            }) || null;
-        }
+        const target = this.#selectDosExecutableEntry(entries, executableHint);
         if (!target) {
             return null;
         }
@@ -3026,6 +3335,85 @@ export class PlatformManager {
             dosSram: this.#isNonEmptyBlob(dosSram) ? dosSram : null,
             dosExecHint
         };
+    }
+
+    async #refreshDosGameProfileFromLastRun() {
+        if (this.#selected_platform?.platform_id !== 'dos') {
+            return;
+        }
+
+        const refreshToken = (this.#dos_exec_profile_refresh_token || 0) + 1;
+        this.#dos_exec_profile_refresh_token = refreshToken;
+
+        for (let attempt = 0; attempt < PlatformManager.DOS_PROFILE_REFRESH_ATTEMPTS; attempt += 1) {
+            if (refreshToken !== this.#dos_exec_profile_refresh_token) {
+                return;
+            }
+            if (this.#selected_platform?.platform_id !== 'dos' || !this.#nostalgist) {
+                return;
+            }
+
+            let sidecarBlob = null;
+            if (attempt > 0 && attempt % PlatformManager.DOS_PROFILE_REFRESH_CAPTURE_INTERVAL === 0) {
+                sidecarBlob = await this.#captureDosPureSidecar({
+                    maxWaitMs: PlatformManager.DOS_PROFILE_REFRESH_CAPTURE_MS,
+                    allowSlowFallback: false
+                });
+            } else {
+                sidecarBlob = this.#readDosPureSidecarBlob(this.#normalizeDosRomBaseName(this.#program_name || ''));
+            }
+
+            if (this.#isNonEmptyBlob(sidecarBlob)) {
+                let dosExec = null;
+                try {
+                    dosExec = await this.#extractDosLastRunExecFromSidecar(sidecarBlob);
+                } catch (error) {
+                    this.#warnDosDebug('Failed to refresh DOS LASTRUN.DBP while polling game profile:', error);
+                }
+
+                if (dosExec) {
+                    const execHash = await this.#computeDosExecutableHash(this.#current_rom, dosExec);
+                    const archiveHash = this.#current_game_profile_context?.archiveHash || null;
+
+                    console.info('[VM/E][DOS][EXECHASH] DOS executable hash resolved.', {
+                        programName: this.#program_name || null,
+                        caption: this.#caption || null,
+                        dosExec,
+                        execHash,
+                        archiveHash
+                    });
+
+                    if (!execHash) {
+                        console.warn('[VM/E][DOS][EXECHASH] DOS executable was detected but execHash could not be computed.', {
+                            programName: this.#program_name || null,
+                            caption: this.#caption || null,
+                            dosExec,
+                            archiveHash
+                        });
+                    }
+
+                    const refreshResult = this.#refreshCurrentGameProfileContext({
+                        dosExec,
+                        execHash
+                    });
+
+                    console.info('[VM/E][PROFILE] Refreshed DOS executable profile context.', {
+                        dosExec,
+                        execHash,
+                        profileId: this.#current_game_profile?.id || null,
+                        previousProfileId: refreshResult.previousProfileId,
+                        nextProfileId: refreshResult.nextProfileId
+                    });
+
+                    if (refreshResult.profileChanged || refreshResult.contextChanged) {
+                        this.#vme?.applyCurrentAutoGameProfile?.();
+                    }
+                    return;
+                }
+            }
+
+            await this.sleep(PlatformManager.DOS_PROFILE_REFRESH_DELAY_MS);
+        }
     }
 
     #isZipFile(fileName) {

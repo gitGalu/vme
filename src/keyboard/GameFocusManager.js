@@ -33,6 +33,10 @@ class GameFocusManager {
     static initialize(nostalgist, initialState = false) {
       if (!GameFocusManager.#instance) {
         GameFocusManager.#instance = new GameFocusManager(nostalgist, initialState);
+      } else {
+        GameFocusManager.#instance.#nostalgist = nostalgist;
+        GameFocusManager.#instance.#wantsGameFocus = initialState;
+        GameFocusManager.#instance.syncState(initialState, 'initialize');
       }
       return GameFocusManager.#instance;
     }

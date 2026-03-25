@@ -75,6 +75,10 @@ export class UiManager {
         this.#kb_mode_change_handler_bound = this.#kbModeChangeHandler.bind(this);
     }
 
+    applyAutoGameProfile(profile) {
+        UiManager.applyAutoGameProfile(profile);
+    }
+
     initFastUI() {
         var fastuiContainer = document.createElement('div');
         fastuiContainer.id = 'fastui';
@@ -297,10 +301,13 @@ export class UiManager {
         };
 
         const focusManager = GameFocusManager.getInstance();
+        const shouldManageKbModeFromDesktop = EnvironmentManager.isDesktop() || EnvironmentManager.isQuest();
 
         if (isCursorKeysOnly) {
             options = [{ value: 'focusmode', text: getKbModeLabel('focusmode', 'Full keyboard passthrough') }];
-            focusManager.enable();
+            if (shouldManageKbModeFromDesktop) {
+                focusManager.enable();
+            }
         } else if (hasKeyboardSupport) {
             options = [
                 { value: 'retropad', text: getKbModeLabel('retropad', 'Keyboard as joystick') },
@@ -316,10 +323,12 @@ export class UiManager {
             : options[0]?.value;
 
         this.#kbModeDropdown = new CustomDropdown('kbModeDropdownContainer', options, initialValue);
-        if (initialValue === 'focusmode') {
-            focusManager.enable();
-        } else if (initialValue === 'retropad') {
-            focusManager.disable();
+        if (shouldManageKbModeFromDesktop) {
+            if (initialValue === 'focusmode') {
+                focusManager.enable();
+            } else if (initialValue === 'retropad') {
+                focusManager.disable();
+            }
         }
         window.__VME_KB_MODE = initialValue;
 
@@ -1099,6 +1108,132 @@ export class UiManager {
         return UiManager.#baseInputMethod ?? UiManager.#currentInputMethod ?? TOUCH_INPUT.JOYSTICK;
     }
 
+    static #resolveProfileInputMethod(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        switch (String(value || '').trim().toLowerCase()) {
+            case 'joystick':
+                return TOUCH_INPUT.JOYSTICK;
+            case 'mouse':
+                return TOUCH_INPUT.MOUSE;
+            case 'keyboard':
+                return TOUCH_INPUT.KEYBOARD;
+            case 'cursors':
+            case 'cursor-keys':
+            case 'cursor keys':
+                return TOUCH_INPUT.CURSORS;
+            case 'custom':
+                return TOUCH_INPUT.CUSTOM;
+            default:
+                return null;
+        }
+    }
+
+    static #resolveProfileJoyMode(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        switch (String(value || '').trim().toLowerCase()) {
+            case 'quickjoy':
+                return JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY;
+            case 'quickshot':
+                return JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC;
+            case 'quickshot-keyboard':
+            case 'quickshot_keyboard':
+            case 'cursor-keys':
+            case 'cursor keys':
+                return JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD;
+            case 'hideaway':
+            case 'auto-hide':
+            case 'auto hide':
+                return JOYSTICK_TOUCH_MODE.HIDEAWAY;
+            default:
+                return null;
+        }
+    }
+
+    static applyAutoGameProfile(profile) {
+        if (!profile || EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
+            if (profile) {
+                console.info('[VM/E][PROFILE] Skipped touch auto-profile application.', {
+                    profileId: profile.id || null,
+                    desktop: EnvironmentManager.isDesktop(),
+                    quest: EnvironmentManager.isQuest()
+                });
+            }
+            return;
+        }
+
+        const touchConfig = profile.touch;
+        if (!touchConfig || typeof touchConfig !== 'object') {
+            console.info('[VM/E][PROFILE] Profile matched but has no touch config.', {
+                profileId: profile.id || null
+            });
+            return;
+        }
+
+        const selectedPlatform = UiManager.#platform_manager?.getSelectedPlatform?.();
+        if (!selectedPlatform) {
+            console.info('[VM/E][PROFILE] Profile matched but no selected platform is available.', {
+                profileId: profile.id || null
+            });
+            return;
+        }
+
+        const joyMode = UiManager.#resolveProfileJoyMode(touchConfig.joyMode ?? touchConfig.touchControllerMode);
+        if (joyMode != null && Array.isArray(selectedPlatform.touch_controllers)) {
+            const index = selectedPlatform.touch_controllers.indexOf(joyMode);
+            if (index >= 0) {
+                UiManager.#currentControllerIndex = index;
+                UiManager.#currentJoyTouchMode = joyMode;
+                UiManager.updateJoystickSelectorIndex();
+            }
+        }
+
+        const customPresetId = typeof touchConfig.customPresetId === 'string' ? touchConfig.customPresetId : null;
+        if (customPresetId && UiManager.#customControllerManager) {
+            console.info('[VM/E][PROFILE] Applying touch auto-profile preset.', {
+                profileId: profile.id || null,
+                inputMethod: 'custom',
+                customPresetId,
+                joyMode: joyMode ?? null
+            });
+            UiManager.#customControllerManager.setActivePreset(customPresetId);
+            UiManager.#baseInputMethod = TOUCH_INPUT.CUSTOM;
+            UiManager.#keyboardOverlayVisible = false;
+            UiManager.#applyTouchInputState();
+            return;
+        }
+
+        if (customPresetId && !UiManager.#customControllerManager) {
+            console.info('[VM/E][PROFILE] Profile requested custom preset but custom controller manager is unavailable.', {
+                profileId: profile.id || null,
+                customPresetId
+            });
+        }
+
+        const inputMethod = UiManager.#resolveProfileInputMethod(touchConfig.inputMethod);
+        if (inputMethod == null) {
+            console.info('[VM/E][PROFILE] Profile matched but no applicable touch input method was resolved.', {
+                profileId: profile.id || null,
+                touchConfig
+            });
+            return;
+        }
+
+        console.info('[VM/E][PROFILE] Applying touch auto-profile input mode.', {
+            profileId: profile.id || null,
+            inputMethod,
+            joyMode: joyMode ?? null
+        });
+        UiManager.#baseInputMethod = inputMethod;
+        UiManager.#keyboardOverlayVisible = false;
+        UiManager.#applyTouchInputState();
+    }
+
     static #getDesiredTouchGameFocus() {
         if (UiManager.#keyboardOverlayVisible) {
             return true;
@@ -1117,13 +1252,24 @@ export class UiManager {
 
     static #syncTouchGameFocus() {
         const desired = UiManager.#getDesiredTouchGameFocus();
+        window.__VME_KB_MODE = desired ? 'focusmode' : 'retropad';
         const focusManager = GameFocusManager.getInstance();
+        const focusEmulationCanvas = () => {
+            const canvas = document.querySelector('#emuscreen canvas');
+            if (canvas && typeof canvas.focus === 'function') {
+                canvas.focus();
+            }
+        };
         if (focusManager.isEnabled() === desired) {
+            if (desired) {
+                focusEmulationCanvas();
+            }
             return;
         }
 
         if (desired) {
             focusManager.enable();
+            focusEmulationCanvas();
         } else {
             focusManager.disable();
         }

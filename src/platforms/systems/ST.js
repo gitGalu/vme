@@ -256,6 +256,10 @@ const ST = {
     input_player1_gun_select_mbtn: 'nul'
   },
   touch_controller_mapping: {
+    input_player1_up: 'F13',
+    input_player1_left: 'F14',
+    input_player1_down: 'F15',
+    input_player1_right: 'F11',
     input_player1_x: 'F14',
     input_player1_y: 'F13',
     input_player1_c: 'nul',
@@ -485,6 +489,26 @@ const ST = {
       }
     ]
   },
+  game_profiles: [
+    {
+      id: 'st-obsession',
+      match: {
+        romHash: [
+          'a8551b0fd0fb53e864111858a544706021b0ebc75888bde78aef7c8af76229cb',
+          'f7b44de8cf386923ea030302c2899d411d36fc6b202633b3e26ec15f28454d88',
+          'd4c2e97368b20ea133fbcdc98ef08f8db508dc161744a113f59d893207423f4d',
+          'e073b7fd009baa55c84dcbf1f0730a5498351942a6283d06685cb888e2f20a54',
+          'e7ca0cca1bde6aa00c6d705463e1367288089e26d47b7d599c43a3786e75c859',
+          'e025e2a8f9c34c16bbb51f7c43b2eeae37199b716c18c67c3a568bf97c7be428',
+          '985b00bec7f4d6e53134169bc1c4bdb30b32b3c0ee28f9400c3f0cf70107e9aa',
+          '36c1d9899e56793ada3fe5c75cf4514fa9024a1ceaeb60bf8859ce83cbda4a4d'
+        ]
+      },
+      touch: {
+        customPresetId: 'pinball-1'
+      }
+    }
+  ],
   fire_buttons: 1,
   keyboard: {
     shiftKey: 2,

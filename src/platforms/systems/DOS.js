@@ -1,6 +1,6 @@
 
 import PlatformBase from '../PlatformBase.js';
-import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../../Constants.js';
+import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE, TOUCH_INPUT } from '../../Constants.js';
 import { KeyMaps } from '../../touch/KeyMaps.js';
 
 const DOS = {
@@ -1293,6 +1293,109 @@ const DOS = {
                     }
                 ]
             },
+            // {
+            //     "id": "dos-qj-pop2",
+            //     "name": "Prince of Persia 2",
+            //     "description": "The Shadow and the Flame",
+            //     "gameFocus": true,
+            //     "defaultLayoutId": "layout-1",
+            //     "currentLayoutId": "layout-1",
+            //     "layouts": [
+            //     ],
+            //     "layout": {
+            //         "landscape": {
+            //             "columns": 50,
+            //             "rows": 50
+            //         },
+            //         "portrait": {
+            //             "columns": 50,
+            //             "rows": 50
+            //         }
+            //     },
+            //     "elements": [
+            //         {
+            //             "component": "DualTouchButton",
+            //             "binding": {
+            //                 "type": "keyboard",
+            //                 "primary": {
+            //                     "key": "ArrowLeft",
+            //                     "code": "ArrowLeft",
+            //                     "keyCode": "37"
+            //                 },
+            //                 "secondary": {
+            //                     "key": "ArrowRight",
+            //                     "code": "ArrowRight",
+            //                     "keyCode": "39"
+            //                 }
+            //             },
+            //             "gridArea": {
+            //                 "landscape": "39 / 1 / span 14 / span 16",
+            //                 "portrait": "45 / 1 / span 6 / span 18"
+            //             },
+            //             "labels": [
+            //                 "LEFT",
+            //                 "RIGHT"
+            //             ],
+            //             "options": {
+            //                 "isHorizontal": true
+            //             }
+            //         },
+            //         {
+            //             "component": "DualTouchButton",
+            //             "binding": {
+            //                 "type": "keyboard",
+            //                 "primary": {
+            //                     "key": "ArrowUp",
+            //                     "code": "ArrowUp",
+            //                     "keyCode": "38"
+            //                 },
+            //                 "secondary": {
+            //                     "key": "ArrowDown",
+            //                     "code": "ArrowDown",
+            //                     "keyCode": "40"
+            //                 }
+            //             },
+            //             "gridArea": {
+            //                 "landscape": "27 / 43 / span 24 / span 8",
+            //                 "portrait": "39 / 40 / span 12 / span 11"
+            //             },
+            //             "labels": [
+            //                 "JUMP",
+            //                 "DOWN"
+            //             ],
+            //             "options": {
+            //                 "isHorizontal": false
+            //             }
+            //         },
+            //         {
+            //             "component": "DualTouchButton",
+            //             "binding": {
+            //                 "type": "keyboard",
+            //                 "primary": {
+            //                     "key": "Control",
+            //                     "code": "ControlLeft",
+            //                     "keyCode": "17"
+            //                 },
+            //                 "secondary": {
+            //                     "key": "Shift",
+            //                     "code": "ShiftLeft",
+            //                     "keyCode": "16"
+            //                 }
+            //             },
+            //             "gridArea": {
+            //                 "landscape": "27 / 35 / span 24 / span 8",
+            //                 "portrait": "39 / 29 / span 12 / span 11"
+            //             },
+            //             "labels": [
+            //                 "SWORD",
+            //                 "ACTION"
+            //             ],
+            //             "options": {
+            //                 "isHorizontal": false
+            //             }
+            //         }
+            //     ]
+            // }
             {
                 "id": "dos-qj-pop2",
                 "name": "Prince of Persia 2",
@@ -1300,8 +1403,6 @@ const DOS = {
                 "gameFocus": true,
                 "defaultLayoutId": "layout-1",
                 "currentLayoutId": "layout-1",
-                "layouts": [
-                ],
                 "layout": {
                     "landscape": {
                         "columns": 50,
@@ -1318,57 +1419,30 @@ const DOS = {
                         "binding": {
                             "type": "keyboard",
                             "primary": {
-                                "key": "ArrowLeft",
-                                "code": "ArrowLeft",
-                                "keyCode": "37"
+                                "key": "Control",
+                                "code": "ControlLeft",
+                                "keyCode": "17"
                             },
                             "secondary": {
-                                "key": "ArrowRight",
-                                "code": "ArrowRight",
-                                "keyCode": "39"
+                                "key": "Shift",
+                                "code": "ShiftLeft",
+                                "keyCode": "16"
                             }
                         },
                         "gridArea": {
-                            "landscape": "39 / 1 / span 14 / span 16",
-                            "portrait": "45 / 1 / span 6 / span 18"
+                            "landscape": "26 / 35 / span 25 / span 16",
+                            "portrait": "39 / 31 / span 12 / span 20"
                         },
                         "labels": [
-                            "LEFT",
-                            "RIGHT"
+                            "SWORD",
+                            "ACTION"
                         ],
                         "options": {
                             "isHorizontal": true
                         }
                     },
                     {
-                        "component": "DualTouchButton",
-                        "binding": {
-                            "type": "keyboard",
-                            "primary": {
-                                "key": "ArrowUp",
-                                "code": "ArrowUp",
-                                "keyCode": "38"
-                            },
-                            "secondary": {
-                                "key": "ArrowDown",
-                                "code": "ArrowDown",
-                                "keyCode": "40"
-                            }
-                        },
-                        "gridArea": {
-                            "landscape": "27 / 43 / span 24 / span 8",
-                            "portrait": "39 / 40 / span 12 / span 11"
-                        },
-                        "labels": [
-                            "JUMP",
-                            "DOWN"
-                        ],
-                        "options": {
-                            "isHorizontal": false
-                        }
-                    },
-                    {
-                        "component": "DualTouchButton",
+                        "component": "QuickshotComponent",
                         "binding": {
                             "type": "keyboard",
                             "primary": {
@@ -1383,21 +1457,114 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "27 / 35 / span 24 / span 8",
-                            "portrait": "39 / 29 / span 12 / span 11"
+                            "landscape": "26 / 1 / span 25 / span 34",
+                            "portrait": "39 / 1 / span 12 / span 30"
                         },
-                        "labels": [
-                            "SWORD",
-                            "ACTION"
-                        ],
                         "options": {
-                            "isHorizontal": false
+                            "label": " ",
+                            "mode": "keyboard"
                         }
                     }
                 ]
             }
         ]
     },
+    game_profiles: [
+        {
+            id: 'dos-worms',
+            match: {
+                execHash: '7ad8cf06463c6a19b5fefa627b2711d42e53694ac32e6ffa3cd3a110ca0519d4'
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'preset-worms'
+            }
+        },
+        {
+            id: 'dos-stunts',
+            match: {
+                execHash: [
+                    '15d4200c06459e263e2734d5715b067fa95a5bdaa3bab603582c728d6b12cb28',
+                    '83363c040b465c94ea1d84dae9bbdba10831f1b992e378123eac6f90692bb7c5'
+                ]
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'dos-qj-stunts'
+            }
+        },
+        {
+            id: 'dos-qj-shift',
+            match: {
+                execHash: [
+                    'b648ce9a783f7de00ce2a61979ed096ba272f3ffe860ab5a24ebc5af62c33e76',
+                    '2f7ce29565d7912a0c7d06ec6b74df7dfe907ca5c0fbef824c1ba86455f24d60',
+                    'bee42771e080ca2786313fd1ca3d07076157b357ea92695300792f57636ab478',
+                    'c9091214d40197bb14ca67cb1410bee43874649007e67344b8e3e67ca4fa9f0f',
+                    'bd1716a2ff83dcfd68995a481214ac61a81a98a954acd0ed2d76b372e54fcaa5'
+                ]
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'dos-qj-shift'
+            }
+        },
+        {
+            id: 'dos-qj-space',
+            match: {
+                execHash: [
+                    '7a6fc1113498a45f3af96bc3e6fa68bfd3205c1b6575927e4194683c2d8a3cbb',
+                    '10e937e87c48f12e220862b140b7a501c809854ad5de0cb473a0fc58add54e5c',
+                    'cc904eb16f517aa01560b5df955a8eaa1bd90c5ecae3886f17c504d5e4888059',
+                    'a6a7526911e5ba75dc82270578256dcb59f3b39392ef820df3df8e49b02f84c7',
+                    '3779a52c1a5ccd4f8ad879af24df93e46a431a25beaf55d2691e6bd84abbfadd'
+                ]
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'dos-qj-space'
+            }
+        },
+        {
+            id: 'dos-pinball-tristan',
+            match: {
+                execHash: [
+                    'eadce78787496dd9d1da1642a87f83c8275795aba2472977732b7c4f859cf42a',
+                    'b7a1fb0e6c8f775eedc5ad01b1b6de058753aeac4ad09b8fb764293e68ac52ce',
+                    'bb99ec8d17a7bf841c43293609b3907e7268accc347192091cd345623375d130'
+                ]
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'dos-pinball-tristan'
+            }
+        },
+        {
+            id: 'dos-pinball-epic',
+            match: {
+                execHash: [
+                    'b7751c099d6adae76ab55d306a0550bf664b98ebfbae980782847de857c872da',
+                    '4f3c1b051de9dfc99b5b0ccf99aeac7dff5c9dd6dfbf9f8a69a6165adf1c3982',
+                    'b53155c6a123e4adb57db6f4cd47a8d68a81e6061f77c79c27b2b4789a842c56',
+                    '6c7d7c288da0e80fd2c1c0f0ffac78435018fbd31713e7564caad7c980db4605'
+                ]
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'dos-pinball-epic'
+            }
+        },
+        {
+            id: 'dos-qj-pop2',
+            match: {
+                execHash: '2a4268b4c42dd808947edcc4e4fe9646ef33f1bfb4e5361b6267fadbaf112dbd'
+            },
+            touch: {
+                inputMethod: TOUCH_INPUT.CUSTOM,
+                customPresetId: 'dos-qj-pop2'
+            }
+        }
+    ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD,
     disable_touch_input: false,
     fire_buttons: 1,

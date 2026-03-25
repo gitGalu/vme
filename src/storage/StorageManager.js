@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
-import CryptoJS from 'crypto-js';
 import { Debug } from '../Debug.js';
+import { computeBlobSha256 } from '../utils/HashUtils.js';
 
 export class StorageManager {
     #db;
@@ -92,19 +92,7 @@ export class StorageManager {
     }
 
     async #computeHash(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const data = event.target.result;
-                const wordArray = CryptoJS.lib.WordArray.create(data);
-                const hash = CryptoJS.SHA256(wordArray).toString();
-                resolve(hash);
-            };
-            reader.onerror = function (error) {
-                reject(error);
-            };
-            reader.readAsArrayBuffer(blob);
-        });
+        return computeBlobSha256(blob);
     }
 
     static storeValue(key, value) {
