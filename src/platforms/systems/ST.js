@@ -367,7 +367,7 @@ const ST = {
               "landscape": "28 / 1 / span 8 / span 8",
               "portrait": "38 / 1 / span 5 / span 19"
             },
-            "label": "TILT"
+            "label": "START<br/>TILT"
           },
           {
             "component": "SingleTouchButton",
@@ -476,10 +476,10 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 47 / span 4 / span 4",
-              "portrait": "29 / 42 / span 2 / span 9"
+              "landscape": "13 / 47 / span 4 / span 4",
+              "portrait": "32 / 42 / span 2 / span 9"
             },
-            "label": "Y"
+            "label": "MUSIC"
           }
         ]
       }
