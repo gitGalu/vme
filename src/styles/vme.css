@@ -549,6 +549,11 @@ body {
 
   padding-right: 2em;
   padding-right: max(2em, env(safe-area-inset-right));
+  transition: opacity 160ms ease;
+}
+
+#settings.launch-starting {
+  opacity: 0.72;
 }
 
 #settings.dragging {
@@ -2485,6 +2490,10 @@ a {
   z-index: 5000;
 }
 
+.launch-settings-modal--closing {
+  pointer-events: none;
+}
+
 .launch-settings-dialog {
   width: 100%;
   display: flex;
@@ -2510,6 +2519,10 @@ a {
   animation: launch-settings-sheet-in 180ms ease-out forwards;
 }
 
+.launch-settings-modal--closing .launch-settings-dialog {
+  animation: launch-settings-sheet-out 160ms ease-in forwards;
+}
+
 .launch-settings-dialog__header {
   width: 100%;
   color: #444444;
@@ -2527,6 +2540,18 @@ a {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes launch-settings-sheet-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(28px);
   }
 }
 

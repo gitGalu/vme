@@ -308,13 +308,18 @@ export class PlatformManager {
                 }
                 finished = true;
                 document.removeEventListener('keydown', handleLaunchKey, true);
+                const settingsElement = document.getElementById('settings');
+                settingsElement?.classList.add('launch-starting');
                 const overrides = {};
                 for (const [id, dropdown] of dropdowns.entries()) {
                     overrides[id] = dropdown.getValue();
                 }
-                this.#launch_settings_modal = null;
-                overlay.remove();
-                resolve(overrides);
+                overlay.classList.add('launch-settings-modal--closing');
+                window.setTimeout(() => {
+                    this.#launch_settings_modal = null;
+                    overlay.remove();
+                    resolve(overrides);
+                }, 160);
             };
             overlay.addEventListener('click', finish);
             overlay.addEventListener('keydown', (event) => {
