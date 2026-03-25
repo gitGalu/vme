@@ -7,6 +7,7 @@ import { StorageManager } from './storage/StorageManager.js';
 import { HelpCommand } from './cli/HelpCommand.js';
 import { SystemCommand } from './cli/SystemCommand.js';
 import { ListCommand } from './cli/ListCommand.js';
+import { RandomCommand } from './cli/RandomCommand.js';
 import { FindCommand } from './cli/FindCommand.js';
 import { SetCommand } from './cli/SetCommand.js';
 import { OpenCommand } from './cli/OpenCommand.js';
@@ -101,6 +102,7 @@ export class VME {
         this.#cli.register_command(new SystemCommand(this.#pl));
         this.#cli.register_command(new FindCommand(this.#pl));
         this.#cli.register_command(new ListCommand(this.#pl));
+        this.#cli.register_command(new RandomCommand(this.#pl));
         this.#cli.register_command(new OpenCommand(this.#pl));
         this.#cli.register_command(new AboutCommand(this.#pl));
         this.#cli.register_command(new SaveBrowserCommand(this.#save_browser));

@@ -886,6 +886,10 @@ export class PlatformManager {
                 self.#cli.print(`Auto M3U prepared (${autoDiskSetInfo.selectedNames.length}/${autoDiskSetInfo.totalDisks}):`);
                 autoDiskSetInfo.selectedNames.forEach((name) => self.#cli.print(`- ${name}`));
                 self.#cli.print("&nbsp;");
+            } else {
+                self.#cli.print("Program loaded:");
+                self.#cli.print(`- ${caption}`);
+                self.#cli.print("&nbsp;");
             }
             self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
 
