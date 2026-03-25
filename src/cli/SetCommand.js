@@ -12,10 +12,6 @@ export class SetCommand extends CommandBase {
             validValues: ["SINGLE", "MULTI"],
             description: "single or multi line results"
         },
-        SYSKB: {
-            validValues: ["0", "1"],
-            description: "use system touchscreen keyboard"
-        },
         DEBUG: {
             validValues: ["0", "1"],
             description: "enable debug information",

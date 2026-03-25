@@ -9,7 +9,6 @@ import Kb6Sound from '../assets/audio/gui_type6.mp3';
 import Kb7Sound from '../assets/audio/gui_type7.mp3';
 import Kb8Sound from '../assets/audio/gui_type8.mp3';
 import { EnvironmentManager } from '../EnvironmentManager.js';
-import { StorageManager } from '../storage/StorageManager.js';
 import { VME } from '../VME.js';
 import { UiManager } from '../ui/UiManager.js';
 import GameFocusManager from './GameFocusManager.js';
@@ -781,7 +780,7 @@ export class KeyboardManager {
         if (isVisible) {
             this.hideTouchKeyboard();
         } else {
-            if ((StorageManager.getValue("SYSKB") == "1") || EnvironmentManager.isQuest()) {
+            if (EnvironmentManager.isQuest()) {
                 document.getElementById('cors_hidden_input').focus();
             } else {
                 this.showTouchKeyboard();
