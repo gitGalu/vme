@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.75] - 2026-03-25
+
+- VM/E Autoprofiles: added auto-detection for touch controller profiles
+- added RND command to load random program from the current software directory
+- added NXT command to cycle through software titles
+- fixed touch input bug
+- DOS: added custom touch controller for Prince of Persia 2
+
 ## [0.70] - 2026-03-22
 
 - VM/E Autoconfig: added a machine configuration override UI
@@ -9,7 +17,7 @@ All notable changes to this project will be documented in this file.
 - Atari 800: added Autoconfig options for machine model override, BASIC on/off, and PAL/NTSC selection
 - Atari ST: added Autoconfig options for machine model override, RAM size, and monitor type
 - Atari ST: added a custom touch controller for Pinball Obsession
-- DOS: added custom touch controllers for Stunts (4D Sports Driving) and Prince of Persia 2
+- DOS: added custom touch controller for Stunts (4D Sports Driving)
 
 ## [0.64] - 2026-03-20
 
