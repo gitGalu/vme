@@ -14,6 +14,7 @@ export const TOUCH_INPUT = {
     MOUSE: 300,
     KEYBOARD: 500,
     CURSORS: 600,
+    CUSTOM: 700,
     SPECIAL: 700
 }
 

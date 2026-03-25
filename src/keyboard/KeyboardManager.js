@@ -804,6 +804,7 @@ export class KeyboardManager {
     }
 
     showTouchKeyboard() {
+        s('#keyboardContainer').style.display = 'block';
         const btn = document.querySelector('#toggle-keyboard');
         btn.style.visibility = "hidden";
 
@@ -812,10 +813,6 @@ export class KeyboardManager {
 
     hideTouchKeyboard(notifyUi = true) {
         UiManager.keyboardVisible = false;
-        if (notifyUi) {
-            UiManager.keyboardClosed();
-        }
-
         s('#keyboardContainer').classList.remove('visible');
 
         const btn = document.querySelector('#toggle-keyboard');
@@ -829,6 +826,10 @@ export class KeyboardManager {
             allKeys.forEach(key => key.classList.remove('keyboard-gamepad-focused'));
 
             this.#gamepadManager.updateFocus();
+        }
+
+        if (notifyUi) {
+            UiManager.keyboardClosed();
         }
     }
 }

@@ -53,7 +53,8 @@ export class UiManager {
     static #diskSwitchInProgress = false;
 
     static #currentInputMethod;
-    static #previousInputMethod;
+    static #baseInputMethod;
+    static #keyboardOverlayVisible = false;
     static #currentControllerIndex = 0;
     static #currentJoyTouchMode;
 
@@ -884,25 +885,19 @@ export class UiManager {
                 config,
                 {
                     onPresetActivated: (preset) => {
-                        if (UiManager.#currentInputMethod === TOUCH_INPUT.KEYBOARD) {
+                        if (UiManager.#keyboardOverlayVisible) {
                             UiManager.#kb_manager.hideTouchKeyboard(false);
                             UiManager.hideKeyboard();
+                            UiManager.#keyboardOverlayVisible = false;
                         }
 
-                        const focusManager = GameFocusManager.getInstance();
-                        const wantsGameFocus = UiManager.#customControllerManager.isGameFocusEnabled();
-                        if (wantsGameFocus) {
-                            focusManager.enable();
-                        } else {
-                            focusManager.disable();
-                        }
-                        UiManager.#currentInputMethod = TOUCH_INPUT.CUSTOM;
-                        UiManager.#updateAdditionalFastButtonsVisibility();
-                        UiManager.showTouchOnly(UiManager.#customControllerManager);
+                        UiManager.#baseInputMethod = TOUCH_INPUT.CUSTOM;
+                        UiManager.#applyTouchInputState();
                     },
                     onPickerDismissed: () => {
-                        if (UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM && !UiManager.#customControllerManager?.getActivePreset()) {
-                            UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK, true);
+                        if (UiManager.#baseInputMethod === TOUCH_INPUT.CUSTOM && !UiManager.#customControllerManager?.getActivePreset()) {
+                            UiManager.#baseInputMethod = TOUCH_INPUT.JOYSTICK;
+                            UiManager.#applyTouchInputState();
                         }
                     }
                 }
@@ -954,11 +949,7 @@ export class UiManager {
         const additionalButtons = UiManager.#platform_manager?.getSelectedPlatform()?.additional_buttons || {};
         const buttonCount = Object.keys(additionalButtons).length;
         const hideRequestedByCustomPreset = UiManager.#customControllerManager?.shouldHideAdditionalButtons?.() === true;
-        const isKeyboardWithCustomPreset = UiManager.#currentInputMethod === TOUCH_INPUT.KEYBOARD &&
-            UiManager.#previousInputMethod === TOUCH_INPUT.CUSTOM &&
-            hideRequestedByCustomPreset;
-        const shouldHide = (UiManager.#currentInputMethod === TOUCH_INPUT.CUSTOM && hideRequestedByCustomPreset) ||
-            isKeyboardWithCustomPreset;
+        const shouldHide = UiManager.#baseInputMethod === TOUCH_INPUT.CUSTOM && hideRequestedByCustomPreset;
 
         for (let i = 1; i <= buttonCount; i++) {
             const button = document.getElementById(`fast${i}`);
@@ -1057,7 +1048,8 @@ export class UiManager {
     };
 
     static setCurrentJoyTouchMode(mode) {
-        UiManager.#currentInputMethod = TOUCH_INPUT.JOYSTICK;
+        UiManager.#baseInputMethod = TOUCH_INPUT.JOYSTICK;
+        UiManager.#keyboardOverlayVisible = false;
         UiManager.#currentJoyTouchMode = mode;
         UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK, true);
     }
@@ -1066,6 +1058,8 @@ export class UiManager {
         const selectedMode = touch_controllers[index];
         UiManager.#currentControllerIndex = index;
         UiManager.#currentJoyTouchMode = selectedMode;
+        UiManager.#baseInputMethod = TOUCH_INPUT.JOYSTICK;
+        UiManager.#keyboardOverlayVisible = false;
 
         if (UiManager.#joystickSelector) {
             UiManager.#joystickSelector.setSelectedIndex(index);
@@ -1084,12 +1078,109 @@ export class UiManager {
         return UiManager.#currentInputMethod === TOUCH_INPUT.JOYSTICK;
     }
 
+    static #getEffectiveInputMethod() {
+        if (UiManager.#keyboardOverlayVisible) {
+            return TOUCH_INPUT.KEYBOARD;
+        }
+
+        return UiManager.#baseInputMethod ?? UiManager.#currentInputMethod ?? TOUCH_INPUT.JOYSTICK;
+    }
+
+    static #getDesiredTouchGameFocus() {
+        if (UiManager.#keyboardOverlayVisible) {
+            return true;
+        }
+
+        switch (UiManager.#baseInputMethod) {
+            case TOUCH_INPUT.CURSORS:
+                return true;
+            case TOUCH_INPUT.CUSTOM:
+                return !!UiManager.#customControllerManager?.getActivePreset() &&
+                    UiManager.#customControllerManager.isGameFocusEnabled();
+            default:
+                return false;
+        }
+    }
+
+    static #syncTouchGameFocus() {
+        const desired = UiManager.#getDesiredTouchGameFocus();
+        const focusManager = GameFocusManager.getInstance();
+        if (focusManager.isEnabled() === desired) {
+            return;
+        }
+
+        if (desired) {
+            focusManager.enable();
+        } else {
+            focusManager.disable();
+        }
+    }
+
+    static #applyTouchInputState({ showSplash = false, forceCustomPicker = false, syncKeyboardOverlay = true } = {}) {
+        if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
+            return;
+        }
+
+        if (UiManager.#baseInputMethod == null) {
+            UiManager.#baseInputMethod = TOUCH_INPUT.JOYSTICK;
+        }
+
+        UiManager.#currentInputMethod = UiManager.#getEffectiveInputMethod();
+
+        if (UiManager.#keyboardOverlayVisible) {
+            UiManager.hideJoystick();
+            UiManager.hideCursors();
+            UiManager.hideMousepad();
+
+            const keepCustomControllerVisible = UiManager.#baseInputMethod === TOUCH_INPUT.CUSTOM &&
+                !!UiManager.#customControllerManager?.getActivePreset();
+            if (keepCustomControllerVisible) {
+                UiManager.#customControllerManager.show();
+            } else {
+                UiManager.hideCustomControllers();
+            }
+
+            UiManager.showKeyboard();
+            UiManager.#kb_manager.showTouchKeyboard();
+        } else {
+            if (syncKeyboardOverlay) {
+                UiManager.#kb_manager.hideTouchKeyboard(false);
+            }
+            UiManager.hideKeyboard();
+
+            switch (UiManager.#baseInputMethod) {
+                case TOUCH_INPUT.JOYSTICK:
+                    UiManager.toggleJoystick(showSplash);
+                    break;
+                case TOUCH_INPUT.MOUSE:
+                    UiManager.toggleMousePad(showSplash);
+                    break;
+                case TOUCH_INPUT.CURSORS:
+                    UiManager.toggleCursors(showSplash);
+                    break;
+                case TOUCH_INPUT.CUSTOM:
+                    UiManager.toggleSpecial(showSplash, forceCustomPicker);
+                    break;
+                default:
+                    UiManager.#baseInputMethod = TOUCH_INPUT.JOYSTICK;
+                    UiManager.#currentInputMethod = TOUCH_INPUT.JOYSTICK;
+                    UiManager.toggleJoystick(showSplash);
+                    break;
+            }
+        }
+
+        UiManager.#updateAdditionalFastButtonsVisibility();
+        UiManager.#syncTouchGameFocus();
+    }
+
     static toggleInputMethod(inputMethod, skipPre = false) {
         if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
             return;
         }
 
-        if (inputMethod == UiManager.#currentInputMethod && !skipPre) {
+        const effectiveInputMethod = UiManager.#getEffectiveInputMethod();
+
+        if (inputMethod == effectiveInputMethod && !skipPre) {
             if (inputMethod == TOUCH_INPUT.KEYBOARD) return;
             if (inputMethod == TOUCH_INPUT.CURSORS) return;
             if (inputMethod == TOUCH_INPUT.MOUSE) return;
@@ -1099,58 +1190,31 @@ export class UiManager {
                 UiManager.#currentJoyTouchMode = touch_controllers[UiManager.#currentControllerIndex];
             }
             if (inputMethod == TOUCH_INPUT.CUSTOM) {
-                UiManager.toggleSpecial(false, true);
+                UiManager.#applyTouchInputState({ forceCustomPicker: true });
                 return;
             }
         }
 
-        switch (UiManager.#currentInputMethod) {
-            case TOUCH_INPUT.KEYBOARD:
-                UiManager.#kb_manager.hideTouchKeyboard(false);
-                UiManager.hideKeyboard();
-                GameFocusManager.getInstance().disable();
-                break;
-            case TOUCH_INPUT.CURSORS:
-                GameFocusManager.getInstance().disable();
-                break;
-            case TOUCH_INPUT.CUSTOM:
-                GameFocusManager.getInstance().disable();
-                break;
-        }
-
         if (inputMethod == TOUCH_INPUT.KEYBOARD) {
-            UiManager.#previousInputMethod = this.#currentInputMethod;
+            if (UiManager.#baseInputMethod == null) {
+                UiManager.#baseInputMethod = effectiveInputMethod === TOUCH_INPUT.KEYBOARD
+                    ? TOUCH_INPUT.JOYSTICK
+                    : effectiveInputMethod;
+            }
+            UiManager.#keyboardOverlayVisible = true;
+        } else {
+            UiManager.#baseInputMethod = inputMethod;
+            UiManager.#keyboardOverlayVisible = false;
         }
 
-        const previousInputMethod = UiManager.#currentInputMethod;
-        UiManager.#currentInputMethod = inputMethod;
-        UiManager.#updateAdditionalFastButtonsVisibility();
-
-        switch (inputMethod) {
-            case TOUCH_INPUT.JOYSTICK:
-                this.toggleJoystick(false);
-                break;
-            case TOUCH_INPUT.MOUSE:
-                this.toggleMousePad(false);
-                break;
-            case TOUCH_INPUT.CURSORS:
-                this.toggleCursors(false);
-                break;
-            case TOUCH_INPUT.KEYBOARD:
-                this.toggleKeyboard(false);
-                break;
-            case TOUCH_INPUT.CUSTOM:
-                this.toggleSpecial(false, previousInputMethod === TOUCH_INPUT.CUSTOM);
-                break;
-        }
+        UiManager.#applyTouchInputState();
     }
 
     static toggleKeyboard = (showSplash) => {
-        GameFocusManager.getInstance().enable();
         UiManager.hideJoystick();
         UiManager.hideCursors();
         UiManager.hideMousepad();
-        const keepCustomControllerVisible = UiManager.#previousInputMethod === TOUCH_INPUT.CUSTOM &&
+        const keepCustomControllerVisible = UiManager.#baseInputMethod === TOUCH_INPUT.CUSTOM &&
             !!UiManager.#customControllerManager?.getActivePreset();
         if (keepCustomControllerVisible) {
             UiManager.#customControllerManager.show();
@@ -1162,9 +1226,14 @@ export class UiManager {
     }
 
     static keyboardClosed = () => {
-        if (UiManager.#previousInputMethod != undefined) {
-            UiManager.toggleInputMethod(UiManager.#previousInputMethod);
+        const emulator = document.getElementById('emulator');
+        const isEmulationScreenVisible = emulator && window.getComputedStyle(emulator).display !== 'none';
+        if (!isEmulationScreenVisible) {
+            return;
         }
+
+        UiManager.#keyboardOverlayVisible = false;
+        UiManager.#applyTouchInputState({ syncKeyboardOverlay: false });
     }
 
     static toggleJoystick = (showSplash) => {
@@ -1195,7 +1264,6 @@ export class UiManager {
 
     static toggleCursors = (showSplash) => {
         if (showSplash) UiManager.osdMessage('Cursor keys', 1000);
-        GameFocusManager.getInstance().enable();
         UiManager.showTouchOnly(UiManager.#ck);
     }
 
@@ -1207,13 +1275,6 @@ export class UiManager {
         if (forcePicker || !UiManager.#customControllerManager.getActivePreset()) {
             UiManager.#customControllerManager.openPresetPicker();
             return;
-        }
-
-        const focusManager = GameFocusManager.getInstance();
-        if (UiManager.#customControllerManager.isGameFocusEnabled()) {
-            focusManager.enable();
-        } else {
-            focusManager.disable();
         }
 
         if (showSplash) {
