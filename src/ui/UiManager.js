@@ -21,7 +21,12 @@ import {
     getSyntheticKeyboardTarget
 } from '../keyboard/SyntheticKeyboard.js';
 
-function getJoystickModeName(mode) {
+function getJoystickModeName(mode, platform = null) {
+    const overrideLabel = platform?.touch_controller_mode_labels?.[mode];
+    if (typeof overrideLabel === 'string' && overrideLabel.trim().length > 0) {
+        return overrideLabel;
+    }
+
     switch (mode) {
         case JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY:
             return 'QuickJoy';
@@ -492,7 +497,7 @@ export class UiManager {
             const hasAlternativeTouchInputMode = hasMouseMode || hasKeyboardMode || hasCursorMode || hasCustomMode;
 
             if (touch_controllers.length > 1) {
-                const joystickOptions = touch_controllers.map(mode => getJoystickModeName(mode));
+                const joystickOptions = touch_controllers.map(mode => getJoystickModeName(mode, selectedPlatform));
 
                 UiManager.#joystickSelector = new MultiSelectTouchButton(
                     s("#fastui"),

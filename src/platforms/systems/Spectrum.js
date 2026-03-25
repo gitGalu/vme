@@ -139,6 +139,9 @@ const Spectrum = {
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD
     ],
+    touch_controller_mode_labels: {
+        [JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD]: 'QuickShot'
+    },
     touch_key_mapping: {
         keyMap: {
             'Interface 2': KeyMaps.ZX_INTERFACE_2_LEFT,
