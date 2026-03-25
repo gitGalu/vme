@@ -482,7 +482,15 @@ export class UiManager {
                 UiManager.showMousepad();
             }
         } else {
+            const selectedPlatform = UiManager.#platform_manager.getSelectedPlatform();
             const touch_controllers = UiManager.#platform_manager.getSelectedPlatform().touch_controllers;
+            const hasMouseMode = Array.isArray(selectedPlatform.mouse_controllers) && selectedPlatform.mouse_controllers.length > 0;
+            const hasKeyboardMode = selectedPlatform.keyboard != undefined;
+            const hasCursorMode = selectedPlatform.arrow_keys && selectedPlatform.platform_id !== 'dos';
+            const hasCustomMode = Array.isArray(selectedPlatform.custom_controllers?.presets) &&
+                selectedPlatform.custom_controllers.presets.length > 0;
+            const hasAlternativeTouchInputMode = hasMouseMode || hasKeyboardMode || hasCursorMode || hasCustomMode;
+
             if (touch_controllers.length > 1) {
                 const joystickOptions = touch_controllers.map(mode => getJoystickModeName(mode));
 
@@ -499,7 +507,7 @@ export class UiManager {
                     'JOY',
                     true // Show all options
                 );
-            } else if (touch_controllers.length === 1) {
+            } else if (touch_controllers.length === 1 && hasAlternativeTouchInputMode) {
                 new SingleTouchButton(s("#fastui"), '<span style="font-size: 50%;">JOY</span>', undefined, 'fastjoy', new InputSwitchListener(TOUCH_INPUT.JOYSTICK), FAST_BTN_RADIUS);
             }
 
