@@ -10,8 +10,8 @@
     <link rel="icon" href="/vme/assets/favicon-CcvJXZ4M.ico" type="image/x-icon">
     <link rel="icon" href="/vme/assets/favicon-32x32-DDiKfeWr.png" type="image/png" sizes="32x32">
     <link rel="icon" href="/vme/assets/favicon-16x16-q6ilooy1.png" type="image/png" sizes="16x16">
-  <script type="module" crossorigin src="/vme/assets/index-Dt-BMI-v.js"></script>
-  <link rel="stylesheet" crossorigin href="/vme/assets/index-DJA1Br-b.css">
+  <script type="module" crossorigin src="/vme/assets/index-DHfeeeWS.js"></script>
+  <link rel="stylesheet" crossorigin href="/vme/assets/index-DGP6LQFb.css">
 <link rel="manifest" href="/vme/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/vme/registerSW.js"></script></head>
 <style>
     html {
@@ -123,7 +123,7 @@
             </div>
             <div id="menu-wrap">
                 <div id="menu-button-strip"></div>
-                <p>&nbsp;</p>
+                <p class="menu-strip-spacer">&nbsp;</p>
             </div>
             <div id="cors_interface">
                 <span id="cors_query_caret">Command></span>
@@ -136,6 +136,8 @@
             <div id="cors_results" tabindex="0"></div>
         </div>
 
+        <img id="cli-thumbnail" alt="">
+
         <div id="keyboardContainer">
             <div id="keyboardControls">
                 <div class="kbCtrlContainer">
@@ -145,6 +147,11 @@
                 </div>
               </div>
             <div id="keyboard" class="keyboardQwerty">
+                <div id="keyboardSelection">
+                    <span class="key selectionKey" id="keySelUp">&#x2191;</span>
+                    <span class="key selectionKey" id="keySelDown">&#x2193;</span>
+                    <span class="key selectionKey" id="keySelEnter">OK</span>
+                </div>
                 <span class="key layerA layerB layerC" data-value="backspace" data-code="Backspace"
                     id="keyBackspace">BSP</span>
                 <span class="key layerA layerB layerC" data-value="space" data-code="Space" id="keySpace">SPC</span>
