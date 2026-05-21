@@ -1,4 +1,5 @@
 import { FileUtils } from '../utils/FileUtils.js';
+import { SelectedPlatforms } from '../platforms/PlatformManager.js';
 
 const SHOW_DEBOUNCE_MS = 200;
 const LAYER_ORDER = ['snaps', 'titles', 'boxarts'];
@@ -35,7 +36,7 @@ class ThumbnailPreviewClass {
         });
     }
 
-    show(romName) {
+    show(romName, platformIdOverride = null) {
         if (!this.#imgEl || !this.#platformManager) return;
         const token = ++this.#currentToken;
         this.#imgEl.classList.remove('visible');
@@ -49,14 +50,20 @@ class ThumbnailPreviewClass {
         }
         this.#debounceTimer = setTimeout(() => {
             this.#debounceTimer = null;
-            this.#resolve(romName, token);
+            this.#resolve(romName, token, platformIdOverride);
         }, SHOW_DEBOUNCE_MS);
     }
 
-    async #resolve(romName, token) {
+    async #resolve(romName, token, platformIdOverride) {
         if (!this.#imgEl || !this.#platformManager) return;
         if (this.#currentToken !== token) return;
-        const platform = this.#platformManager.getSelectedPlatform?.();
+        let platform = null;
+        if (platformIdOverride) {
+            platform = Object.values(SelectedPlatforms).find(p => p.platform_id === platformIdOverride) || null;
+        }
+        if (!platform) {
+            platform = this.#platformManager.getSelectedPlatform?.();
+        }
         if (!platform || typeof platform.getThumbnailUrls !== 'function') {
             this.hide();
             return;

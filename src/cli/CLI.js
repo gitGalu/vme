@@ -209,7 +209,8 @@ export class CLI {
                 const currentItem = items[this.#currentIndex];
                 this.#addFlashingClass(currentItem.querySelector('span'));
                 this.selected_command.selection_changed(currentItem);
-                ThumbnailPreview.show(this.#extractItemTitle(currentItem));
+                const platformOverride = currentItem.getAttribute('data-platform-id') || null;
+                ThumbnailPreview.show(this.#extractItemTitle(currentItem), platformOverride);
             }
             if (this.#currentIndex != -1) {
                 if (!this.#isElementInContainerViewport(items[this.#currentIndex].querySelector('span'), container)) {

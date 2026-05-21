@@ -78,6 +78,9 @@ export class CommandBase {
         results.forEach((item, index) => {
             const p = document.createElement('p');
             p.setAttribute('data-value', item.data);
+            if (item.__platformId) {
+                p.setAttribute('data-platform-id', item.__platformId);
+            }
             p.classList.add('corsrow');
 
             const span = document.createElement('span');

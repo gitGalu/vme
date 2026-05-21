@@ -35,6 +35,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
+import { HistoryManager } from '../history/HistoryManager.js';
 import { DiskSetBuilder } from '../utils/DiskSetBuilder.js';
 import { resolveGameProfile } from '../utils/GameProfileMatcher.js';
 import { computeBlobSha256 } from '../utils/HashUtils.js';
@@ -1179,6 +1180,13 @@ export class PlatformManager {
             "url": `${filename}`
         });
 
+        HistoryManager.record({
+            romPath: filename,
+            romName,
+            label: caption,
+            platformId: this.#selected_platform.platform_id
+        });
+
         return this.loadRom(filename, caption, false, romName);
     }
 
@@ -1637,11 +1645,13 @@ export class PlatformManager {
         return this.#active_theme;
     }
 
-    updatePlatform() {
+    updatePlatform({ printStatus = true } = {}) {
         s('#platformLabel').innerHTML = "(" + this.#selected_platform.short_name + ")";
         this.theme(this.#selected_platform.theme);
         this.#keyboard_manager?.setTouchCapsEnabled(this.#selected_platform.keyboard?.touch_caps_toggle === true);
-        this.#print_platform_status();
+        if (printStatus) {
+            this.#print_platform_status();
+        }
     }
 
     updateGamepadStatus() {
