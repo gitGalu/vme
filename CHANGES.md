@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.80] - 2026-05-21
+
+- add libretro game thumbnails
+- touch: add arrows panel for CLI selection mode
+- CLI: add RECENT command showing recently played games across all platforms
+
 ## [0.75] - 2026-03-25
 
 - VM/E Autoprofiles: added auto-detection for touch controller profiles
