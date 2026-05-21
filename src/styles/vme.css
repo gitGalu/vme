@@ -1219,6 +1219,12 @@ a {
   visibility: visible !important;
 }
 
+body.selection-mode-active #menu-button-strip,
+body.selection-mode-active #menu-button-header-strip,
+body.selection-mode-active .menu-strip-spacer {
+  display: none !important;
+}
+
 .selectionKey {
   display: flex !important;
   align-items: center;

@@ -607,7 +607,10 @@ export class KeyboardManager {
     setSelectionPanelVisible(visible) {
         const container = document.querySelector('#keyboardContainer');
         if (!container) return;
-        container.classList.toggle('selection-mode', visible === true);
+        const on = visible === true;
+        container.classList.toggle('selection-mode', on);
+        const kbVisible = container.classList.contains('visible');
+        document.body.classList.toggle('selection-mode-active', on && kbVisible);
     }
 
     #handleCliInput(e) {
@@ -849,6 +852,8 @@ export class KeyboardManager {
 
         if (this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
             this.setSelectionPanelVisible(true);
+        } else {
+            document.body.classList.remove('selection-mode-active');
         }
     }
 
@@ -858,6 +863,7 @@ export class KeyboardManager {
             this.#cli.set_selection_mode(false);
         }
         s('#keyboardContainer').classList.remove('visible');
+        document.body.classList.remove('selection-mode-active');
 
         const btn = document.querySelector('#toggle-keyboard');
         btn.style.visibility = "visible";
