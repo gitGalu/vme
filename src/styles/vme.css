@@ -1171,6 +1171,71 @@ a {
   border-radius: 3px;
 }
 
+#keyboard {
+  position: relative;
+}
+
+#keyboardSelection {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 240px;
+  max-width: 50%;
+  padding: 8px;
+  padding-right: calc(env(safe-area-inset-right) + 8px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+  background: rgba(150, 150, 150, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  pointer-events: auto;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+#keyboardContainer.selection-mode #keyboard {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-top: none;
+}
+
+#keyboardContainer.selection-mode #keyboard > .key {
+  visibility: hidden !important;
+}
+
+#keyboardContainer.selection-mode #keyboardSelection {
+  display: grid;
+}
+
+#keyboardContainer.selection-mode #keyboardSelection .key {
+  visibility: visible !important;
+}
+
+.selectionKey {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  font-size: 0.9em;
+}
+
+#keySelUp { grid-column: 1; grid-row: 1; }
+#keySelDown { grid-column: 1; grid-row: 2; }
+#keySelEnter { grid-column: 2; grid-row: 1 / span 2; }
+
+.selectionKey.active,
+.selectionKey:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .kb-mode-popover {
   position: absolute;
   backdrop-filter: blur(16px);

@@ -10,6 +10,8 @@ export class CLI {
     #lines = [];
     static #corsQuery = document.getElementById('cors_query');;
     #articleMode;
+    #selectionModeActive = false;
+    #keyboardManager = null;
 
     constructor() {
         this.#currentIndex = -1;
@@ -36,14 +38,62 @@ export class CLI {
     }
 
     set_selection_mode(val) {
+        this.#selectionModeActive = val === true;
+        if (this.#keyboardManager) {
+            this.#keyboardManager.setSelectionPanelVisible(this.#selectionModeActive);
+        }
         if (val) {
             this.#hideCursor();
         } else {
+            this.#currentIndex = -1;
+            const container = document.querySelector('#cors_results');
+            if (container) {
+                container.querySelectorAll('span.highlight').forEach(el => el.classList.remove('highlight'));
+            }
             this.#showCursor();
             if (this.selected_command) {
                 this.selected_command.selection_changed();
             }
         }
+    }
+
+
+    is_selection_mode_active() {
+        return this.#selectionModeActive === true;
+    }
+
+    set_keyboard_manager(km) {
+        this.#keyboardManager = km;
+    }
+
+    move_selection(direction) {
+        const items = s('#cors_results').children;
+        if (!items || items.length === 0) return;
+        if (this.#currentIndex === -1) {
+            this.#currentIndex = 0;
+            this.set_selection_mode(true);
+        } else if (direction === 'down') {
+            this.#currentIndex = (this.#currentIndex + 1) % items.length;
+        } else if (direction === 'up') {
+            this.#currentIndex = (this.#currentIndex - 1 + items.length) % items.length;
+        }
+        this.update();
+    }
+
+    confirm_selection() {
+        const items = s('#cors_results').children;
+        if (!items || items.length === 0) return;
+        if (this.#currentIndex < 0) {
+            this.#currentIndex = 0;
+            this.set_selection_mode(true);
+            this.update();
+            return;
+        }
+        this.#simulateClick(items[this.#currentIndex]);
+        if (this.selected_command) {
+            this.selected_command.selection_changed();
+        }
+        this.set_selection_mode(false);
     }
 
     is_loading() {
@@ -217,7 +267,7 @@ export class CLI {
             }
             else
                 if (this.is_command_selectable && this.#currentIndex == -1) {
-                    if (items.length > 0) { 
+                    if (items.length > 0) {
                         this.#currentIndex++;
                         this.set_selection_mode(true);
                     }
@@ -227,7 +277,11 @@ export class CLI {
                     return;
                 }
         }
+        const justEnteredSelection = is_enter && this.#selectionModeActive && this.#currentIndex >= 0;
         this.parse_input(CLI.#corsQuery.textContent, is_enter);
+        if (justEnteredSelection) {
+            this.update();
+        }
     }
 
     register_command(command) {

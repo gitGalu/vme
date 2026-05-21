@@ -79,7 +79,9 @@ export class KeyboardManager {
         this.#handleEmulationSpecialBound = this.#handleEmulationSpecial.bind(this);
 
         this.#initTouchKeyboard();
+        this.#initSelectionPanel();
         this.#initHiddenInputs();
+        this.#cli.set_keyboard_manager(this);
         window.addEventListener('keydown', this.#keyguardKeydownBound, true);
         window.addEventListener('keyup', this.#keyguardKeyupBound, true);
         window.addEventListener('keypress', this.#keyguardKeypressBound, true);
@@ -572,6 +574,42 @@ export class KeyboardManager {
         });
     }
 
+    #initSelectionPanel() {
+        const bind = (id, handler) => {
+            const el = document.querySelector(id);
+            if (!el) return;
+            const wrapped = (e) => {
+                if (e.type === 'touchstart') {
+                    e.preventDefault();
+                }
+                e.stopPropagation();
+                handler();
+            };
+            el.addEventListener('click', wrapped);
+            el.addEventListener('touchstart', wrapped, { passive: false });
+        };
+
+        bind('#keySelUp', () => {
+            this.playSound('ArrowUp');
+            this.#cli.move_selection('up');
+        });
+        bind('#keySelDown', () => {
+            this.playSound('ArrowDown');
+            this.#cli.move_selection('down');
+        });
+        bind('#keySelEnter', () => {
+            this.playSound('Enter');
+            this.#cli.confirm_selection();
+            this.hideTouchKeyboard();
+        });
+    }
+
+    setSelectionPanelVisible(visible) {
+        const container = document.querySelector('#keyboardContainer');
+        if (!container) return;
+        container.classList.toggle('selection-mode', visible === true);
+    }
+
     #handleCliInput(e) {
         if (e.type === 'touchstart') {
             e.preventDefault();
@@ -808,10 +846,17 @@ export class KeyboardManager {
         btn.style.visibility = "hidden";
 
         s('#keyboardContainer').classList.add('visible');
+
+        if (this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
+            this.setSelectionPanelVisible(true);
+        }
     }
 
     hideTouchKeyboard(notifyUi = true) {
         UiManager.keyboardVisible = false;
+        if (this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
+            this.#cli.set_selection_mode(false);
+        }
         s('#keyboardContainer').classList.remove('visible');
 
         const btn = document.querySelector('#toggle-keyboard');
