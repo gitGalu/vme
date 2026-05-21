@@ -7,6 +7,7 @@ const GBA = {
     core: 'mgba',
     platform_name: 'Nintendo Game Boy Advance',
     short_name: 'GBA',
+    libretro_thumbnails_system: 'Nintendo - Game Boy Advance',
     theme: {
         '--color0': '#222222',
         '--color1': '#dddddd',

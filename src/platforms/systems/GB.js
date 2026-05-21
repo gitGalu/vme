@@ -7,6 +7,7 @@ const GB = {
     core: 'gambatte',
     platform_name: 'Nintendo Game Boy',
     short_name: 'GB',
+    libretro_thumbnails_system: 'Nintendo - Game Boy',
     theme: {
         '--color0': '#828329',
         '--color1': '#374e79',

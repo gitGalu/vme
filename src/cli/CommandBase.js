@@ -1,6 +1,7 @@
 import { CLI } from './CLI.js';
 import { s } from '../dom.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { ThumbnailPreview } from '../ui/ThumbnailPreview.js';
 
 
 export class CommandBase {
@@ -49,46 +50,62 @@ export class CommandBase {
         return false;
     }
 
+    handle_navigation(direction) {
+        return false;
+    }
+
     set_cli(cli) {
         this.cli = cli;
+    }
+
+    #commitSelection(item) {
+        const settingsElement = document.getElementById('settings');
+        if (settingsElement) {
+            settingsElement.style.pointerEvents = 'none';
+        }
+        const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
+        menuButtons.forEach(btn => {
+            btn.style.pointerEvents = 'none';
+        });
+        ThumbnailPreview.hide();
+        this.process_selection(item);
     }
 
     #show_results(results, force_selection) {
         const container = s("#cors_results");
         container.innerHTML = "";
     
-        results.forEach((item) => {
+        results.forEach((item, index) => {
             const p = document.createElement('p');
             p.setAttribute('data-value', item.data);
             p.classList.add('corsrow');
-    
+
             const span = document.createElement('span');
             if (StorageManager.getValue("LINES") != "single") {
             } else {
                 span.classList.add('singleline');
             }
-    
+
             if (item.tag) {
                 const tagSpan = document.createElement('span');
                 tagSpan.classList.add('tag');
                 tagSpan.innerHTML = "[" + item.tag + "] ";
                 span.appendChild(tagSpan);
             }
-    
+
             span.append(item.label);
             p.append(span);
-            p.addEventListener('click', id => {
-                const settingsElement = document.getElementById('settings');
-                if (settingsElement) {
-                    settingsElement.style.pointerEvents = 'none';
+            p.addEventListener('click', () => {
+                if (this.cli && this.cli.is_selection_mode_active && this.cli.is_selection_mode_active()) {
+                    if (this.cli.get_selection_index && this.cli.get_selection_index() === index) {
+                        this.#commitSelection(item);
+                    } else {
+                        this.cli.set_selection_index(index);
+                        this.cli.update();
+                    }
+                    return;
                 }
-
-                const menuButtons = document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button');
-                menuButtons.forEach(btn => {
-                    btn.style.pointerEvents = 'none';
-                });
-
-                this.process_selection(item);
+                this.#commitSelection(item);
             });
             container.append(p);
         });

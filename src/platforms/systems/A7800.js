@@ -7,6 +7,7 @@ const A7800 = {
     core: 'prosystem',
     platform_name: 'Atari 7800 ProSystem',
     short_name: 'A7800',
+    libretro_thumbnails_system: 'Atari - 7800',
     theme: {
         '--color0': '#000000',
         '--color1': '#fafafa',

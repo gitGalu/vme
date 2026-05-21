@@ -7,6 +7,7 @@ const MD = {
     core: 'genesis_plus_gx',
     platform_name: 'Sega Mega Drive',
     short_name: 'SMD',
+    libretro_thumbnails_system: 'Sega - Mega Drive - Genesis',
     theme: {
         '--color0': '#00009B',
         '--color1': '#eeeeee',

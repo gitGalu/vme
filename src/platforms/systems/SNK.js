@@ -7,6 +7,7 @@ const SNK = {
     core: 'fbalpha2012_neogeo',
     platform_name: 'Neo Geo AES / MVS',
     short_name: 'SNK',
+    libretro_thumbnails_system: 'SNK - Neo Geo',
     theme: {
         '--color0': '#656565',
         '--color1': '#c3c3c3',

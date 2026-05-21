@@ -7,6 +7,7 @@ const C264 = {
     core: 'vice_xplus4',
     platform_name: 'Commodore C16, C116 & Plus/4',
     short_name: 'C264',
+    libretro_thumbnails_system: 'Commodore - Plus-4',
     theme: {
         '--color1': '#000000',
         '--color2': '#ffffff',

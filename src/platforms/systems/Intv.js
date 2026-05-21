@@ -7,6 +7,7 @@ const Intv = {
     core: 'freeintv',
     platform_name: 'Mattel Intellivision',
     short_name: 'Intv',
+    libretro_thumbnails_system: 'Mattel - Intellivision',
     theme: {
         '--color0': '#566A1D',
         '--color1': '#FAFAFA',

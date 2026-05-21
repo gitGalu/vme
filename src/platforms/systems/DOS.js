@@ -10,6 +10,7 @@ const DOS = {
     uses_pthreads: true,
     platform_name: 'DOS PC (Pentium + SB + SVGA)',
     short_name: 'DOS',
+    libretro_thumbnails_system: 'DOS',
     theme: {
         '--color0': '#0000AA',
         '--color1': '#FFFF55',

@@ -122,6 +122,7 @@ const Spectrum = {
     core: 'fuse',
     platform_name: 'Sinclair ZX Spectrum',
     short_name: 'Spectrum',
+    libretro_thumbnails_system: 'Sinclair - ZX Spectrum',
     theme: {
         '--color0': '#c0c000',
         '--color1': '#0000c0',

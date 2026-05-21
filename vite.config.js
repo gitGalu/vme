@@ -63,6 +63,7 @@ export default defineConfig({
         { src: 'assets/shaders/*', dest: 'assets/shaders' },
         { src: 'assets/boot/*', dest: 'assets/boot' },
         { src: 'assets/images/vme-512.png', dest: '.' },
+        { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
       ],
     }),
     VitePWA({
@@ -117,7 +118,7 @@ export default defineConfig({
 
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
     },
   },
 

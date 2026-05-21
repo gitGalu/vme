@@ -7,6 +7,7 @@ const NES = {
     core: 'fceumm',
     platform_name: 'Nintendo Entertainment System',
     short_name: 'NES',
+    libretro_thumbnails_system: 'Nintendo - Nintendo Entertainment System',
     theme: {
         '--color0': '#000000',
         '--color1': '#eeeeee',

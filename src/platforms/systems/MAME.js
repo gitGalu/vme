@@ -7,6 +7,7 @@ const MAME = {
     core: 'mame2003_plus',
     platform_name: 'Arcade',
     short_name: 'MAME',
+    libretro_thumbnails_system: 'MAME',
     theme: {
         '--color0': '#222222',
         '--color1': '#FFFFFF',

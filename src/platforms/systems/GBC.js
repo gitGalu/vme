@@ -7,6 +7,7 @@ const GBC = {
     core: 'gambatte',
     platform_name: 'Nintendo Game Boy Color',
     short_name: 'GBC',
+    libretro_thumbnails_system: 'Nintendo - Game Boy Color',
     theme: {
         '--color0': '#ffffff',
         '--color1': '#4e93f1',

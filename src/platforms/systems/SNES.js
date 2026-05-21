@@ -7,6 +7,7 @@ const SNES = {
     core: 'snes9x',
     platform_name: 'Super Nintendo Entertainment System',
     short_name: 'SNES',
+    libretro_thumbnails_system: 'Nintendo - Super Nintendo Entertainment System',
     loader: 'unzip',
     theme: {
         '--color0': '#3c246d',

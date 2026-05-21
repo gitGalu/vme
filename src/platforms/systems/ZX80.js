@@ -7,6 +7,7 @@ const ZX80 = {
     core: '81',
     platform_name: 'Sinclair ZX80 / ZX81',
     short_name: 'ZX80',
+    libretro_thumbnails_system: 'Sinclair - ZX 81',
     theme: {
         '--color0': '#ffffff',
         '--color1': '#000000',

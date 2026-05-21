@@ -8,6 +8,7 @@ const XT = {
     core: 'virtualxt',
     platform_name: 'IBM PC/XT (286 + CGA)',
     short_name: 'XT',
+    libretro_thumbnails_system: 'DOS',
     theme: {
         '--color0': '#000000',
         '--color1': '#00AAAA',

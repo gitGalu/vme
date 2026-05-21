@@ -150,6 +150,7 @@ const ST = {
   multidisk: true,
   platform_name: 'Atari ST / STE / TT / Falcon',
   short_name: 'ST',
+  libretro_thumbnails_system: 'Atari - ST',
   loader: 'gemzip',
   theme: {
     '--color0': '#ffffff',

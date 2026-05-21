@@ -148,6 +148,7 @@ const Amiga = {
   bios: ['kick1x', 'kick2x', 'kick3x'],
   platform_name: 'Commodore Amiga',
   short_name: 'Amiga',
+  libretro_thumbnails_system: 'Commodore - Amiga',
   theme: {
     '--color0': '#A7A7A7',
     '--color1': '#000000',

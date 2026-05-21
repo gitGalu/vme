@@ -161,6 +161,7 @@ const A800 = {
     bios: ['ATARIXL.ROM', 'ATARIBAS.ROM'],
     platform_name: 'Atari 800 / XE / XL',
     short_name: 'A800',
+    libretro_thumbnails_system: 'Atari - 8-bit',
     theme: {
         '--color0': '#005181',
         '--color1': '#60b7e7',

@@ -9,6 +9,31 @@ class FileUtils {
         return filename.substring(0, lastDotIndex);
     }
 
+    static cleanRomName(filename) {
+        if (filename == undefined || filename == null) return '';
+        let name = String(filename).replace(/\.[^/.]+$/, '');
+        const tagPattern = /\s*[\[\(][^\[\]\(\)]*[\]\)]/g;
+        let prev;
+        do {
+            prev = name;
+            name = name.replace(tagPattern, '');
+        } while (name !== prev);
+        return name.replace(/\s{2,}/g, ' ').trim();
+    }
+
+    static normalizeForThumbnailMatch(filename) {
+        let cleaned = FileUtils.cleanRomName(filename);
+        if (!cleaned) return '';
+        cleaned = cleaned
+            .replace(/\s+v\s*\d+(?:\.\d+)*[a-z]?\b/gi, '')
+            .replace(/\s+rev\.?\s*[a-z0-9]+\b/gi, '');
+        return cleaned
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
     static ensureDir(FS, dirPath) {
         if (!dirPath || dirPath === "/") return;
 

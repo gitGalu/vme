@@ -7,6 +7,7 @@ const PCE = {
     core: 'mednafen_pce_fast',
     platform_name: 'PC Engine',
     short_name: 'PCE',
+    libretro_thumbnails_system: 'NEC - PC Engine - TurboGrafx 16',
     theme: {
         '--color0': '#000000',
         '--color1': '#f0f0f0',

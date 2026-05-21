@@ -1002,7 +1002,7 @@ a {
   pointer-events: none;
   transform: translateY(100%);
   transition: transform 0.2s ease-out;
-  z-index: 10000;
+  z-index: 100001;
 }
 
 #keyboardContainer.visible {
@@ -1205,6 +1205,7 @@ a {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-top: none;
+  pointer-events: none;
 }
 
 #keyboardContainer.selection-mode #keyboard > .key {
@@ -1223,6 +1224,61 @@ body.selection-mode-active #menu-button-strip,
 body.selection-mode-active #menu-button-header-strip,
 body.selection-mode-active .menu-strip-spacer {
   display: none !important;
+}
+
+#cli-thumbnail {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  width: 240px;
+  height: auto;
+  max-height: 240px;
+  border-radius: 5px;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: translateX(calc(100% + 40px));
+  transition: opacity 200ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#cli-thumbnail:not([src]),
+#cli-thumbnail[src=""],
+#cli-thumbnail:not(.visible) {
+  pointer-events: none;
+}
+
+#cli-thumbnail:not([src]),
+#cli-thumbnail[src=""] {
+  visibility: hidden;
+}
+
+#cli-thumbnail.visible {
+  opacity: 1;
+  transform: translateX(0);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  #cli-thumbnail.visible:hover {
+    transform: translateX(0) scale(1.03);
+  }
+}
+
+
+#cli-thumbnail.layer-flipping {
+  opacity: 0;
+  transform: perspective(800px) rotateY(180deg);
+  transition: opacity 280ms ease-out, transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#cli-thumbnail.layer-flipping.visible {
+  opacity: 1;
+  transform: perspective(800px) rotateY(0deg);
+}
+
+.rnd-hint {
+  margin-left: 1ch;
 }
 
 .selectionKey {

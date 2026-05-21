@@ -9,7 +9,8 @@
     "build:server": "VITE_BASE=/ VITE_PWA_START_URL=/?source=pwa vite build --emptyOutDir",
     "build:gh": "VITE_BASE=/vme/ VITE_PWA_START_URL=/vme/?source=pwa vite build --emptyOutDir",
     "preview": "vite preview --port 8080 --host",
-    "deploy": "npm run build:gh && gh-pages -d dist"
+    "deploy": "npm run build:gh && gh-pages -d dist",
+    "build-thumbnails": "node scripts/build-thumbnail-index.js"
   },
   "keywords": [],
   "author": "gitGalu",

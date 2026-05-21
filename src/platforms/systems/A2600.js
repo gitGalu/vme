@@ -7,6 +7,7 @@ const A2600 = {
     core: 'stella2014',
     platform_name: 'Atari 2600 / VCS',
     short_name: 'A2600',
+    libretro_thumbnails_system: 'Atari - 2600',
     theme: {
         '--color0': '#000000',
         '--color1': '#a984ec',

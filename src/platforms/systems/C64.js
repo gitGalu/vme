@@ -7,6 +7,7 @@ const C64 = {
     core: 'vice_x64',
     platform_name: 'Commodore 64',
     short_name: 'C64',
+    libretro_thumbnails_system: 'Commodore - 64',
     theme: {
         '--color0': '#6a53f5',
         '--color1': '#b19efe',

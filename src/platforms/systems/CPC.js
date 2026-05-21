@@ -6,6 +6,7 @@ const CPC = {
     core: 'crocods',
     platform_name: 'Amstrad CPC',
     short_name: 'CPC',
+    libretro_thumbnails_system: 'Amstrad - CPC',
     loader: 'unzip',
     theme: {
         '--color0': '#000060',

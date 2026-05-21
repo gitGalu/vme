@@ -7,6 +7,7 @@ const Lynx = {
     core: 'handy',
     platform_name: 'Atari Lynx',
     short_name: 'Lynx',
+    libretro_thumbnails_system: 'Atari - Lynx',
     theme: {
         '--color0': '#579342',
         '--color1': '#ebe4b2',

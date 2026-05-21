@@ -7,6 +7,7 @@ const SMS = {
     core: 'gearsystem',
     platform_name: 'Sega Master System',
     short_name: 'SMS',
+    libretro_thumbnails_system: 'Sega - Master System - Mark III',
     theme: {
         '--color0': '#000000',
         '--color1': '#ffffff',

@@ -1,6 +1,7 @@
 import { s, show, hide } from '../dom.js';
 import { CommandBase } from './CommandBase.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { ThumbnailPreview } from '../ui/ThumbnailPreview.js';
 
 export class CLI {
     #kb_event_bound;
@@ -50,6 +51,7 @@ export class CLI {
             if (container) {
                 container.querySelectorAll('span.highlight').forEach(el => el.classList.remove('highlight'));
             }
+            ThumbnailPreview.hide();
             this.#showCursor();
             if (this.selected_command) {
                 this.selected_command.selection_changed();
@@ -67,6 +69,9 @@ export class CLI {
     }
 
     move_selection(direction) {
+        if (this.selected_command && this.selected_command.handle_navigation instanceof Function) {
+            if (this.selected_command.handle_navigation(direction)) return;
+        }
         const items = s('#cors_results').children;
         if (!items || items.length === 0) return;
         if (this.#currentIndex === -1) {
@@ -78,6 +83,14 @@ export class CLI {
             this.#currentIndex = (this.#currentIndex - 1 + items.length) % items.length;
         }
         this.update();
+    }
+
+    set_selection_index(idx) {
+        this.#currentIndex = idx;
+    }
+
+    get_selection_index() {
+        return this.#currentIndex;
     }
 
     confirm_selection() {
@@ -141,6 +154,8 @@ export class CLI {
             if (this.#articleMode) {
                 let div = s('#cors_results');
                 div.scrollTop += div.offsetHeight;
+            } else if (this.selected_command && this.selected_command.handle_navigation instanceof Function && this.selected_command.handle_navigation('down')) {
+                return;
             } else if (this.#currentIndex != -1) {
                 let items = s('#cors_results').children;
                 if (this.#currentIndex < items.length - 1) {
@@ -157,6 +172,8 @@ export class CLI {
             if (this.#articleMode) {
                 let div = s('#cors_results');
                 div.scrollTop -= div.offsetHeight;
+            } else if (this.selected_command && this.selected_command.handle_navigation instanceof Function && this.selected_command.handle_navigation('up')) {
+                return;
             } else if (this.#currentIndex != -1) {
                 let items = s('#cors_results').children;
                 if (this.#currentIndex > 0) {
@@ -189,8 +206,10 @@ export class CLI {
             if (items.length == 0) return;
             items.forEach(item => item.querySelector('span').classList.remove('highlight'));
             if (this.#currentIndex >= 0) {
-                this.#addFlashingClass(items[this.#currentIndex].querySelector('span'));
-                this.selected_command.selection_changed(items[this.#currentIndex]);
+                const currentItem = items[this.#currentIndex];
+                this.#addFlashingClass(currentItem.querySelector('span'));
+                this.selected_command.selection_changed(currentItem);
+                ThumbnailPreview.show(this.#extractItemTitle(currentItem));
             }
             if (this.#currentIndex != -1) {
                 if (!this.#isElementInContainerViewport(items[this.#currentIndex].querySelector('span'), container)) {
@@ -198,6 +217,15 @@ export class CLI {
                 }
             }
         }
+    }
+
+    #extractItemTitle(itemEl) {
+        if (!itemEl) return '';
+        const span = itemEl.querySelector('span');
+        if (!span) return '';
+        const clone = span.cloneNode(true);
+        clone.querySelectorAll('.tag').forEach(el => el.remove());
+        return (clone.textContent || '').trim();
     }
 
     #addFlashingClass(element) {

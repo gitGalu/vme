@@ -24,6 +24,7 @@ import { CheckFixCommand } from './cli/CheckFixCommand.js';
 import { BootCommand } from './cli/BootCommand.js';
 import { PlatformManager } from './platforms/PlatformManager.js';
 import { UiManager } from './ui/UiManager.js';
+import { ThumbnailPreview } from './ui/ThumbnailPreview.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { NetworkManager } from './NetworkManager.js';
 import { isMobile } from 'react-device-detect';
@@ -88,6 +89,7 @@ export class VME {
         this.#kb = new KeyboardManager(this.#cli);
         this.#db = new StorageManager();
         this.#pl = new PlatformManager(this, this.#cli, this.#db, this.#net, this.#kb);
+        ThumbnailPreview.init(this.#pl);
         this.#env = new EnvironmentManager(this.#pl);
         this.#ui = new UiManager(this.#pl, this.#kb);
         this.#save_browser = new SaveBrowser(this, this.#pl, this.#db, this.#cli);

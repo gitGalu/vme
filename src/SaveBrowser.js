@@ -4,6 +4,7 @@ import Flicking from "@egjs/flicking";
 import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { CustomDropdown } from './components/CustomDropdown.js';
+import { FileUtils } from './utils/FileUtils.js';
 
 export class SaveBrowser {
     #vme;
@@ -198,7 +199,7 @@ export class SaveBrowser {
 
         const randomDegree = Math.random() * 20 - 10;
         if (item.caption == undefined) {
-            item.caption = this.#cleanFilename(item.program_name);
+            item.caption = FileUtils.cleanRomName(item.program_name);
         }
 
         const timestamp = new Date(item.timestamp).toLocaleString();
@@ -726,13 +727,7 @@ export class SaveBrowser {
             });
     }
 
-    #cleanFilename(filename) {
-        filename = filename.replace(/\.[^/.]+$/, "");
-        filename = filename.replace(/[\[\(][^\[\]\(\)]+[\]\)]/g, "").trim();
-        return filename;
-    }
-
-    #groupSavesByGame(items) {
+#groupSavesByGame(items) {
         const gameMap = new Map();
 
         items.forEach(item => {

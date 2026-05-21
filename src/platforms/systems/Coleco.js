@@ -7,6 +7,7 @@ const Coleco = {
     core: 'gearcoleco',
     platform_name: 'ColecoVision',
     short_name: 'Coleco',
+    libretro_thumbnails_system: 'Coleco - ColecoVision',
     theme: {
         '--color0': '#000000',
         '--color1': '#EEEEEE',

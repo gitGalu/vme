@@ -7,6 +7,7 @@ const A5200 = {
     core: 'a5200',
     platform_name: 'Atari 5200',
     short_name: 'A5200',
+    libretro_thumbnails_system: 'Atari - 5200',
     theme: {
         '--color0': '#000000',
         '--color1': '#ffffff',

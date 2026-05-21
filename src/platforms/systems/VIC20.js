@@ -7,6 +7,7 @@ const VIC20 = {
     core: 'vice_xvic',
     platform_name: 'Commodore VIC-20',
     short_name: 'VIC20',
+    libretro_thumbnails_system: 'Commodore - VIC-20',
     theme: {
         '--color0': '#ffffff',
         '--color1': '#250ec5',
