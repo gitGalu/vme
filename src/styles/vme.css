@@ -1176,21 +1176,18 @@ a {
 }
 
 #keyboardSelection {
-  display: none;
+  display: grid;
   position: absolute;
   top: 0;
-  bottom: 0;
-  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  right: calc(env(safe-area-inset-right, 0px) + 8px);
   width: 240px;
-  max-width: 50%;
   padding: 8px;
-  padding-right: calc(env(safe-area-inset-right) + 8px);
-  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+  pointer-events: none;
   background: rgba(150, 150, 150, 0.3);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
@@ -1208,12 +1205,26 @@ a {
   pointer-events: none;
 }
 
+#keyboard > .key {
+  transition: opacity 240ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 #keyboardContainer.selection-mode #keyboard > .key {
-  visibility: hidden !important;
+  opacity: 0 !important;
+  transform: translateX(-32px);
+  pointer-events: none;
+}
+
+#keyboardSelection {
+  opacity: 0;
+  transform: translateX(32px);
+  transition: opacity 240ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #keyboardContainer.selection-mode #keyboardSelection {
-  display: grid;
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
 }
 
 #keyboardContainer.selection-mode #keyboardSelection .key {

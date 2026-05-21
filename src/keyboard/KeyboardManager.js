@@ -611,6 +611,19 @@ export class KeyboardManager {
         container.classList.toggle('selection-mode', on);
         const kbVisible = container.classList.contains('visible');
         document.body.classList.toggle('selection-mode-active', on && kbVisible);
+        if (on) {
+            this.#syncSelectionPanelWidth();
+        }
+    }
+
+    #syncSelectionPanelWidth() {
+        const ctrl = document.querySelector('.kbCtrlContainer');
+        const panel = document.querySelector('#keyboardSelection');
+        if (!ctrl || !panel) return;
+        const width = ctrl.getBoundingClientRect().width;
+        if (width > 0) {
+            panel.style.width = `${Math.round(width)}px`;
+        }
     }
 
     #handleCliInput(e) {
