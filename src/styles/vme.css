@@ -1220,10 +1220,29 @@ a {
   visibility: visible !important;
 }
 
+#menu-button-strip,
+#menu-button-header-strip,
+.menu-strip-spacer {
+  max-height: 200px;
+  transition: opacity 260ms ease-out 220ms;
+  overflow: hidden;
+}
+
 body.selection-mode-active #menu-button-strip,
 body.selection-mode-active #menu-button-header-strip,
 body.selection-mode-active .menu-strip-spacer {
-  display: none !important;
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+  transition:
+    opacity 200ms ease-out,
+    max-height 240ms ease-out,
+    margin 240ms ease-out,
+    padding 240ms ease-out;
 }
 
 #cli-thumbnail {
