@@ -450,6 +450,8 @@ export class CLI {
         this.#lines = [];
         var table = s("#cors_results");
         table.innerHTML = "";
+        const hint = table.parentNode?.querySelector('.rnd-hint');
+        if (hint) hint.remove();
     }
 
     reset() {

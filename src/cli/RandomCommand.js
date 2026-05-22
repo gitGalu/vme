@@ -101,9 +101,11 @@ export class RandomCommand extends CommandBase {
     #prependHint() {
         const container = s('#cors_results');
         if (!container) return;
+        const existing = container.parentNode?.querySelector('.rnd-hint');
+        if (existing) existing.remove();
         const hint = document.createElement('p');
         hint.classList.add('rnd-hint');
         hint.innerHTML = 'Use &uarr;/&darr; to roll again, ENTER to load.<br>&nbsp;';
-        container.prepend(hint);
+        container.parentNode.insertBefore(hint, container);
     }
 }
