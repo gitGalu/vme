@@ -676,15 +676,7 @@ export class UiManager {
                 }
                 this.#diskDropdown?.close();
 
-                controlsMenu.style.display = 'block';
-                controlsMenu.style.position = 'fixed';
-                controlsMenu.style.fontSize = '10pt';
-
-                const rect = controlsButton.getBoundingClientRect();
-                const menuRect = controlsMenu.getBoundingClientRect();
-
-                controlsMenu.style.top = `${rect.bottom}px`;
-                controlsMenu.style.left = `${rect.right - menuRect.width}px`;
+                UiManager.positionDropdownUnderLabel(controlsButton, controlsMenu);
             } else {
                 controlsMenu.style.display = 'none';
             }
@@ -740,15 +732,7 @@ export class UiManager {
                 }
                 this.#diskDropdown?.close();
 
-                saveMenu.style.display = 'block';
-                saveMenu.style.position = 'fixed';
-                saveMenu.style.fontSize = '10pt';
-
-                const rect = saveButton.getBoundingClientRect();
-                const menuRect = saveMenu.getBoundingClientRect();
-
-                saveMenu.style.top = `${rect.bottom}px`;
-                saveMenu.style.left = `${rect.right - menuRect.width}px`;
+                UiManager.positionDropdownUnderLabel(saveButton, saveMenu);
             } else {
                 saveMenu.style.display = 'none';
             }
@@ -980,6 +964,25 @@ export class UiManager {
             }
             button.style.display = shouldHide ? 'none' : 'flex';
         }
+    }
+
+    static positionDropdownUnderLabel(button, menu) {
+        menu.style.display = 'block';
+        menu.style.position = 'fixed';
+        menu.style.fontSize = '10pt';
+        const rect = button.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        let labelCenter = rect.left + rect.width / 2;
+        if (button.firstChild && button.firstChild.nodeType === Node.TEXT_NODE) {
+            const range = document.createRange();
+            range.selectNodeContents(button.firstChild);
+            const labelRect = range.getBoundingClientRect();
+            if (labelRect.width > 0) {
+                labelCenter = labelRect.left + labelRect.width / 2;
+            }
+        }
+        menu.style.top = `${rect.bottom}px`;
+        menu.style.left = `${labelCenter - menuRect.width / 2}px`;
     }
 
     static hideJoystick() {
