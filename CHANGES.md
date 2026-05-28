@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.82] - 2026-05-28
+
+- Amiga: add libretro game thumbnails for WHDLoad files
+- fix RND command
+- layout fixes
+
 ## [0.80] - 2026-05-21
 
 - add libretro game thumbnails
