@@ -1031,10 +1031,6 @@ a {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  #keyboardSelection {
-    right: 8px;
-  }
-
   .keyboardQwerty>.key {
     padding-top: 6px !important;
     padding-bottom: 6px !important;
@@ -1233,6 +1229,12 @@ a {
 
 #keyboardContainer.selection-mode #keyboardSelection .key {
   visibility: visible !important;
+}
+
+@media (orientation: landscape) {
+  #keyboardSelection {
+    right: 8px;
+  }
 }
 
 #menu-button-strip,
