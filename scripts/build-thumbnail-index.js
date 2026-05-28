@@ -10,7 +10,11 @@ const PLATFORMS = [
     { platform_id: 'spectrum', system: 'Sinclair - ZX Spectrum' },
     { platform_id: 'atari800', system: 'Atari - 8-bit' },
     { platform_id: 'nes', system: 'Nintendo - Nintendo Entertainment System' },
-    { platform_id: 'amiga', system: 'Commodore - Amiga' },
+    {
+        platform_id: 'amiga',
+        system: 'Commodore - Amiga',
+        dat_url: 'https://raw.githubusercontent.com/libretro/libretro-database/master/dat/Commodore%20-%20Amiga.dat'
+    },
     { platform_id: 'atari2600', system: 'Atari - 2600' },
     { platform_id: 'cpc', system: 'Amstrad - CPC' },
     { platform_id: 'mame', system: 'MAME' },
@@ -48,6 +52,10 @@ const LAYER_KEY = {
 };
 
 const OUT_DIR = path.resolve(__dirname, '..', 'src', 'thumbnail-index');
+const platformFilter = process.argv
+    .slice(2)
+    .find(arg => arg.startsWith('--platform='))
+    ?.slice('--platform='.length);
 
 function fetchUrl(url) {
     return new Promise((resolve, reject) => {
@@ -98,6 +106,67 @@ function normalizeKey(filename) {
         .trim();
 }
 
+function normalizeWHDLoadKey(filename) {
+    if (!filename) return '';
+    const stem = String(filename).replace(/\.[^/.]+$/, '');
+    const base = stem.split(/_v\d+(?:\.\d+)*[a-z]?\b/i)[0];
+    if (!base || base === stem) return '';
+    return base
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '')
+        .trim();
+}
+
+function parseDatGames(datText) {
+    const games = [];
+    let current = null;
+    for (const line of datText.split(/\r?\n/)) {
+        if (/^\s*game\s*\(/.test(line)) {
+            current = { name: '', roms: [] };
+            continue;
+        }
+        if (!current) continue;
+        if (/^\s*\)\s*$/.test(line)) {
+            if (current.name && current.roms.length > 0) {
+                games.push(current);
+            }
+            current = null;
+            continue;
+        }
+        const nameMatch = line.match(/^\s*name\s+"([^"]+)"/);
+        if (nameMatch) {
+            current.name = nameMatch[1];
+            continue;
+        }
+        const romMatch = line.match(/^\s*rom\s*\(\s*name\s+"([^"]+)"/);
+        if (romMatch) {
+            current.roms.push(romMatch[1]);
+        }
+    }
+    return games;
+}
+
+function addDatAliases(index, games) {
+    let added = 0;
+    for (const game of games) {
+        const titleKey = normalizeKey(game.name);
+        if (!titleKey || !index[titleKey]) continue;
+        const target = index[titleKey];
+        for (const romName of game.roms) {
+            const keys = [
+                normalizeKey(romName),
+                normalizeWHDLoadKey(romName)
+            ].filter(Boolean);
+            for (const key of keys) {
+                if (index[key]) continue;
+                index[key] = target;
+                added++;
+            }
+        }
+    }
+    return added;
+}
+
 // Lower is better. Prefer canonical releases over alternate/hacked dumps.
 function scoreCandidate(filename) {
     let score = 0;
@@ -139,11 +208,23 @@ function buildIndexForLayer(filenames) {
 
 async function buildForPlatform(platform) {
     console.log(`\n=== ${platform.platform_id} (${platform.system}) ===`);
+    let datGames = [];
+    if (platform.dat_url) {
+        process.stdout.write('  DAT aliases: fetching... ');
+        try {
+            const datText = await fetchUrl(platform.dat_url);
+            datGames = parseDatGames(datText);
+            console.log(`${datGames.length} games`);
+        } catch (err) {
+            console.log(`FAILED (${err.message})`);
+        }
+    }
     const result = {
         platform_id: platform.platform_id,
         system: platform.system,
         generated_at: new Date().toISOString()
     };
+    let successfulLayers = 0;
     for (const layer of LAYERS) {
         const url = `https://thumbnails.libretro.com/${encodeURIComponent(platform.system)}/${layer}/`;
         process.stdout.write(`  ${layer}: fetching... `);
@@ -151,11 +232,16 @@ async function buildForPlatform(platform) {
             const html = await fetchUrl(url);
             const filenames = parseListing(html);
             const index = buildIndexForLayer(filenames);
+            const aliases = datGames.length > 0 ? addDatAliases(index, datGames) : 0;
             result[LAYER_KEY[layer]] = index;
-            console.log(`${filenames.length} files -> ${Object.keys(index).length} unique titles`);
+            successfulLayers++;
+            console.log(`${filenames.length} files -> ${Object.keys(index).length} keys (${aliases} DAT aliases)`);
         } catch (err) {
             console.log(`FAILED (${err.message})`);
         }
+    }
+    if (successfulLayers === 0) {
+        throw new Error(`No thumbnail layers fetched for ${platform.platform_id}; leaving existing index untouched`);
     }
     const outPath = path.join(OUT_DIR, `${platform.platform_id}.json`);
     fs.writeFileSync(outPath, JSON.stringify(result, null, 0));
@@ -164,15 +250,23 @@ async function buildForPlatform(platform) {
 
 (async () => {
     if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
-    for (const platform of PLATFORMS) {
+    const platforms = platformFilter
+        ? PLATFORMS.filter(platform => platform.platform_id === platformFilter)
+        : PLATFORMS;
+    if (platforms.length === 0) {
+        throw new Error(`Unknown platform: ${platformFilter}`);
+    }
+    for (const platform of platforms) {
         await buildForPlatform(platform);
     }
     for (const alias of ALIASES) {
-        const src = path.join(OUT_DIR, `${alias.from}.json`);
-        const dst = path.join(OUT_DIR, `${alias.to}.json`);
-        if (fs.existsSync(src)) {
-            fs.copyFileSync(src, dst);
-            console.log(`alias: ${alias.to}.json <- ${alias.from}.json`);
+        if (!platformFilter || platformFilter === alias.from || platformFilter === alias.to) {
+            const src = path.join(OUT_DIR, `${alias.from}.json`);
+            const dst = path.join(OUT_DIR, `${alias.to}.json`);
+            if (fs.existsSync(src)) {
+                fs.copyFileSync(src, dst);
+                console.log(`alias: ${alias.to}.json <- ${alias.from}.json`);
+            }
         }
     }
     console.log('\nDone.');

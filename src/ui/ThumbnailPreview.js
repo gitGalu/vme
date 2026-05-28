@@ -73,8 +73,8 @@ class ThumbnailPreviewClass {
             this.hide();
             return;
         }
-        const key = FileUtils.normalizeForThumbnailMatch(romName);
-        if (!key) {
+        const keys = FileUtils.getThumbnailMatchKeys(romName);
+        if (keys.length === 0) {
             this.hide();
             return;
         }
@@ -87,7 +87,7 @@ class ThumbnailPreviewClass {
             const layerIndex = index[layer];
             const layerUrl = urls[layer];
             if (!layerIndex || !layerUrl) continue;
-            const filename = layerIndex[key];
+            const filename = keys.map(key => layerIndex[key]).find(Boolean);
             if (!filename) continue;
             layers.push({ layer, url: `${layerUrl}${encodeURIComponent(filename)}` });
         }

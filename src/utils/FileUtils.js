@@ -34,6 +34,25 @@ class FileUtils {
             .trim();
     }
 
+    static normalizeWHDLoadForThumbnailMatch(filename) {
+        if (filename == undefined || filename == null) return '';
+        const stem = String(filename).replace(/\.[^/.]+$/, '');
+        const base = stem.split(/_v\d+(?:\.\d+)*[a-z]?\b/i)[0];
+        if (!base || base === stem) return '';
+        return base
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '')
+            .trim();
+    }
+
+    static getThumbnailMatchKeys(filename) {
+        const keys = [
+            FileUtils.normalizeForThumbnailMatch(filename),
+            FileUtils.normalizeWHDLoadForThumbnailMatch(filename)
+        ].filter(Boolean);
+        return [...new Set(keys)];
+    }
+
     static ensureDir(FS, dirPath) {
         if (!dirPath || dirPath === "/") return;
 
