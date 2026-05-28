@@ -1031,6 +1031,10 @@ a {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  #keyboardSelection {
+    right: 8px;
+  }
+
   .keyboardQwerty>.key {
     padding-top: 6px !important;
     padding-bottom: 6px !important;
