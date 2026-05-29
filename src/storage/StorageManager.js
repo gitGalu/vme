@@ -142,7 +142,7 @@ export class StorageManager {
                     const data = await this.getFile(dep.key);
                     if (data) {
                         depsData[dep.key] = data;
-                    } else {
+                    } else if (dep.required !== false) {
                         missingDeps.push(dep.type);
                     }
                 }

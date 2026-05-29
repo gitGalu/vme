@@ -140,6 +140,167 @@ const AMIGA_WORMS = Object.freeze([
     "36c58219a09f7955bbd7f9bd108c1936233bbecba271183b65801e1eeb0f7ada"
 ]);
 
+const AMIGA_MODEL_PRESET_OPTIONS = Object.freeze([
+  { value: 'auto', label: 'Auto' },
+  { value: 'A500', label: 'A500 OCS, 512K Chip + 512K Slow, KS 1.3', requiredBios: ['kick34005.A500'], defaultAvailable: true },
+  { value: 'A500PLUS', label: 'A500+ ECS, 1MB Chip, KS 2.04', requiredBios: ['kick37175.A500'] },
+  { value: 'A600', label: 'A600 ECS, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40063.A600'], defaultAvailable: true },
+  { value: 'A1200OG', label: 'A1200 AGA, 2MB Chip, KS 3.1', requiredBios: ['kick40068.A1200'], defaultAvailable: true },
+  { value: 'A1200', label: 'A1200 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A1200'], defaultAvailable: true },
+  {
+    value: 'A1200_030',
+    label: 'A1200 030 AGA, 2MB Chip + 8MB Fast, KS 3.1',
+    requiredBios: ['kick40068.A1200'],
+    defaultAvailable: true,
+    coreConfig: {
+      puae_model: 'A1200',
+      puae_cpu_model: '68030',
+      puae_fastmem_size: '8'
+    }
+  },
+  {
+    value: 'A1200_040',
+    label: 'A1200 040 AGA, 2MB Chip + 8MB Fast, KS 3.1',
+    requiredBios: ['kick40068.A1200'],
+    defaultAvailable: true,
+    coreConfig: {
+      puae_model: 'A1200',
+      puae_cpu_model: '68040',
+      puae_fpu_model: 'cpu',
+      puae_fastmem_size: '8'
+    }
+  },
+  {
+    value: 'A1200_060',
+    label: 'A1200 060 AGA, 2MB Chip + 8MB Fast + 128MB Z3, KS 3.1',
+    requiredBios: ['kick40068.A1200'],
+    defaultAvailable: true,
+    coreConfig: {
+      puae_model: 'A1200',
+      puae_cpu_model: '68060',
+      puae_fpu_model: 'cpu',
+      puae_fastmem_size: '8',
+      puae_z3mem_size: '128'
+    }
+  },
+  { value: 'A4030', label: 'A4000/030 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A4000'] },
+  { value: 'A4040', label: 'A4000/040 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A4000'] },
+  { value: 'CD32', label: 'CD32 AGA, 2MB Chip, KS 3.1', requiredBiosAny: [['kick40060.CD32.combined'], ['kick40060.CD32', 'kick40060.CD32.ext']] },
+  { value: 'CD32FR', label: 'CD32 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBiosAny: [['kick40060.CD32.combined'], ['kick40060.CD32', 'kick40060.CD32.ext']] },
+  { value: 'A500OG', label: 'A500 OCS, 512K Chip, KS 1.2', requiredBios: ['kick33180.A500'], enabled: false },
+  { value: 'A2000OG', label: 'A2000 OCS, 512K Chip + 512K Slow, KS 1.2', requiredBios: ['kick33180.A500'], enabled: false },
+  { value: 'A2000', label: 'A2000 ECS, 1MB Chip, KS 3.1', requiredBios: ['kick40063.A600'], enabled: false },
+  { value: 'CDTV', label: 'CDTV OCS, 1MB Chip, KS 1.3', requiredBios: ['kick34005.A500', 'kick34005.CDTV'], enabled: false }
+]);
+
+const AMIGA_VIDEO_STANDARD_OPTIONS = Object.freeze([
+  { value: 'auto', label: 'Auto' },
+  { value: 'PAL', label: 'PAL 50Hz' },
+  { value: 'NTSC', label: 'NTSC 60Hz' }
+]);
+
+const AMIGA_MODEL_PRESET_VALUES = new Set(AMIGA_MODEL_PRESET_OPTIONS.map(option => option.value));
+const AMIGA_VIDEO_STANDARD_VALUES = new Set(AMIGA_VIDEO_STANDARD_OPTIONS.map(option => option.value));
+
+function normalizeAmigaModelPreset(value, fallback = 'auto') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim();
+  return AMIGA_MODEL_PRESET_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeAmigaVideoStandard(value, fallback = 'auto') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim().toUpperCase();
+  return AMIGA_VIDEO_STANDARD_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function isAmigaModelPresetAvailable(option, availableBiosKeys) {
+  if (!option || option.enabled === false || option.value === 'auto') {
+    return option?.value === 'auto';
+  }
+
+  if (!(availableBiosKeys instanceof Set)) {
+    return option.defaultAvailable === true;
+  }
+
+  if (Array.isArray(option.requiredBiosAny)) {
+    return option.requiredBiosAny.some(group => group.every(key => availableBiosKeys.has(key)));
+  }
+
+  if (Array.isArray(option.requiredBios)) {
+    return option.requiredBios.every(key => availableBiosKeys.has(key));
+  }
+
+  return true;
+}
+
+async function writeStoredSystemFile(storageManager, FS, storageKey, systemFileName = storageKey) {
+  const data = await storageManager.getFile(`amiga.${storageKey}`);
+  if (!data) {
+    return false;
+  }
+
+  const bytes = (data && typeof data.arrayBuffer === 'function')
+    ? new Uint8Array(await data.arrayBuffer())
+    : new Uint8Array(data);
+  FS.writeFile(`/home/web_user/retroarch/userdata/system/${systemFileName}`, bytes);
+  return true;
+}
+
+function buildAmigaLaunchSettings(fileName, overrides = null, context = null) {
+  const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
+  const model = normalizeAmigaModelPreset(overrideInput.model, 'auto');
+  const videoStandard = normalizeAmigaVideoStandard(overrideInput.video_standard, 'auto');
+  const availableBiosKeys = context?.availableDependencyKeys;
+  const selectedModelOption = AMIGA_MODEL_PRESET_OPTIONS.find(option => option.value === model);
+
+  const coreConfig = {
+    puae_video_vresolution: "single",
+    puae_video_resolution: "hires",
+    puae_crop_mode: "auto",
+    puae_floppy_multidrive: "disabled"
+  };
+
+  if (selectedModelOption?.coreConfig) {
+    Object.assign(coreConfig, selectedModelOption.coreConfig);
+  } else if (model !== 'auto') {
+    coreConfig.puae_model = model;
+  }
+
+  if (videoStandard !== 'auto') {
+    coreConfig.puae_video_standard = videoStandard;
+  }
+
+  return {
+    bios: ['kick1x', 'kick2x', 'kick3x'],
+    coreConfig,
+    overrideValues: {
+      model,
+      video_standard: videoStandard
+    },
+    guessedOverrides: {
+      model: 'auto',
+      video_standard: 'auto'
+    },
+    overrideSchema: [
+      {
+        id: 'model',
+        label: 'Model',
+        options: AMIGA_MODEL_PRESET_OPTIONS.filter(option => isAmigaModelPresetAvailable(option, availableBiosKeys))
+      },
+      {
+        id: 'video_standard',
+        label: 'Video',
+        options: AMIGA_VIDEO_STANDARD_OPTIONS
+      }
+    ]
+  };
+}
+
 const Amiga = {
   ...PlatformBase,
   platform_id: 'amiga',
@@ -162,35 +323,22 @@ const Amiga = {
   startup_beforelaunch: async function (nostalgist, storageManager) {
     const FS = nostalgist.getEmscriptenFS();
 
-    const k1xAB = await storageManager.getFile('amiga.kick34005.A500');
-    const k2xAB = await storageManager.getFile('amiga.kick40063.A600');
-    const k3xAB = await storageManager.getFile('amiga.kick40068.A1200');
-
-    FS.writeFile('/home/web_user/retroarch/userdata/system/kick34005.A500', await new Uint8Array(k1xAB));
-    FS.writeFile('/home/web_user/retroarch/userdata/system/kick40063.A600', await new Uint8Array(k2xAB));
-    FS.writeFile('/home/web_user/retroarch/userdata/system/kick40068.A1200', await new Uint8Array(k3xAB));
+    await writeStoredSystemFile(storageManager, FS, 'kick33180.A500');
+    await writeStoredSystemFile(storageManager, FS, 'kick34005.A500');
+    await writeStoredSystemFile(storageManager, FS, 'kick37175.A500');
+    await writeStoredSystemFile(storageManager, FS, 'kick37350.A600');
+    await writeStoredSystemFile(storageManager, FS, 'kick40063.A600');
+    await writeStoredSystemFile(storageManager, FS, 'kick39106.A1200');
+    await writeStoredSystemFile(storageManager, FS, 'kick40068.A1200');
+    await writeStoredSystemFile(storageManager, FS, 'kick39106.A4000');
+    await writeStoredSystemFile(storageManager, FS, 'kick40068.A4000');
+    await writeStoredSystemFile(storageManager, FS, 'kick34005.CDTV');
+    await writeStoredSystemFile(storageManager, FS, 'kick40060.CD32');
+    await writeStoredSystemFile(storageManager, FS, 'kick40060.CD32.ext');
+    await writeStoredSystemFile(storageManager, FS, 'kick40060.CD32.combined', 'kick40060.CD32');
   },
-  guessConfig: (fileName) => {
-    if (fileName.endsWith(".adf")) {
-      return {
-        puae_model: "A500",
-        puae_kickstart: "kick34005.A500",
-        puae_video_vresolution: "single",
-        puae_video_resolution: "hires",
-        puae_cpu_compatibility: "exact",
-        puae_crop_mode: "auto",
-        puae_floppy_multidrive: "disabled"
-      };
-    }
-
-    return {
-      puae_cpu_compatibility: "exact",
-      puae_video_vresolution: "single",
-      puae_video_resolution: "hires",
-      puae_crop_mode: "auto",
-      puae_floppy_multidrive: "disabled"
-    };
-  },
+  resolveLaunchSettings: (fileName, overrides = null, context = null) => buildAmigaLaunchSettings(fileName, overrides, context),
+  guessConfig: (fileName) => buildAmigaLaunchSettings(fileName).coreConfig,
   shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
   // force_scale: true,
   video_smooth: false,
@@ -202,16 +350,76 @@ const Amiga = {
       accepted: ["82a21c1890cae844b3df741f2762d48d"]
     },
     {
+      key: "kick33180.A500",
+      type: "A500/A2000 Kickstart v1.2 rev 33.180",
+      required: false,
+      accepted: ["85ad74194e87c08904327de1a9443b7a"]
+    },
+    {
+      key: "kick37175.A500",
+      type: "A500+ Kickstart v2.04 rev 37.175",
+      required: false,
+      accepted: ["dc10d7bdd1b6f450773dfb558477c230"]
+    },
+    {
+      key: "kick37350.A600",
+      type: "A600 Kickstart v2.05 rev 37.350",
+      required: false,
+      accepted: ["465646c9b6729f77eea5314d1f057951"]
+    },
+    {
       key: "kick40063.A600",
       type: "A600 Kickstart v3.1 rev 40.063",
       required: true,
       accepted: ["e40a5dfb3d017ba8779faba30cbd1c8e"]
     },
     {
+      key: "kick39106.A1200",
+      type: "A1200 Kickstart v3.0 rev 39.106",
+      required: false,
+      accepted: ["b7cc148386aa631136f510cd29e42fc3"]
+    },
+    {
       key: "kick40068.A1200",
       type: "A1200 Kickstart v3.1 rev 40.068",
       required: true,
       accepted: ["646773759326fbac3b2311fd8c8793ee"]
+    },
+    {
+      key: "kick39106.A4000",
+      type: "A4000 Kickstart v3.0 rev 39.106",
+      required: false,
+      accepted: ["9b8bdd5a3fd32c2a5a6f5b1aefc799a5"]
+    },
+    {
+      key: "kick40068.A4000",
+      type: "A4000 Kickstart v3.1 rev 40.068",
+      required: false,
+      accepted: ["9bdedde6a4f33555b4a270c8ca53297d"]
+    },
+    {
+      key: "kick34005.CDTV",
+      type: "CDTV extended ROM v1.00",
+      required: false,
+      accepted: ["89da1838a24460e4b93f4f0c5d92d48d"]
+    },
+    {
+      key: "kick40060.CD32",
+      type: "CD32 Kickstart v3.1 rev 40.060",
+      required: false,
+      accepted: ["5f8924d013dd57a89cf349f4cdedc6b1"]
+    },
+    {
+      key: "kick40060.CD32.ext",
+      type: "CD32 extended ROM rev 40.060",
+      required: false,
+      accepted: ["bb72565701b1b6faece07d68ea5da639"]
+    },
+    {
+      key: "kick40060.CD32.combined",
+      type: "CD32 Kickstart + extended ROM v3.1 rev 40.060",
+      required: false,
+      accepted: ["f2f241bf094168cfb9e7805dc2856433"]
     },
   ],
   keyboard_controller_info: {

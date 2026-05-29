@@ -386,7 +386,22 @@ export class PlatformManager {
         });
     }
 
-    #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null) {
+    async #getAvailableDependencyKeys() {
+        const dependencies = this.#selected_platform?.dependencies;
+        if (!Array.isArray(dependencies) || dependencies.length === 0) {
+            return new Set();
+        }
+
+        const platformId = this.#selected_platform.platform_id;
+        const availability = await Promise.all(dependencies.map(async (dependency) => {
+            const data = await this.#storage_manager.getFile(`${platformId}.${dependency.key}`);
+            return data ? dependency.key : null;
+        }));
+
+        return new Set(availability.filter(Boolean));
+    }
+
+    async #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null) {
         const clonedSavedBios = this.#cloneLaunchBios(savedLaunchBios);
         const clonedSavedCoreConfig = this.#cloneLaunchCoreConfig(savedLaunchCoreConfig);
 
@@ -409,7 +424,9 @@ export class PlatformManager {
         }
 
         if (typeof this.#selected_platform.resolveLaunchSettings === 'function') {
-            const resolved = this.#selected_platform.resolveLaunchSettings(romName, overrides);
+            const resolved = this.#selected_platform.resolveLaunchSettings(romName, overrides, {
+                availableDependencyKeys: await this.#getAvailableDependencyKeys()
+            });
             return {
                 bios: this.#cloneLaunchBios(resolved?.bios) || [],
                 coreConfig: this.#cloneLaunchCoreConfig(resolved?.coreConfig) || {},
@@ -1064,7 +1081,7 @@ export class PlatformManager {
                 }
             }
 
-            let launchSettings = this.#resolveLaunchSettings(
+            let launchSettings = await this.#resolveLaunchSettings(
                 romName,
                 null,
                 this.#pending_launch_bios,
@@ -1133,7 +1150,7 @@ export class PlatformManager {
 
             if (shouldPromptLaunchSettings) {
                 const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
-                launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                launchSettings = await this.#resolveLaunchSettings(romName, overrides);
                 applyLaunchSettingsToCore(launchSettings);
                 self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
                 return;
@@ -1191,7 +1208,7 @@ export class PlatformManager {
     }
 
     async loadRomFile(blob, romName, caption, fromBrowser = false, browserType = null, closeCallback = null) {
-        let launchSettings = this.#resolveLaunchSettings(
+        let launchSettings = await this.#resolveLaunchSettings(
             romName,
             null,
             this.#pending_launch_bios,
@@ -1279,7 +1296,7 @@ export class PlatformManager {
 
                     if (shouldPromptLaunchSettings) {
                         const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
-                        launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                        launchSettings = await this.#resolveLaunchSettings(romName, overrides);
                         applyLaunchSettingsToCore(launchSettings);
 
                         if (backgroundEl) {
@@ -1323,7 +1340,7 @@ export class PlatformManager {
             } else {
                 if (shouldPromptLaunchSettings) {
                     const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
-                    launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                    launchSettings = await this.#resolveLaunchSettings(romName, overrides);
                     applyLaunchSettingsToCore(launchSettings);
                     if (closeCallback) {
                         closeCallback();
@@ -1363,7 +1380,7 @@ export class PlatformManager {
 
             if (shouldPromptLaunchSettings) {
                 const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
-                launchSettings = this.#resolveLaunchSettings(romName, overrides);
+                launchSettings = await this.#resolveLaunchSettings(romName, overrides);
                 applyLaunchSettingsToCore(launchSettings);
                 self.startEmulation(blob, caption, romName);
                 return;
