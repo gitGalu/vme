@@ -15,10 +15,10 @@ export class ListCommand extends CommandBase {
     }
 
     get_help() {
-        return ['list [FILTER]', 'list files starting with text'];
+        return ['list [FILTER]', 'list all files or files starting with text'];
     }
 
-    process_input(parameters) {
+    process_input(parameters, is_enter_pressed) {
         if (this.#platform_manager.get_software_dir() == undefined) {
             this.cli.soft_msg('To use LIST command please import SOFTWARE DIRECTORY first.');
             return;
@@ -28,7 +28,11 @@ export class ListCommand extends CommandBase {
         let results = [];
         var tokens = parameters.filter(Boolean);
         if (tokens.length == 0) {
-            return;
+            if (!is_enter_pressed) {
+                this.cli.soft_msg('Press ENTER to list all software for this platform.');
+                return;
+            }
+            results = model.items;
         } else if (tokens.length > 0) {
             results = model.items.filter((val) => {
                 if (val[4]) {
