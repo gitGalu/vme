@@ -115,12 +115,17 @@ export class CLI {
 
     set_loading(val) {
         this.#is_loading = val;
+        const settingsElement = document.getElementById('settings');
         if (val) {
             this.#hideCursor();
+            if (settingsElement) {
+                settingsElement.classList.add('launch-loading');
+            }
         } else {
             this.#showCursor();
-
-            const settingsElement = document.getElementById('settings');
+            if (settingsElement) {
+                settingsElement.classList.remove('launch-loading');
+            }
             if (settingsElement) {
                 settingsElement.style.pointerEvents = 'auto';
             }

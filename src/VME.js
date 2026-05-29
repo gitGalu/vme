@@ -259,6 +259,7 @@ export class VME {
                 const settingsElement = document.getElementById('settings');
                 if (settingsElement) {
                     settingsElement.classList.remove('launch-starting');
+                    settingsElement.classList.remove('launch-loading');
                     settingsElement.style.pointerEvents = 'auto';
                 }
 
