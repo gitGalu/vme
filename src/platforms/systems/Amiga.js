@@ -201,6 +201,71 @@ const AMIGA_VIDEO_STANDARD_OPTIONS = Object.freeze([
 
 const AMIGA_MODEL_PRESET_VALUES = new Set(AMIGA_MODEL_PRESET_OPTIONS.map(option => option.value));
 const AMIGA_VIDEO_STANDARD_VALUES = new Set(AMIGA_VIDEO_STANDARD_OPTIONS.map(option => option.value));
+const AMIGA_NO_MEDIA_CONFIG_FILE = 'no-media.uae';
+const AMIGA_NO_MEDIA_MODEL_VALUES = new Set(['auto', 'A500', 'A1200']);
+const AMIGA_SYSTEM_DIR = '/home/web_user/retroarch/userdata/system';
+const AMIGA_NO_MEDIA_CONFIGS = Object.freeze({
+  A500: Object.freeze({
+    kickstart: 'kick34005.A500',
+    cpu_model: '68000',
+    fpu_model: '0',
+    mmu_model: '0',
+    chipmem_size: '1',
+    bogomem_size: '2',
+    fastmem_size: '0',
+    z3mem_size: '0',
+    cpu_24bit_addressing: 'true',
+    chipset: 'ocs',
+    chipset_compatible: 'A500'
+  }),
+  A1200: Object.freeze({
+    kickstart: 'kick40068.A1200',
+    cpu_model: '68020',
+    fpu_model: '0',
+    mmu_model: '0',
+    chipmem_size: '4',
+    bogomem_size: '0',
+    fastmem_size: '0',
+    z3mem_size: '0',
+    cpu_24bit_addressing: 'true',
+    chipset: 'aga',
+    chipset_compatible: 'A1200'
+  })
+});
+
+function isAmigaNoMediaConfig(fileName) {
+  if (typeof fileName !== 'string') {
+    return false;
+  }
+  return fileName.split(/[\\/]/).pop().toLowerCase() === AMIGA_NO_MEDIA_CONFIG_FILE;
+}
+
+function createAmigaNoMediaConfig(model) {
+  const config = AMIGA_NO_MEDIA_CONFIGS[model] || AMIGA_NO_MEDIA_CONFIGS.A500;
+  return [
+    'config_description=VM/E No Media',
+    `kickstart_rom_file=${AMIGA_SYSTEM_DIR}/${config.kickstart}`,
+    `cpu_model=${config.cpu_model}`,
+    `fpu_model=${config.fpu_model}`,
+    `mmu_model=${config.mmu_model}`,
+    `chipmem_size=${config.chipmem_size}`,
+    `bogomem_size=${config.bogomem_size}`,
+    `fastmem_size=${config.fastmem_size}`,
+    `z3mem_size=${config.z3mem_size}`,
+    `cpu_24bit_addressing=${config.cpu_24bit_addressing}`,
+    `chipset=${config.chipset}`,
+    `chipset_compatible=${config.chipset_compatible}`,
+    'nr_floppies=0',
+    'floppy0=',
+    'floppy1=',
+    'floppy2=',
+    'floppy3=',
+    'floppy0type=-1',
+    'floppy1type=-1',
+    'floppy2type=-1',
+    'floppy3type=-1'
+  ].join('\n');
+}
 
 function normalizeAmigaModelPreset(value, fallback = 'auto') {
   if (typeof value !== 'string') {
@@ -253,7 +318,9 @@ async function writeStoredSystemFile(storageManager, FS, storageKey, systemFileN
 
 function buildAmigaLaunchSettings(fileName, overrides = null, context = null) {
   const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
-  const model = normalizeAmigaModelPreset(overrideInput.model, 'auto');
+  const noMediaBoot = isAmigaNoMediaConfig(fileName);
+  const requestedModel = normalizeAmigaModelPreset(overrideInput.model, 'auto');
+  const model = noMediaBoot && !AMIGA_NO_MEDIA_MODEL_VALUES.has(requestedModel) ? 'auto' : requestedModel;
   const videoStandard = normalizeAmigaVideoStandard(overrideInput.video_standard, 'auto');
   const availableBiosKeys = context?.availableDependencyKeys;
   const selectedModelOption = AMIGA_MODEL_PRESET_OPTIONS.find(option => option.value === model);
@@ -265,10 +332,12 @@ function buildAmigaLaunchSettings(fileName, overrides = null, context = null) {
     puae_floppy_multidrive: "disabled"
   };
 
-  if (selectedModelOption?.coreConfig) {
-    Object.assign(coreConfig, selectedModelOption.coreConfig);
-  } else if (model !== 'auto') {
-    coreConfig.puae_model = model;
+  if (!noMediaBoot) {
+    if (selectedModelOption?.coreConfig) {
+      Object.assign(coreConfig, selectedModelOption.coreConfig);
+    } else if (model !== 'auto') {
+      coreConfig.puae_model = model;
+    }
   }
 
   if (videoStandard !== 'auto') {
@@ -290,7 +359,12 @@ function buildAmigaLaunchSettings(fileName, overrides = null, context = null) {
       {
         id: 'model',
         label: 'Model',
-        options: AMIGA_MODEL_PRESET_OPTIONS.filter(option => isAmigaModelPresetAvailable(option, availableBiosKeys))
+        options: AMIGA_MODEL_PRESET_OPTIONS.filter(option => {
+          if (noMediaBoot && !AMIGA_NO_MEDIA_MODEL_VALUES.has(option.value)) {
+            return false;
+          }
+          return isAmigaModelPresetAvailable(option, availableBiosKeys);
+        })
       },
       {
         id: 'video_standard',
@@ -336,6 +410,14 @@ const Amiga = {
     await writeStoredSystemFile(storageManager, FS, 'kick40060.CD32');
     await writeStoredSystemFile(storageManager, FS, 'kick40060.CD32.ext');
     await writeStoredSystemFile(storageManager, FS, 'kick40060.CD32.combined', 'kick40060.CD32');
+  },
+  prepareLaunchRom: ({ launchRomInput, romName, launchSettings }) => {
+    if (!isAmigaNoMediaConfig(romName)) {
+      return launchRomInput;
+    }
+    const requestedModel = normalizeAmigaModelPreset(launchSettings?.overrideValues?.model, 'auto');
+    const model = requestedModel === 'A1200' ? 'A1200' : 'A500';
+    return new Blob([createAmigaNoMediaConfig(model)], { type: 'text/plain' });
   },
   resolveLaunchSettings: (fileName, overrides = null, context = null) => buildAmigaLaunchSettings(fileName, overrides, context),
   guessConfig: (fileName) => buildAmigaLaunchSettings(fileName).coreConfig,

@@ -26,6 +26,7 @@ export class BootCommand extends CommandBase {
 
     #print(platform) {
         switch (platform.platform_id) {
+            case "amiga":
             case "atari800":
             case "spectrum":
             case "c64":
@@ -42,22 +43,25 @@ export class BootCommand extends CommandBase {
 
     async #boot(platform) {
         switch (platform.platform_id) {
+            case "amiga":
+                this.#loadText('', 'no-media.uae', this.#getNoMediaLaunchOptions());
+                break;
             case "atari800":
-                this.#load('/vme/assets/boot/empty', '[BASIC].atr');
+                this.#load('/vme/assets/boot/empty', '[BASIC].atr', this.#getNoMediaLaunchOptions());
                 break;
             case "spectrum":
-                this.#load('/vme/assets/boot/zx.tzx', 'zx.tzx');
+                this.#load('/vme/assets/boot/zx.tzx', 'zx.tzx', this.#getNoMediaLaunchOptions());
                 break;
             case "c64":
             case "c128":
             case "c264":
             case "vic20":
-                this.#load('/vme/assets/boot/empty', 'empty.d64');
+                this.#load('/vme/assets/boot/empty', 'empty.d64', this.#getNoMediaLaunchOptions());
                 break;
         }
     }
 
-    #load(path, fileName) {
+    #load(path, fileName, launchOptions = null) {
         fetch(path)
             .then(response => {
                 if (!response.ok) {
@@ -66,10 +70,21 @@ export class BootCommand extends CommandBase {
                 return response.blob();
             })
             .then(blob => {
-                this.#pm.loadLocalRom(blob, fileName);
+                this.#pm.loadLocalRom(blob, fileName, launchOptions);
             })
             .catch(error => {
                 console.error('Failed to load', error);
             });
+    }
+
+    #loadText(text, fileName, launchOptions = null) {
+        const blob = new Blob([text], { type: 'text/plain' });
+        this.#pm.loadLocalRom(blob, fileName, launchOptions);
+    }
+
+    #getNoMediaLaunchOptions() {
+        return {
+            statusMessage: 'Booting without media.'
+        };
     }
 }

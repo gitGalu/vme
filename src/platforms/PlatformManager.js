@@ -934,7 +934,7 @@ export class PlatformManager {
         StorageManager.storeValue(this.#selected_platform.platform_id + ".LAST_FILE", jsonString);
     }
 
-    async loadRom(romSource, caption, isLocal = true, romName = caption) {
+    async loadRom(romSource, caption, isLocal = true, romName = caption, launchOptions = null) {
         let core = this.#selected_platform.core;
         let coreWasm = this.#getCoreAssetPath(core, 'wasm');
 
@@ -949,6 +949,9 @@ export class PlatformManager {
         const originalRomSource = romSource;
         const originalRomName = romName;
         const originalCaption = caption;
+        const launchStatusMessage = typeof launchOptions?.statusMessage === 'string'
+            ? launchOptions.statusMessage
+            : null;
 
         try {
 
@@ -1104,6 +1107,18 @@ export class PlatformManager {
                     }
                 });
             };
+            const prepareLaunchRomInput = async (input, resolvedLaunchSettings) => {
+                if (typeof this.#selected_platform.prepareLaunchRom !== 'function') {
+                    return input;
+                }
+                const prepared = await this.#selected_platform.prepareLaunchRom({
+                    launchRomInput: input,
+                    romName,
+                    caption,
+                    launchSettings: resolvedLaunchSettings
+                });
+                return prepared || input;
+            };
 
             this.#prepareNostalgist(romName, caption);
             applyLaunchSettingsToCore(launchSettings);
@@ -1122,6 +1137,9 @@ export class PlatformManager {
             if (autoDiskSetInfo) {
                 self.#cli.print(`Auto M3U prepared (${autoDiskSetInfo.selectedNames.length}/${autoDiskSetInfo.totalDisks}):`);
                 autoDiskSetInfo.selectedNames.forEach((name) => self.#cli.print(`- ${name}`));
+                self.#cli.print("&nbsp;");
+            } else if (launchStatusMessage) {
+                self.#cli.print(launchStatusMessage);
                 self.#cli.print("&nbsp;");
             } else {
                 self.#cli.print("Program loaded:");
@@ -1152,9 +1170,12 @@ export class PlatformManager {
                 const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
                 launchSettings = await this.#resolveLaunchSettings(romName, overrides);
                 applyLaunchSettingsToCore(launchSettings);
+                launchRomInput = await prepareLaunchRomInput(launchRomInput, launchSettings);
                 self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
                 return;
             }
+
+            launchRomInput = await prepareLaunchRomInput(launchRomInput, launchSettings);
 
             const launch = async () => {
                 // Remove all launch listeners
@@ -1179,8 +1200,8 @@ export class PlatformManager {
         }
     }
 
-    async loadLocalRom(romBlob, caption) {
-        return this.loadRom(romBlob, caption, true);
+    async loadLocalRom(romBlob, caption, launchOptions = null) {
+        return this.loadRom(romBlob, caption, true, caption, launchOptions);
     }
 
     async loadRomFileFromUrl(filename, romName, caption) {
