@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.83] - 2026-05-30
+
+- Amiga: added Autoconfig options for machine model override 
+- Amiga: support booting without media (NMB command)
+- allow listing all software using LIST command
+
 ## [0.82] - 2026-05-28
 
 - Amiga: add libretro game thumbnails for WHDLoad files
