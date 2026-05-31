@@ -21,6 +21,9 @@ import {
     getSyntheticKeyboardTarget
 } from '../keyboard/SyntheticKeyboard.js';
 
+const REWIND_REPEAT_MS = 33;
+const FAST_FORWARD_HOLD_REPEAT_MS = 16;
+
 function getJoystickModeName(mode, platform = null) {
     const overrideLabel = platform?.touch_controller_mode_labels?.[mode];
     if (typeof overrideLabel === 'string' && overrideLabel.trim().length > 0) {
@@ -270,12 +273,16 @@ export class UiManager {
         addButtonEventListeners(s('#desktopUiRewind'),
             (pressed) => {
                 if (pressed) {
+                    if (intervalId !== null) {
+                        return;
+                    }
                     UiManager.#platform_manager.getNostalgist().sendCommand('REWIND');
                     intervalId = setInterval(() => {
                         UiManager.#platform_manager.getNostalgist().sendCommand('REWIND');
-                    }, 5);
-                } else {
+                    }, REWIND_REPEAT_MS);
+                } else if (intervalId !== null) {
                     clearInterval(intervalId);
+                    intervalId = null;
                 }
             });
 
@@ -1510,12 +1517,14 @@ class RightControlListener extends TouchButtonListener {
 class RepeatingCommandButtonListener extends TouchButtonListener {
     #nostalgist;
     #command;
+    #repeatMs;
     #intervalId = null;
 
-    constructor(nostalgist, command) {
+    constructor(nostalgist, command, repeatMs) {
         super();
         this.#nostalgist = nostalgist;
         this.#command = command;
+        this.#repeatMs = repeatMs;
     }
 
     trigger(s) {
@@ -1526,7 +1535,7 @@ class RepeatingCommandButtonListener extends TouchButtonListener {
             this.#nostalgist.sendCommand(this.#command);
             this.#intervalId = setInterval(() => {
                 this.#nostalgist.sendCommand(this.#command);
-            }, 5);
+            }, this.#repeatMs);
         } else if (this.#intervalId !== null) {
             clearInterval(this.#intervalId);
             this.#intervalId = null;
@@ -1536,7 +1545,7 @@ class RepeatingCommandButtonListener extends TouchButtonListener {
 
 class RewindButtonListener extends RepeatingCommandButtonListener {
     constructor(nostalgist) {
-        super(nostalgist, 'REWIND');
+        super(nostalgist, 'REWIND', REWIND_REPEAT_MS);
     }
 }
 
@@ -1558,7 +1567,7 @@ class CommandButtonListener extends TouchButtonListener {
 
 class FastForwardListener extends RepeatingCommandButtonListener {
     constructor(nostalgist) {
-        super(nostalgist, 'FAST_FORWARD_HOLD');
+        super(nostalgist, 'FAST_FORWARD_HOLD', FAST_FORWARD_HOLD_REPEAT_MS);
     }
 }
 
