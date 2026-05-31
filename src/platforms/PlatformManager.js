@@ -2040,47 +2040,6 @@ export class PlatformManager {
         }
     }
 
-    showThumbnail(text) {
-        let platform_thumbnail_dir = this.getSelectedPlatform().thumbnail_dir;
-        let imageUrl = `http://thumbnails.libretro.com/${platform_thumbnail_dir}/Named_Snaps/${text.replace('.zip', '.png')}`;
-
-        if (this.dynamicImg) {
-            this.dynamicImg.src = imageUrl;
-            this.dynamicImg.style.display = 'block';
-        }
-    }
-
-    hideThumbnail() {
-        if (this.dynamicImg) {
-            this.dynamicImg.style.display = 'none';
-        }
-    }
-
-    #addHoverListener() {
-        this.dynamicImg = document.createElement('img');
-        this.dynamicImg.className = 'dynamic-image';
-        this.dynamicImg.style.display = 'none';
-        document.body.appendChild(this.dynamicImg);
-
-        this.dynamicImg.addEventListener('error', () => {
-            this.hideThumbnail();
-        });
-
-        const corsResults = document.getElementById('cors_results');
-        corsResults.addEventListener('mouseover', (event) => {
-            if (event.target.tagName === 'SPAN' && event.target.parentNode.classList.contains('corsrow')) {
-                let text = event.target.textContent.trim();
-                this.showThumbnail(text);
-            }
-        });
-
-        corsResults.addEventListener('mouseout', (event) => {
-            if (event.target.tagName === 'SPAN' && event.target.parentNode.classList.contains('corsrow')) {
-                this.hideThumbnail();
-            }
-        });
-    }
-
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }

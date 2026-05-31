@@ -3020,14 +3020,6 @@ body.selection-mode-active .menu-strip-spacer {
   filter: brightness(0) invert(1);
 }
 
-.dynamic-image {
-  position: fixed;
-  z-index: 1000;
-  pointer-events: none;
-  display: none;
-  top: 10px;
-  right: 10px;
-}
 
 .corsrow img {
   display: none;

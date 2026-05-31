@@ -19,6 +19,9 @@ class ThumbnailPreviewClass {
         this.#platformManager = platformManager;
         this.#imgEl = document.getElementById('cli-thumbnail');
         if (!this.#imgEl) return;
+        // Request the cross-origin mirror image via CORS so it is allowed under
+        // `Cross-Origin-Embedder-Policy: require-corp` (see PlatformBase getThumbnailUrls).
+        this.#imgEl.crossOrigin = 'anonymous';
         this.#imgEl.addEventListener('load', () => {
             if (this.#imgEl.dataset.token === String(this.#currentToken)) {
                 this.#imgEl.classList.add('visible');
