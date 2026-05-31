@@ -1507,25 +1507,36 @@ class RightControlListener extends TouchButtonListener {
     }
 }
 
-class RewindButtonListener extends TouchButtonListener {
+class RepeatingCommandButtonListener extends TouchButtonListener {
     #nostalgist;
-    #intervalId;
-    static #command = 'REWIND';
+    #command;
+    #intervalId = null;
 
-    constructor(nostalgist) {
+    constructor(nostalgist, command) {
         super();
         this.#nostalgist = nostalgist;
+        this.#command = command;
     }
 
     trigger(s) {
         if (s) {
-            this.#nostalgist.sendCommand(RewindButtonListener.#command);
+            if (this.#intervalId !== null) {
+                return;
+            }
+            this.#nostalgist.sendCommand(this.#command);
             this.#intervalId = setInterval(() => {
-                this.#nostalgist.sendCommand(RewindButtonListener.#command);
+                this.#nostalgist.sendCommand(this.#command);
             }, 5);
-        } else {
+        } else if (this.#intervalId !== null) {
             clearInterval(this.#intervalId);
+            this.#intervalId = null;
         }
+    }
+}
+
+class RewindButtonListener extends RepeatingCommandButtonListener {
+    constructor(nostalgist) {
+        super(nostalgist, 'REWIND');
     }
 }
 
@@ -1545,21 +1556,9 @@ class CommandButtonListener extends TouchButtonListener {
     }
 }
 
-class FastForwardListener extends TouchButtonListener {
-    static #command = 'FAST_FORWARD';
-    #nostalgist;
-    #isActive = false;
-
+class FastForwardListener extends RepeatingCommandButtonListener {
     constructor(nostalgist) {
-        super();
-        this.#nostalgist = nostalgist;
-    }
-
-    trigger(s) {
-        if (s !== this.#isActive) {
-            this.#isActive = s;
-            this.#nostalgist.sendCommand(FastForwardListener.#command);
-        }
+        super(nostalgist, 'FAST_FORWARD_HOLD');
     }
 }
 
