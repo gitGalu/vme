@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.84] - 2026-05-31
+
+- improve Rewind and Fast Forward actions
+- switch libretro thumbnails server to CORS-enabled mirror
+- fix broken DOS emulation in Safari browsers
+
 ## [0.83] - 2026-05-30
 
 - Amiga: added Autoconfig options for machine model override 
