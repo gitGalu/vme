@@ -74,6 +74,8 @@ export class QuickShot {
         } else if (buttonsCount == 4) {
             if (platform_id == "gba") {
                 new QuadrupleTouchButton(bottomContainer, 'L', 'R', 'B', 'A', undefined, 'qs4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'l', 'r', 'b', 'a'), QuadrupleTouchButton.Layout.ABLR);
+            } else if (platform_id == "tic80") {
+                new QuadrupleTouchButton(bottomContainer, 'X', 'Y', 'A', 'B', undefined, 'qs4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'y', 'x', 'b', 'a'), QuadrupleTouchButton.Layout.ABLR);
             } else if (platform_id == "snk" || platform_id == "mame") {
                 new QuadrupleTouchButton(bottomContainer, 'C', 'D', 'A', 'B', undefined, 'qsab4', new QuadrupleTouchButtonJoyListener(this.#nostalgist, 'x', 'y', 'a', 'b'), QuadrupleTouchButton.Layout.ABCD);
             } 
