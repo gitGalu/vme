@@ -1280,9 +1280,11 @@ body.selection-mode-active .menu-strip-spacer {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 20px);
   right: calc(env(safe-area-inset-right, 0px) + 20px);
-  width: 240px;
+  /* Phone baseline; bumped up on tablet/desktop below. The vw/vh caps keep it
+     from overwhelming small or short (landscape) windows. */
+  width: min(240px, 40vw);
   height: auto;
-  max-height: 240px;
+  max-height: min(240px, 40vh);
   border-radius: 5px;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
   z-index: 100000;
@@ -1290,6 +1292,22 @@ body.selection-mode-active .menu-strip-spacer {
   opacity: 0;
   transform: translateX(calc(100% + 40px));
   transition: opacity 200ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Tablet / iPad-class viewports. */
+@media (min-width: 768px) {
+  #cli-thumbnail {
+    width: min(320px, 38vw);
+    max-height: min(320px, 45vh);
+  }
+}
+
+/* Desktop. */
+@media (min-width: 1024px) {
+  #cli-thumbnail {
+    width: min(400px, 32vw);
+    max-height: min(400px, 60vh);
+  }
 }
 
 #cli-thumbnail:not([src]),
