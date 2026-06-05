@@ -15,6 +15,7 @@ const TIC80 = {
         '--color2': '#1a1d2c',
         '--font': 'TIC80',
         '--fontsize': '1.2em',
+        '--transform': 'uppercase',
         '--portrait-fontsize': '125%',
         '--cursorwidth': '1em'
     },
@@ -26,8 +27,8 @@ const TIC80 = {
         "Arrow Keys": "D-PAD",
         "Z": "Button A",
         "X": "Button B",
-        "Q": "Button X",
-        "W": "Button Y"
+        "A": "Button X",
+        "S": "Button Y"
     },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
