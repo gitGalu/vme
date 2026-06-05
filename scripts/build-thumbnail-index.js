@@ -39,7 +39,7 @@ const PLATFORMS = [
     { platform_id: 'pce', system: 'NEC - PC Engine - TurboGrafx 16' },
     { platform_id: 'snes', system: 'Nintendo - Super Nintendo Entertainment System' },
     { platform_id: 'snk', system: 'SNK - Neo Geo' },
-    { platform_id: 'tic-80', system: 'TIC-80' }
+    { platform_id: 'tic80', system: 'TIC-80' }
 ];
 
 // Aliases: copy an existing platform's index under a different id.
