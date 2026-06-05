@@ -875,7 +875,7 @@ export class PlatformManager {
 
     getHtmlControls() {
         if (typeof this.#selected_platform.keyboard_controller_info === 'function') {
-            const key = FileUtils.getFilenameWithoutExtension(romName);
+            const key = FileUtils.getFilenameWithoutExtension(this.#program_name);
             return this.#getControls(this.#selected_platform.keyboard_controller_info(key));
         } else {
             return this.#getControls(this.#selected_platform.keyboard_controller_info);
