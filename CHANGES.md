@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.85] - 2026-06-06
+
+- add TIC-80 emulation (uses tic80 core)
+- more libretro thumbnail fixes
+- fix MAME/Arcade platform touch controls not working
+
 ## [0.84] - 2026-05-31
 
 - improve Rewind and Fast Forward actions
