@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.90] - 2026-06-14
+
+- introduce VM/E Shell for gamepad controls (beta)
+
 ## [0.85] - 2026-06-06
 
 - add TIC-80 emulation (uses tic80 core)
