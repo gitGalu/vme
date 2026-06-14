@@ -10,8 +10,8 @@
     <link rel="icon" href="/vme/assets/favicon-CcvJXZ4M.ico" type="image/x-icon">
     <link rel="icon" href="/vme/assets/favicon-32x32-DDiKfeWr.png" type="image/png" sizes="32x32">
     <link rel="icon" href="/vme/assets/favicon-16x16-q6ilooy1.png" type="image/png" sizes="16x16">
-  <script type="module" crossorigin src="/vme/assets/index-BkNUa-gH.js"></script>
-  <link rel="stylesheet" crossorigin href="/vme/assets/index-D7wMatMY.css">
+  <script type="module" crossorigin src="/vme/assets/index-Bv7xQkAM.js"></script>
+  <link rel="stylesheet" crossorigin href="/vme/assets/index-BQscbF5d.css">
 <link rel="manifest" href="/vme/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/vme/registerSW.js"></script></head>
 <style>
     html {
@@ -31,7 +31,41 @@
         </div>
     </div>
 
+    <!-- Gamepad-only menu overlay. Nakladka nad klasycznym CLI; pokazywana dopiero
+         po jawnym wcisnieciu przycisku na padzie (nie przy samym podlaczeniu). -->
+    <div id="gamepad-menu">
+        <!-- Stage: box o sta\ych proporcjach 16:9 (jak ekran TV), wysrodkowany w
+             viewporcie z letterboxem. Caly shell renderuje sie wewnatrz. -->
+        <div id="gamepad-stage">
+            <!-- Miniatura podswietlonego tytulu (Browse) - prawy gorny rog stage. -->
+            <img id="gamepad-menu-thumbnail" alt="" />
+            <div id="gamepad-menu-inner"></div>
+        </div>
+    </div>
+
+    <!-- Ekran "press to start" w stylu shella (box 16:9). Pokazywany przy ladowaniu gry
+         z shella; gest (klik/dotyk/klawisz) startuje gre i odblokowuje audio. -->
+    <div id="gamepad-launch">
+        <div id="gamepad-launch-stage">
+            <div id="gamepad-launch-inner">
+                <div class="gl-title" id="gamepadLaunchTitle"></div>
+                <div class="gl-status" id="gamepadLaunchStatus">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-game menu pada (long-press Start). Pionowa lista w stylu shella; gra pauzuje. -->
+    <div id="gamepad-ingame">
+        <div id="gamepad-ingame-inner">
+            <div class="gi-title" id="gamepadIngameTitle"></div>
+            <div class="gi-list" id="gamepadIngameList"></div>
+        </div>
+    </div>
+
     <div id="save-browser">
+        <!-- Breadcrumb skorki trybu pada (widoczny tylko gdy body.gamepad-browser-skin).
+             3. segment = aktywny filtr platformy (aktualizowany w SaveBrowser). -->
+        <div class="gm-browser-crumb"><span class="gm-crumb gm-crumb-app">VM/E</span><span class="gm-crumb-sep">›</span><span class="gm-crumb gm-crumb-section" id="saveBrowserCrumbLabel">Save states</span><span class="gm-crumb-sep">›</span><span class="gm-crumb gm-crumb-section" id="saveBrowserCrumbFilter">All platforms</span></div>
         <div id="flicking-background"></div>
         <div id="saveBrowserEmpty">Loading...</div>
         <div id="flicking" class="flicking-viewport">
@@ -58,6 +92,7 @@
     </div>
 
     <div id="collection-browser">
+        <div class="gm-browser-crumb"><span class="gm-crumb gm-crumb-app">VM/E</span><span class="gm-crumb-sep">›</span><span class="gm-crumb gm-crumb-section" id="collectionBrowserCrumbLabel">Collections</span></div>
         <div id="collection-flicking-background"></div>
         <div id="collectionBrowserEmpty">Loading...</div>
         <div id="collection-flicking" class="flicking-viewport">
