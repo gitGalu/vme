@@ -122,8 +122,12 @@ export class PlatformManager {
     #handleGamepadConnection() {
         if (!this.#selected_platform) return;
         const hasGamepad = EnvironmentManager.hasGamepad();
-        const keyboardMode = this.#getKeyboardMode();
-        if (hasGamepad && this.#selected_platform.gamepad_filter) {
+        // The gamepad filter (coalesce/disable/leftStickToDpad) is for the GAME - it shapes
+        // the raw pad for a specific core. It must NOT be applied in the shell/menu/browsers,
+        // because the navigator.getGamepads monkey-patch zeroes/merges buttons globally (X/Y/B
+        // disappear in shell navigation). Apply the filter ONLY while a game runs (#nostalgist).
+        const gameRunning = !!this.#nostalgist;
+        if (gameRunning && hasGamepad && this.#selected_platform.gamepad_filter) {
             this.#applyGamepadFilter(this.#selected_platform.gamepad_filter);
         } else {
             this.#applyGamepadFilter(null);
@@ -574,6 +578,11 @@ export class PlatformManager {
         });
     }
 
+    /** Drop the gamepad filter (restore the raw pad) - e.g. when returning to the shell/menu. */
+    clearGamepadFilter() {
+        this.#applyGamepadFilter(null);
+    }
+
     #applyGamepadFilter(filter) {
         if (!navigator.getGamepads) return;
 
@@ -739,6 +748,15 @@ export class PlatformManager {
             ? this.#selected_platform.keyboard_joystick_mapping
             : null;
 
+
+        // IMPORTANT: a platform WITHOUT gamepad_filter -> remove any lingering getGamepads
+        // patch left over from an earlier filtered game (e.g. A800). Otherwise the A800 filter
+        // mangles the pad for NES/A2600/etc -> chaotic impulses / dead controls. Some branches
+        // below never call #applyGamepadFilter, so the patch would persist.
+        if (!this.#selected_platform.gamepad_filter) {
+            this.#applyGamepadFilter(null);
+        }
+
         if (EnvironmentManager.isDesktop() && this.#selected_platform.touch_controllers.length == 1 && this.#selected_platform.touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
             retroarchConfigOverrides = {
                 ...this.#selected_platform.touch_controller_mapping
@@ -803,7 +821,13 @@ export class PlatformManager {
                 fastforward_ratio: (this.#selected_platform.fastforward_ratio === undefined) ? 10 : this.#selected_platform.fastforward_ratio,
                 ...(this.#selected_platform.platform_id === 'dos' ? { video_gpu_screenshot: false } : {}),
                 input_pause_toggle: false,
-                video_scale_integer: (this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale,
+                // 'Fill screen' (MAXIMIZE_IMAGE key): disables integer scaling -> the image
+                // scales smoothly and fills the screen (keeping aspect ratio), overriding the
+                // per-platform force_scale. Honored ONLY when launched from the gamepad shell
+                // (the CLI only offers Authentic/Pixel-perfect). Default is pixel-perfect.
+                video_scale_integer: (StorageManager.getValue('MAXIMIZE_IMAGE') === '1' && this.#vme.isGamepadLaunch?.())
+                    ? false
+                    : ((this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale),
                 video_smooth: (this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth,
                 savestate_thumbnail_enable: (typeof this.#selected_platform.savestate_thumbnail_enable === 'boolean')
                     ? this.#selected_platform.savestate_thumbnail_enable
@@ -1182,12 +1206,21 @@ export class PlatformManager {
                 // Remove all launch listeners
                 document.body.removeEventListener('click', launch);
                 document.body.removeEventListener('keydown', launch);
+                document.body.removeEventListener('touchstart', launch);
                 self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
             };
 
-            // Only allow keyboard or mouse to proceed - gamepad does not count as user gesture for AudioContext
+            // Only allow keyboard/mouse/touch to proceed - a gamepad does not count as a
+            // user gesture for AudioContext.
             document.body.addEventListener('click', launch, { once: true });
             document.body.addEventListener('keydown', launch, { once: true });
+            document.body.addEventListener('touchstart', launch, { once: true });
+
+            // Signal: ROM ready, waiting for a user gesture (the shell shows the 'press to
+            // start' screen - see VME). In pad mode the game doesn't start itself (pad != gesture).
+            document.dispatchEvent(new CustomEvent('vme:awaiting-launch-gesture', {
+                detail: { caption, romName }
+            }));
 
         } catch (error) {
             console.log(error.stack);
@@ -1280,6 +1313,43 @@ export class PlatformManager {
 
             const hasGamepad = Array.from(navigator.getGamepads()).some(gp => gp?.connected);
 
+            // Pad skin mode (Save/Collection in the gamepad shell) -> use the SAME launch
+            // screen as Browse files (#gamepad-launch, driven by VME via the event). No
+            // separate browserLoadingOverlay, no bottom bar, no 'Keyboard controls'. A gesture
+            // (click/touch/key) starts the game.
+            const gamepadSkinLaunch = document.body.classList.contains('gamepad-browser-skin');
+
+            if (hasGamepad && gamepadSkinLaunch) {
+                if (shouldPromptLaunchSettings) {
+                    const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
+                    launchSettings = await this.#resolveLaunchSettings(romName, overrides);
+                    applyLaunchSettingsToCore(launchSettings);
+                    if (closeCallback) closeCallback();
+                    self.startEmulation(blob, caption, romName);
+                    return;
+                }
+
+                self.#keyboard_manager.hideTouchKeyboard();
+
+                const launch = async () => {
+                    document.body.removeEventListener('click', launch);
+                    document.body.removeEventListener('keydown', launch);
+                    document.body.removeEventListener('touchstart', launch);
+                    if (gamepadManager) gamepadManager.setGuiNavigationEnabled(false);
+                    if (closeCallback) closeCallback();
+                    self.startEmulation(blob, caption, romName);
+                };
+                document.body.addEventListener('click', launch, { once: true });
+                document.body.addEventListener('keydown', launch, { once: true });
+                document.body.addEventListener('touchstart', launch, { once: true });
+
+                // VME will show #gamepad-launch in the 'press to start' state (like Browse).
+                document.dispatchEvent(new CustomEvent('vme:awaiting-launch-gesture', {
+                    detail: { caption, romName }
+                }));
+                return;
+            }
+
             if (hasGamepad) {
                 const overlayId = browserType === 'save' ? 'browserLoadingOverlay' : 'collectionBrowserLoadingOverlay';
                 const messageId = browserType === 'save' ? 'browserLoadingMessage' : 'collectionBrowserLoadingMessage';
@@ -1292,6 +1362,7 @@ export class PlatformManager {
                 const backgroundEl = document.getElementById(backgroundId);
 
                 if (overlay && messageEl && controlsEl) {
+                    // (pad skin handled above - this is the no-skin path)
 
                     if (backgroundEl) {
                         backgroundEl.classList.add('zoom-out');
@@ -1664,6 +1735,23 @@ export class PlatformManager {
         return this.#model;
     }
 
+    /**
+     * Whether the current platform is "ready" for browsing/searching: all required files
+     * (BIOSes/dependencies) present, the platform not marked not_ready, and a software
+     * directory (collection) loaded. Async (checkFiles).
+     * @returns {Promise<boolean>}
+     */
+    async isSelectedPlatformReady() {
+        const platform = this.#selected_platform;
+        if (!platform) return false;
+        try {
+            const [, missingDeps, softwareFile] = await this.#storage_manager.checkFiles(platform);
+            return missingDeps.length === 0 && !platform.not_ready && softwareFile != null;
+        } catch (e) {
+            return false;
+        }
+    }
+
     #clearSoftwareDirCache() {
         if (this.#model && Array.isArray(this.#model.items)) {
             this.#model.items.length = 0;
@@ -1691,6 +1779,15 @@ export class PlatformManager {
         if (printStatus) {
             this.#print_platform_status();
         }
+    }
+
+    /**
+     * Skip the launch-settings (Autoconfig) dialog on the NEXT launch - used when launching
+     * from the gamepad shell (the desktop/mobile form doesn't fit there; a dedicated shell
+     * form will come later). Uses default settings.
+     */
+    skipLaunchSettingsPromptOnce() {
+        this.#skip_launch_settings_prompt_once = true;
     }
 
     updateGamepadStatus() {

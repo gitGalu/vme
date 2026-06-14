@@ -15,9 +15,16 @@ class ThumbnailPreviewClass {
     #activeLayerIndex = 0;
     #preferredLayer = 'snaps'; // session-only memory of last layer user picked
 
-    init(platformManager) {
+    /**
+     * @param {PlatformManager} platformManager
+     * @param {string|HTMLElement} [imgElOrId] the <img> element or its id (default 'cli-thumbnail').
+     *        Lets the same logic serve a separate widget (e.g. the thumbnail in the gamepad menu).
+     */
+    init(platformManager, imgElOrId = 'cli-thumbnail') {
         this.#platformManager = platformManager;
-        this.#imgEl = document.getElementById('cli-thumbnail');
+        this.#imgEl = typeof imgElOrId === 'string'
+            ? document.getElementById(imgElOrId)
+            : imgElOrId;
         if (!this.#imgEl) return;
         // Request the cross-origin mirror image via CORS so it is allowed under
         // `Cross-Origin-Embedder-Policy: require-corp` (see PlatformBase getThumbnailUrls).
@@ -148,4 +155,5 @@ class ThumbnailPreviewClass {
     }
 }
 
+export { ThumbnailPreviewClass };
 export const ThumbnailPreview = new ThumbnailPreviewClass();

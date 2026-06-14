@@ -6,6 +6,7 @@ import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { StorageManager } from "./storage/StorageManager.js";
 import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
+import { t } from './i18n/shellStrings.js';
 
 export class CollectionBrowser {
     #vme;
@@ -33,6 +34,10 @@ export class CollectionBrowser {
     #buttonElements = new Set();
     #backButton;
     #backHandler;
+
+    #choiceItems = [];
+    #choiceActions = [];
+    #choiceFocus = 0;
 
     constructor(vme, platform_manager, storage_manager, cli) {
         this.#vme = vme;
@@ -342,7 +347,11 @@ export class CollectionBrowser {
                                 .sort((a, b) => b.timestamp - a.timestamp)[0];
 
                             if (saveAvailable != undefined) {
-                                item.save_data_id = saveAvailable.save_data_id;
+                                // IMPORTANT: getSaveData expects saveMeta.id (primary key),
+                                // NOT save_data_id (FK to the saveData table). Passing
+                                // save_data_id here caused "Save state not found" when
+                                // id != save_data_id (e.g. after an in-game save).
+                                item.save_data_id = saveAvailable.id;
                             }
 
                             const newPanel = self.#createPanelHTML(item);
@@ -449,16 +458,32 @@ export class CollectionBrowser {
         const gamepadManager = this.#vme.getGamepadManager();
         if (gamepadManager) {
             const buttonIds = ['collectionBrowserUiBack', 'collectionBrowserUiLoad', 'collectionBrowserUiRestore'];
+            // Continue/Start over/Cancel overlay - always passed (skin may turn on later,
+            // on first pad use - e.g. Collection autostart after reload).
+            const overlay = {
+                show: () => this.showLaunchChoiceOverlay(),
+                isOpen: () => this.isLaunchChoiceOpen(),
+                navigate: (d) => this.navigateLaunchChoice(d),
+                select: () => this.selectLaunchChoice(),
+                hide: () => this.#hideLaunchChoiceOverlay()
+            };
             gamepadManager.initBrowserNavigation(this.#flicking, buttonIds, () => {
                 StorageManager.clearValue(BOOT_TO);
                 StorageManager.clearValue(COLLECTION_BROWSER_COLLECTION_INDEX);
                 StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
                 this.close();
                 this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
-            });
+            }, null, overlay, () => this.#enableGamepadSkin());
         }
 
+        this.#updateCrumbLabel();
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.COLLECTION_BROWSER);
+    }
+
+    /** Breadcrumb label (gamepad mode) follows shell language - e.g. Collection / Kolekcja. */
+    #updateCrumbLabel() {
+        const el = document.getElementById('collectionBrowserCrumbLabel');
+        if (el) el.textContent = t('crumb.collection');
     }
 
     close(skipPlatformUpdate = false) {
@@ -481,6 +506,115 @@ export class CollectionBrowser {
             this.#items.length = 0;
         }
         this.#items = undefined;
+    }
+
+    /**
+     * Enable the gamepad skin for Collection (e.g. on first pad use after autostart/reload).
+     * Look (depth, breadcrumb, hidden buttons, non-tilt) is CSS under the class -> applies
+     * instantly. Also shows the legend bar.
+     */
+    #enableGamepadSkin() {
+        if (document.body.classList.contains('gamepad-browser-skin')) return;
+        document.body.classList.add('gamepad-browser-skin');
+        // User used the pad (e.g. Collection autostart via BOOT_TO) -> back (B) should
+        // return to the gamepad shell, not the CLI.
+        this.#vme.markReturnToShell?.();
+        this.#updateCrumbLabel();
+        const gm = this.#vme.getGamepadManager();
+        gm?.updateBrowserLegend?.();
+        gm?.showLegendBar?.();
+    }
+
+    /**
+     * A on a game in gamepad skin mode: if a savestate EXISTS -> show the choice overlay
+     * (Continue / Start over / Cancel). No save -> start fresh immediately.
+     */
+    activateCurrentGame() {
+        const activePanel = this.#flicking?.currentPanel;
+        const hasSave = !!activePanel && activePanel.element.dataset.save !== "undefined";
+        if (hasSave) {
+            this.showLaunchChoiceOverlay();
+        } else {
+            this.#loadSelected();
+        }
+    }
+
+    /** Choice overlay (shell style): Continue (restore latest) / Start over / Cancel. */
+    showLaunchChoiceOverlay() {
+        const activePanel = this.#flicking?.currentPanel;
+        if (!activePanel) return;
+        const title = activePanel.element.getAttribute('data-program-name')
+            || activePanel.element.querySelector('.flicking-title-name')?.textContent
+            || 'Game';
+
+        let overlay = document.getElementById('collectionLaunchOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'collectionLaunchOverlay';
+            overlay.className = 'gm-browser-overlay';
+            document.getElementById('collection-browser').appendChild(overlay);
+        }
+        overlay.innerHTML = '';
+
+        const crumb = document.createElement('div');
+        crumb.className = 'gm-browser-overlay-crumb';
+        crumb.innerHTML = '<span class="gm-crumb gm-crumb-app">VM/E</span>'
+            + '<span class="gm-crumb-sep">›</span>'
+            + '<span class="gm-crumb gm-crumb-section">Collections</span>';
+        overlay.appendChild(crumb);
+
+        const list = document.createElement('div');
+        list.className = 'gm-list gm-browser-overlay-list';
+
+        this.#choiceItems = [];
+        this.#choiceActions = [
+            { label: 'Continue (latest save)', run: () => this.#restoreSelected() },
+            { label: 'Start over', run: () => this.#loadSelected() },
+            { label: 'Cancel', run: () => {} }
+        ];
+        this.#choiceActions.forEach(opt => {
+            const row = document.createElement('div');
+            row.className = 'gm-item';
+            const label = document.createElement('span');
+            label.className = 'gm-item-label';
+            label.textContent = opt.label;
+            row.appendChild(label);
+            list.appendChild(row);
+            this.#choiceItems.push(row);
+        });
+        overlay.appendChild(list);
+
+        this.#choiceFocus = 0;
+        this.#updateChoiceFocus();
+        overlay.classList.add('visible');
+    }
+
+    #updateChoiceFocus() {
+        this.#choiceItems?.forEach((el, i) => el.classList.toggle('focused', i === this.#choiceFocus));
+        this.#choiceItems?.[this.#choiceFocus]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    isLaunchChoiceOpen() {
+        const o = document.getElementById('collectionLaunchOverlay');
+        return !!o && o.classList.contains('visible');
+    }
+
+    navigateLaunchChoice(delta) {
+        const n = this.#choiceActions?.length || 0;
+        if (!n) return;
+        this.#choiceFocus = (this.#choiceFocus + delta + n) % n;
+        this.#updateChoiceFocus();
+    }
+
+    selectLaunchChoice() {
+        const opt = this.#choiceActions?.[this.#choiceFocus];
+        this.#hideLaunchChoiceOverlay();
+        opt?.run?.();
+    }
+
+    #hideLaunchChoiceOverlay() {
+        const o = document.getElementById('collectionLaunchOverlay');
+        if (o) o.classList.remove('visible');
     }
 
     async #restoreSelected() {
@@ -650,7 +784,12 @@ export class CollectionBrowser {
         } else if (event.key === "ArrowLeft") {
             this.#flicking.prev().catch(() => { });
         } else if (event.key === "Enter") {
-            this.#loadSelected();
+            // Gamepad skin mode: A -> choice overlay (if a save exists) or start fresh.
+            if (document.body.classList.contains('gamepad-browser-skin')) {
+                this.activateCurrentGame();
+            } else {
+                this.#loadSelected();
+            }
         }
     }
 

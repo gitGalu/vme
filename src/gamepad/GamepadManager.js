@@ -1,4 +1,5 @@
 import { EnvironmentManager } from '../EnvironmentManager.js';
+import { t } from '../i18n/shellStrings.js';
 
 export class GamepadManager {
     constructor() {
@@ -50,6 +51,23 @@ export class GamepadManager {
         this.browserFlickingChangeHandler = null;
         this.browserDropdown = null;
 
+        // Gamepad-mode entry: detect an EXPLICIT button press in the menu that switches
+        // the UI from the classic CLI to the gamepad screen. Deliberately separate from
+        // the existing navigation - easy to remove.
+        this.menuTriggerEnabled = false;
+        this.onMenuTrigger = null;
+        this.menuTriggerWasIdle = true;
+
+        // While the gamepad screen is active, classic CLI navigation is skipped and a
+        // dedicated handler takes input (up/down + A=enter, B=exit).
+        this.gamepadMenuActive = false;
+        this.gamepadMenuHandlers = null;
+        this.gamepadMenuLast = { up: false, down: false, left: false, right: false, a: false, b: false, x: false, y: false };
+        this.gamepadMenuLastAxis = { x: 0, y: 0 };
+        // After entering the menu we wait for the pad to be idle, so the (still-held)
+        // button used to open the menu doesn't immediately activate the first item.
+        this.gamepadMenuWaitIdle = true;
+
         this.init();
     }
 
@@ -57,6 +75,8 @@ export class GamepadManager {
         this.createAnimationContainer();
 
         this.createFocusOutline();
+
+        this.createLegendBar();
 
         window.addEventListener('gamepadconnected', (e) => this.handleGamepadConnected(e));
         window.addEventListener('gamepaddisconnected', (e) => this.handleGamepadDisconnected(e));
@@ -125,6 +145,82 @@ export class GamepadManager {
         document.body.appendChild(this.focusOutline);
     }
 
+    createLegendBar() {
+        this.legendBar = document.createElement('div');
+        this.legendBar.id = 'gamepad-legend-bar';
+        this.legendBar.className = 'gamepad-legend-bar';
+
+        document.body.appendChild(this.legendBar);
+
+        // Default content (in case it's shown), but the bar starts HIDDEN - it appears
+        // only when the shell/browser is active (doesn't cover the CLI after connecting a pad).
+        this.showLegendActions();
+    }
+
+    /**
+     * Renders the legend bar content.
+     * @param {Array<{glyph?:string,label:string}>} items - no glyph => text only (a prompt).
+     */
+    setLegend(items) {
+        if (!this.legendBar) return;
+        this.legendBar.innerHTML = '';
+
+        for (const it of items) {
+            const item = document.createElement('div');
+            item.className = 'gamepad-legend-item';
+
+            if (it.glyph) {
+                const glyph = document.createElement('span');
+                glyph.className = 'gamepad-legend-glyph';
+                glyph.dataset.button = it.glyph;
+                glyph.textContent = it.glyph;
+                item.appendChild(glyph);
+            }
+
+            const label = document.createElement('span');
+            label.className = 'gamepad-legend-label';
+            label.textContent = it.label;
+            item.appendChild(label);
+
+            this.legendBar.appendChild(item);
+        }
+    }
+
+    /** "Pad connected, but gamepad mode inactive" state - a prompt. */
+    showLegendPrompt() {
+        this.legendBar?.classList.add('gamepad-legend-prompt');
+        this.setLegend([
+            { label: t('legend.prompt') }
+        ]);
+    }
+
+    /**
+     * Active gamepad-mode state - action glyphs. Glyphs are positional/neutral,
+     * assume standard mapping; they don't mimic a brand (Xbox/PS/Nintendo).
+     * @param {Array<{glyph:string,label:string}>} [actions]
+     */
+    showLegendActions(actions) {
+        this.legendBar?.classList.remove('gamepad-legend-prompt');
+        this.setLegend(actions || [
+            { glyph: 'A', label: t('legend.open') },
+            { glyph: 'B', label: t('legend.back') },
+            { glyph: 'X', label: t('menu.search') },
+            { glyph: 'Y', label: t('menu.platform') }
+        ]);
+    }
+
+    showLegendBar() {
+        if (this.legendBar) {
+            this.legendBar.classList.add('visible');
+        }
+    }
+
+    hideLegendBar() {
+        if (this.legendBar) {
+            this.legendBar.classList.remove('visible');
+        }
+    }
+
     createAnimationContainer() {
         this.animationContainer = document.createElement('div');
         this.animationContainer.id = 'gamepad-message-container';
@@ -137,8 +233,9 @@ export class GamepadManager {
         console.log(`Gamepad connected: ${gamepad.id} (index: ${gamepad.index})`);
 
         this.gamepads.set(gamepad.index, gamepad);
-
-        this.showAnimation('connect');
+        // No 'Gamepad connected' toast - it was redundant (the pad only reveals itself once
+        // a button is pressed, so the user already knows it works) and confusing. Only the
+        // 'disconnected' toast remains (informs about losing the pad).
     }
 
     handleGamepadDisconnected(event) {
@@ -148,6 +245,10 @@ export class GamepadManager {
         this.gamepads.delete(gamepad.index);
 
         this.showAnimation('disconnect');
+
+        if (!this.hasGamepad()) {
+            this.hideLegendBar();
+        }
     }
 
     showAnimation(type) {
@@ -156,8 +257,9 @@ export class GamepadManager {
             this.animationFrameId = null;
         }
 
-        const message = type === 'connect' ? 'Gamepad connected' : 'Gamepad disconnected';
-        this.animationContainer.textContent = message;
+        // Currently called only for 'disconnect' (the 'connected' toast was removed as redundant).
+        this.animationContainer.textContent =
+            type === 'connect' ? 'Gamepad connected' : 'Gamepad disconnected';
 
         this.animationContainer.classList.remove('show', 'hide');
 
@@ -165,9 +267,10 @@ export class GamepadManager {
 
         this.animationContainer.classList.add('show');
 
+        const duration = 2000;
         this.animationFrameId = setTimeout(() => {
             this.hideAnimation();
-        }, 2000);
+        }, duration);
     }
 
     hideAnimation() {
@@ -197,7 +300,15 @@ export class GamepadManager {
                         this.handleGamepadConnected({ gamepad });
                     }
 
-                    this.pollMenuNavigation(gamepad);
+                    if (this.gamepadMenuActive) {
+                        this.pollGamepadMenu(gamepad);
+                    } else if (this.ingameMenuHandlers) {
+                        // In-game (pad mode): detect long-press Start -> in-game menu.
+                        this.pollIngameTrigger(gamepad);
+                    } else {
+                        this.detectMenuTrigger(gamepad);
+                        this.pollMenuNavigation(gamepad);
+                    }
                 }
             }
 
@@ -210,6 +321,207 @@ export class GamepadManager {
     setManagers(keyboardManager, cli) {
         this.keyboardManager = keyboardManager;
         this.cli = cli;
+    }
+
+    /**
+     * Enables/disables detection of entering gamepad mode from the menu.
+     * @param {boolean} enabled
+     * @param {Function} [onTrigger] callback fired on the first button press
+     */
+    /** Whether the shell trigger is active (we're on the MENU screen). */
+    isMenuTriggerEnabled() {
+        return !!this.menuTriggerEnabled;
+    }
+
+    /**
+     * Enable/disable the pad's in-game menu (long-press Start).
+     * @param {?object} handlers { openMenu, isMenuOpen, navigate(d), activate, close } or null.
+     */
+    setIngameMenu(handlers) {
+        this.ingameMenuHandlers = handlers || null;
+        this.ingameStartHeldSince = 0;
+        this.ingameLongPressFired = false;
+        this.ingameLast = { up: false, down: false, a: false, b: false };
+    }
+
+    /**
+     * In-game polling (pad mode): a LONG-PRESS of one of the triggers opens the menu;
+     * when open - navigation. Triggers: Start (9), Select (8), R3 (11).
+     */
+    pollIngameTrigger(gamepad) {
+        const h = this.ingameMenuHandlers;
+        if (!h) return;
+
+        const menuOpen = h.isMenuOpen?.();
+
+        if (menuOpen) {
+            // Menu open -> navigate with D-pad/left stick, A=select, B=close.
+            const up = gamepad.buttons[12]?.pressed || (gamepad.axes[1] || 0) < -this.axisDeadzone;
+            const down = gamepad.buttons[13]?.pressed || (gamepad.axes[1] || 0) > this.axisDeadzone;
+            const a = gamepad.buttons[0]?.pressed || false;
+            const b = gamepad.buttons[1]?.pressed || false;
+            const L = this.ingameLast;
+            if (up && !L.up) h.navigate?.(-1);
+            if (down && !L.down) h.navigate?.(1);
+            if (a && !L.a) h.activate?.();
+            if (b && !L.b) h.close?.();
+            this.ingameLast = { up, down, a, b };
+            // Reset long-press state so it doesn't fire again right after closing.
+            this.ingameStartHeldSince = 0;
+            this.ingameLongPressFired = false;
+            return;
+        }
+
+        // Joystick bridge (joystick-via-keyboard platforms): d-pad/left stick + fire
+        // -> keys (on A800 fire also goes through the '-' key, not joypad). Fire = action
+        // buttons (0/1/2/3), since the filter may merge 0+1.
+        if (h.joystick) {
+            h.joystick({
+                up: (gamepad.buttons[12]?.pressed) || (gamepad.axes[1] || 0) < -this.axisDeadzone || false,
+                down: (gamepad.buttons[13]?.pressed) || (gamepad.axes[1] || 0) > this.axisDeadzone || false,
+                left: (gamepad.buttons[14]?.pressed) || (gamepad.axes[0] || 0) < -this.axisDeadzone || false,
+                right: (gamepad.buttons[15]?.pressed) || (gamepad.axes[0] || 0) > this.axisDeadzone || false,
+                fire: (gamepad.buttons[0]?.pressed) || (gamepad.buttons[1]?.pressed) || false
+            });
+        }
+
+        // Menu closed -> measure the hold of ANY trigger (Start/Select/R3).
+        const LONG_PRESS_MS = 550;
+        const triggerHeld =
+            (gamepad.buttons[9]?.pressed) ||   // Start
+            (gamepad.buttons[8]?.pressed) ||   // Select
+            (gamepad.buttons[11]?.pressed) ||  // R3 (right stick click)
+            false;
+
+        if (triggerHeld) {
+            if (!this.ingameStartHeldSince) {
+                this.ingameStartHeldSince = performance.now();
+                this.ingameLongPressFired = false;
+            } else if (!this.ingameLongPressFired
+                       && performance.now() - this.ingameStartHeldSince >= LONG_PRESS_MS) {
+                this.ingameLongPressFired = true;
+                h.openMenu?.();
+            }
+        } else {
+            this.ingameStartHeldSince = 0;
+            this.ingameLongPressFired = false;
+        }
+    }
+
+    setMenuTrigger(enabled, onTrigger = null) {
+        this.menuTriggerEnabled = enabled;
+        if (onTrigger) {
+            this.onMenuTrigger = onTrigger;
+        }
+        // Require an idle state (no button) before counting a press, so a held button
+        // from a previous context doesn't fire immediately.
+        this.menuTriggerWasIdle = false;
+    }
+
+    /**
+     * Activates/deactivates input routing to the gamepad screen.
+     * @param {boolean} active
+     * @param {{navigate:Function, activate:Function, back:Function,
+     *          toggleFilter?:Function, backspace?:Function}} [handlers]
+     *        navigate(deltaRow, deltaCol) | activate() | back() | toggleFilter() | backspace()
+     */
+    setGamepadMenuActive(active, handlers = null) {
+        this.gamepadMenuActive = active;
+        if (handlers) {
+            this.gamepadMenuHandlers = handlers;
+        }
+        this.gamepadMenuLast = { up: false, down: false, left: false, right: false, a: false, b: false, x: false, y: false };
+        this.gamepadMenuLastAxis = { x: 0, y: 0 };
+        this.gamepadMenuWaitIdle = true;
+        this.stopAutoRepeat();
+    }
+
+    pollGamepadMenu(gamepad) {
+        const h = this.gamepadMenuHandlers;
+        if (!h) return;
+
+        const a = gamepad.buttons[0]?.pressed || false;
+        const b = gamepad.buttons[1]?.pressed || false;
+        const x = gamepad.buttons[2]?.pressed || false;
+        const y = gamepad.buttons[3]?.pressed || false;
+        const dpadUp = gamepad.buttons[12]?.pressed || false;
+        const dpadDown = gamepad.buttons[13]?.pressed || false;
+        const dpadLeft = gamepad.buttons[14]?.pressed || false;
+        const dpadRight = gamepad.buttons[15]?.pressed || false;
+        const axisX = gamepad.axes[0] || 0;
+        const axisY = gamepad.axes[1] || 0;
+
+        // Until the pad returns to idle, ignore input (see gamepadMenuWaitIdle).
+        // IMPORTANT: we check ONLY buttons/axes used by the shell (A/B/X/Y, d-pad, sticks),
+        // NOT Start/Select/bumpers etc. Otherwise a Start button (9) "stuck" in getGamepads
+        // - seen after leaving the Save Browser - blocked waitIdle forever (dead shell).
+        if (this.gamepadMenuWaitIdle) {
+            const SHELL_BUTTONS = [0, 1, 2, 3, 12, 13, 14, 15];   // A,B,X,Y + d-pad
+            const anyButton = SHELL_BUTTONS.some(i => gamepad.buttons[i] && gamepad.buttons[i].pressed);
+            const anyAxis = gamepad.axes.some(ax => Math.abs(ax) > this.axisDeadzone);
+            if (!anyButton && !anyAxis) {
+                this.gamepadMenuWaitIdle = false;
+            }
+            this.gamepadMenuLast = { up: dpadUp, down: dpadDown, left: dpadLeft, right: dpadRight, a, b, x, y };
+            this.gamepadMenuLastAxis = { x: axisX, y: axisY };
+            return;
+        }
+
+        // Edge actions: A=enter, B=back, X=toggle filter, Y=backspace.
+        const L = this.gamepadMenuLast;
+        if (a && !L.a) h.activate?.();
+        if (b && !L.b) h.back?.();
+        if (x && !L.x) h.toggleFilter?.();
+        if (y && !L.y) h.backspace?.();
+
+        // Directions: D-pad or left stick, with auto-repeat.
+        const up = dpadUp || (axisY < -this.axisDeadzone);
+        const down = dpadDown || (axisY > this.axisDeadzone);
+        const left = dpadLeft || (axisX < -this.axisDeadzone);
+        const right = dpadRight || (axisX > this.axisDeadzone);
+        const wasUp = L.up || (this.gamepadMenuLastAxis.y < -this.axisDeadzone);
+        const wasDown = L.down || (this.gamepadMenuLastAxis.y > this.axisDeadzone);
+        const wasLeft = L.left || (this.gamepadMenuLastAxis.x < -this.axisDeadzone);
+        const wasRight = L.right || (this.gamepadMenuLastAxis.x > this.axisDeadzone);
+
+        if (up && !wasUp) {
+            this.startAutoRepeat(() => h.navigate?.(-1, 0));
+        } else if (down && !wasDown) {
+            this.startAutoRepeat(() => h.navigate?.(1, 0));
+        } else if (left && !wasLeft) {
+            this.startAutoRepeat(() => h.navigate?.(0, -1));
+        } else if (right && !wasRight) {
+            this.startAutoRepeat(() => h.navigate?.(0, 1));
+        } else if (!up && !down && !left && !right &&
+                   (wasUp || wasDown || wasLeft || wasRight)) {
+            this.stopAutoRepeat();
+        }
+
+        this.gamepadMenuLast = { up: dpadUp, down: dpadDown, left: dpadLeft, right: dpadRight, a, b, x, y };
+        this.gamepadMenuLastAxis = { x: axisX, y: axisY };
+    }
+
+    detectMenuTrigger(gamepad) {
+        if (!this.menuTriggerEnabled || !gamepad) return;
+
+        const anyButton = gamepad.buttons.some(b => b && b.pressed);
+        const anyAxis = gamepad.axes.some(a => Math.abs(a) > this.axisDeadzone);
+        const active = anyButton || anyAxis;
+
+        if (!this.menuTriggerWasIdle) {
+            // Wait for the pad to be idle before we start listening.
+            if (!active) {
+                this.menuTriggerWasIdle = true;
+            }
+            return;
+        }
+
+        if (active) {
+            this.menuTriggerWasIdle = false;
+            if (this.onMenuTrigger) {
+                this.onMenuTrigger();
+            }
+        }
     }
 
     initMenuNavigation() {
@@ -243,6 +555,12 @@ export class GamepadManager {
             return;
         }
 
+        // The old gamepad CLI navigation (below) is DISABLED - replaced by the gamepad
+        // shell. The CLI is operated with mouse/keyboard. We keep the dead code but don't
+        // run it (it caused, among others, an aero-glass outline around the CLI on connect).
+        return;
+
+        /* eslint-disable no-unreachable */
         const aButton = gamepad.buttons[0] && gamepad.buttons[0].pressed;
 
         const bButton = gamepad.buttons[1] && gamepad.buttons[1].pressed;
@@ -1064,17 +1382,31 @@ export class GamepadManager {
         }
     }
 
-    initBrowserNavigation(flicking, buttonIds, backHandler, dropdown = null) {
+    initBrowserNavigation(flicking, buttonIds, backHandler, dropdown = null, overlay = null, onFirstGamepadUse = null) {
         this.browserActive = true;
         this.browserFlicking = flicking;
         this.browserBackHandler = backHandler;
         this.browserTopBarFocus = false;
         this.browserDropdown = dropdown;
+        // Platform-selection overlay (skin mode) - { show, isOpen, navigate, select, hide }.
+        this.browserOverlay = overlay;
+        // Callback on first pad use (enabling the skin - e.g. Collection autostart).
+        this.browserOnFirstGamepadUse = onFirstGamepadUse;
+        // Default A label on the panel (Collection Browser: 'Load'). Save Browser
+        // overrides to 'Select'/'Load' per view via setBrowserPanelAction.
+        this.browserPanelActionLabel = 'Load';
 
         this.browserButtons = buttonIds.map(id => document.getElementById(id)).filter(btn => btn !== null);
         this.browserCurrentButtonIndex = 0;
 
         this.browserGamepadUsed = false;
+        this.lastBrowserTopBarFocus = false;
+
+        // Legend bar (pad control panel) only when a pad is actually connected.
+        if (this.hasGamepad()) {
+            this.updateBrowserLegend();
+            this.showLegendBar();
+        }
 
         this.browserFlickingChangeHandler = () => {
             if (!this.browserTopBarFocus && this.browserGamepadUsed && this.browserFlicking.currentPanel) {
@@ -1084,6 +1416,38 @@ export class GamepadManager {
 
         if (this.browserFlicking) {
             this.browserFlicking.on('changed', this.browserFlickingChangeHandler);
+        }
+    }
+
+    /**
+     * A action label on the cover panel (depends on the browser view):
+     * game list -> 'Select' (enter the game's saves), game saves -> 'Load'.
+     */
+    setBrowserPanelAction(label) {
+        this.browserPanelActionLabel = label || 'Load';
+        if (this.browserActive && !this.browserTopBarFocus) {
+            this.updateBrowserLegend();
+        }
+    }
+
+    updateBrowserLegend() {
+        // Legend depends on focus context (cover panel vs bar/filter).
+        // In skin mode: X = switch between the carousel and platform selection.
+        const skin = document.body.classList.contains('gamepad-browser-skin');
+        // browserPanelActionLabel is 'Select'/'Load' -> translate via legend.* (fallback: Load).
+        const panelLabel = this.browserPanelActionLabel === 'Select' ? t('legend.select') : t('legend.load');
+        if (this.browserTopBarFocus) {
+            this.showLegendActions([
+                { glyph: 'A', label: t('legend.select') },
+                { glyph: 'B', label: t('legend.back') },
+                { glyph: 'X', label: t('legend.covers') }
+            ]);
+        } else {
+            this.showLegendActions([
+                { glyph: 'A', label: panelLabel },
+                { glyph: 'B', label: t('legend.back') },
+                { glyph: 'X', label: skin ? t('menu.platform') : t('legend.menu') }
+            ]);
         }
     }
 
@@ -1098,6 +1462,8 @@ export class GamepadManager {
         this.browserCurrentButtonIndex = 0;
         this.browserFlicking = null;
         this.browserBackHandler = null;
+        this.browserOverlay = null;
+        this.browserOnFirstGamepadUse = null;
         this.browserFlickingChangeHandler = null;
         this.browserDropdown = null;
 
@@ -1112,6 +1478,10 @@ export class GamepadManager {
         });
 
         this.hideFocusOutline();
+
+        // Closing the browser -> hide the legend bar. If we return to the shell,
+        // #enterGamepadMenu shows it again; in the CLI it should be hidden (doesn't cover the UI).
+        this.hideLegendBar();
     }
 
     handleBrowserNavigation(gamepad) {
@@ -1125,27 +1495,67 @@ export class GamepadManager {
                 this.browserGamepadUsed = true;
                 document.body.classList.add('gamepad-browser-active');
 
+                // Is the first use a DIRECTION (D-pad / left stick)? Directions are harmless
+                // (carousel navigation) - they may act immediately. ACTION buttons (A/B/X/Y...)
+                // on first use only "wake" the skin and are SWALLOWED, so an action
+                // (e.g. loading a save) doesn't fire by accident (see browserOnFirstGamepadUse).
+                const dirPressed =
+                    gamepad.buttons[12]?.pressed || gamepad.buttons[13]?.pressed ||
+                    gamepad.buttons[14]?.pressed || gamepad.buttons[15]?.pressed || anyAxisMoved;
+
+                const wokeSkin = !!this.browserOnFirstGamepadUse;
+                // First pad use in the browser - allow enabling the skin (e.g. Collection autostart).
+                this.browserOnFirstGamepadUse?.();
+
                 if (!this.browserTopBarFocus) {
                     this.updateBrowserPanelFocus();
                 }
+
+                // If the skin just turned on and the first use is an ACTION button (not a
+                // direction) -> SWALLOW the press: store states as "pressed" and return,
+                // so the action doesn't fire this cycle. The user releases and presses again.
+                if (wokeSkin && !dirPressed) {
+                    this.lastAButtonState = gamepad.buttons[0]?.pressed || false;
+                    this.lastBButtonState = gamepad.buttons[1]?.pressed || false;
+                    this.lastXButtonState = gamepad.buttons[2]?.pressed || false;
+                    this.lastYButtonState = gamepad.buttons[3]?.pressed || false;
+                    return;
+                }
             }
+        }
+
+        // Platform-selection overlay (skin mode) - when open, it takes over all control.
+        if (this.browserOverlay && this.browserOverlay.isOpen()) {
+            this.#pollBrowserOverlay(gamepad);
+            this.lastXButtonState = gamepad.buttons[2]?.pressed || false;
+            this.lastAButtonState = gamepad.buttons[0]?.pressed || false;
+            this.lastBButtonState = gamepad.buttons[1]?.pressed || false;
+            this.lastDpadState.up = gamepad.buttons[12]?.pressed || false;
+            this.lastDpadState.down = gamepad.buttons[13]?.pressed || false;
+            return;
         }
 
         const xButton = gamepad.buttons[2] && gamepad.buttons[2].pressed;
 
         if (xButton && !this.lastXButtonState) {
-            this.browserTopBarFocus = !this.browserTopBarFocus;
-
-            if (this.browserTopBarFocus) {
-                this.updateBrowserButtonFocus();
-                document.querySelectorAll('.flicking-panel').forEach(panel => {
-                    panel.classList.remove('active');
-                });
-            } else {
-                this.browserButtons.forEach(btn => btn.classList.remove('browser-button-focused'));
-                this.updateBrowserPanelFocus();
-                if (this.browserFlicking && this.browserFlicking.currentPanel) {
-                    this.browserFlicking.currentPanel.element.classList.add('active');
+            // Skin mode: X opens the overlay ONLY if the overlay wants it (Save Browser:
+            // platform filter). Collection Browser: A opens the overlay (xOpens=false).
+            if (this.browserOverlay && this.browserOverlay.xOpens) {
+                this.browserOverlay.show();
+            } else if (!this.browserOverlay) {
+                // Classic behavior: toggle focus carousel <-> topbar.
+                this.browserTopBarFocus = !this.browserTopBarFocus;
+                if (this.browserTopBarFocus) {
+                    this.updateBrowserButtonFocus();
+                    document.querySelectorAll('.flicking-panel').forEach(panel => {
+                        panel.classList.remove('active');
+                    });
+                } else {
+                    this.browserButtons.forEach(btn => btn.classList.remove('browser-button-focused'));
+                    this.updateBrowserPanelFocus();
+                    if (this.browserFlicking && this.browserFlicking.currentPanel) {
+                        this.browserFlicking.currentPanel.element.classList.add('active');
+                    }
                 }
             }
 
@@ -1361,6 +1771,12 @@ export class GamepadManager {
         this.lastDpadState.right = dpadRight;
         this.lastAxisValue = axisX;
         this.lastAxisYValue = axisY;
+
+        // Refresh the legend only when the focus context changed (panel <-> topbar).
+        if (this.browserTopBarFocus !== this.lastBrowserTopBarFocus) {
+            this.updateBrowserLegend();
+            this.lastBrowserTopBarFocus = this.browserTopBarFocus;
+        }
     }
 
     navigateBrowserButtons(delta) {
@@ -1388,6 +1804,25 @@ export class GamepadManager {
 
     updateBrowserPanelFocus() {
         this.hideFocusOutline();
+    }
+
+    /** Drive the platform-selection overlay (skin mode): D-pad up/down, A=select, B/X=close. */
+    #pollBrowserOverlay(gamepad) {
+        const o = this.browserOverlay;
+        const a = gamepad.buttons[0]?.pressed || false;
+        const b = gamepad.buttons[1]?.pressed || false;
+        const x = gamepad.buttons[2]?.pressed || false;
+        const up = gamepad.buttons[12]?.pressed || (gamepad.axes[1] || 0) < -this.axisDeadzone;
+        const down = gamepad.buttons[13]?.pressed || (gamepad.axes[1] || 0) > this.axisDeadzone;
+        const wasUp = this.lastDpadState.up || (this.lastAxisYValue < -this.axisDeadzone);
+        const wasDown = this.lastDpadState.down || (this.lastAxisYValue > this.axisDeadzone);
+
+        if (a && !this.lastAButtonState) o.select();
+        else if ((b && !this.lastBButtonState) || (x && !this.lastXButtonState)) o.hide();
+        else if (up && !wasUp) o.navigate(-1);
+        else if (down && !wasDown) o.navigate(1);
+
+        this.lastAxisYValue = gamepad.axes[1] || 0;
     }
 
     activateBrowserButton() {
@@ -1419,6 +1854,10 @@ export class GamepadManager {
 
         if (this.animationContainer && this.animationContainer.parentNode) {
             this.animationContainer.parentNode.removeChild(this.animationContainer);
+        }
+
+        if (this.legendBar && this.legendBar.parentNode) {
+            this.legendBar.parentNode.removeChild(this.legendBar);
         }
 
         if (this.animationFrameId) {

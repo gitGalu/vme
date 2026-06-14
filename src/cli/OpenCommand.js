@@ -87,7 +87,11 @@ export class OpenCommand extends CommandBase {
                 return;
             }
             if (arg === "COL") {
-                this.#openCollectionFromAssets();
+                this.#openCollectionFromAssets('../assets/vme_collection.zip');
+                return;
+            }
+            if (arg === "A8") {
+                this.#openCollectionFromAssets('../assets/a8_vme_collection.zip');
                 return;
             }
             this.#openFile();
@@ -112,10 +116,20 @@ export class OpenCommand extends CommandBase {
         }
     }
 
-    #import(file, filename) {
+    #import(file, filename, onResult = null) {
         this.cli.set_loading(true);
 
         const self = this;
+        // Report non-ROM import result to gamepad mode (gamepad shows its own 'notify'
+        // screen). When from gamepad, skip cli.message() - it appends 'Press any key to
+        // continue' and registers global listeners that reload the page on next key/click.
+        const fromGamepad = typeof onResult === 'function';
+        const report = (ok, message) => {
+            if (fromGamepad) onResult({ ok, message });
+        };
+        const cliMessage = (...args) => {
+            if (!fromGamepad) self.cli.message(...args);
+        };
 
         if (filename.endsWith(".json")) { // software dir
             const reader = new FileReader();
@@ -126,22 +140,29 @@ export class OpenCommand extends CommandBase {
                 try {
                     let json = JSON.parse(textContent);
                     self.#platform_manager.importCorsFile(key, json);
-                    self.cli.message("&nbsp;", "Successfully imported software directory.");
+                    cliMessage("&nbsp;", "Successfully imported software directory.");
+                    report(true, 'Software directory imported.');
                 } catch (error) {
-                    self.cli.message("&nbsp;", "Failed to read file.", "Not a valid software directory file.");
+                    cliMessage("&nbsp;", "Failed to read file.", "Not a valid software directory file.");
+                    report(false, 'Not a valid software directory file.');
                     return;
                 }
             };
 
             reader.onerror = function (e) {
                 console.error("Failed to read file!", e);
+                report(false, 'Failed to read file.');
             };
 
             reader.readAsText(file);
         } else if (filename.includes("vme_import")) { // dependency bundle
-            self.#platform_manager.loadVmeImportFile(file);
+            Promise.resolve(self.#platform_manager.loadVmeImportFile(file))
+                .then(() => report(true, 'Dependencies imported.'))
+                .catch((err) => { console.error(err); report(false, 'Failed to import dependencies.'); });
         } else if (filename.includes("vme_collection")) { // collection file
-            self.#platform_manager.loadCollectionFile(file);
+            Promise.resolve(self.#platform_manager.loadCollectionFile(file))
+                .then(() => report(true, 'Collection imported.'))
+                .catch((err) => { console.error(err); report(false, 'Failed to import collection.'); });
         } else {
             var reader = new FileReader();
 
@@ -151,11 +172,17 @@ export class OpenCommand extends CommandBase {
                 let dep = self.#findDep(md5);
                 if (dep != undefined) { // single dependency
                     self.#platform_manager.importFile(dep.key, file);
-                    self.cli.message("&nbsp;", "Successfully imported " + dep.type);
-                } else { // other file (rom)
+                    cliMessage("&nbsp;", "Successfully imported " + dep.type);
+                    report(true, `Imported ${dep.type}.`);
+                } else { // other file (rom) - przejdzie do EMULATION; NIE raportujemy.
                     const blob = new Blob([e.target.result], { type: file.type });
                     self.#platform_manager.loadLocalRom(blob, filename);
                 }
+            };
+
+            reader.onerror = function (e) {
+                console.error("Failed to read file!", e);
+                report(false, 'Failed to read file.');
             };
 
             reader.readAsArrayBuffer(file);
@@ -184,9 +211,9 @@ export class OpenCommand extends CommandBase {
         }
     }
 
-    async #openCollectionFromAssets() {
+    async #openCollectionFromAssets(assetPath = '../assets/vme_collection.zip') {
         const self = this;
-        const url = new URL('../assets/vme_collection.zip', import.meta.url).href;
+        const url = new URL(assetPath, import.meta.url).href;
 
         self.cli.set_loading(true);
         self.cli.clear();
@@ -200,13 +227,23 @@ export class OpenCommand extends CommandBase {
             const blob = await response.blob();
             await self.#platform_manager.loadCollectionFile(blob);
         } catch (error) {
-            console.error("Error loading local vme_collection.zip:", error);
+            console.error(`Error loading collection asset (${assetPath}):`, error);
             self.cli.guru(error, false);
             self.cli.message("&nbsp;", "Error importing VM/E Collection archive.", "File not found or unreadable.");
         }
     }
 
-    #openFile() {
+    /**
+     * Public entry - opens the native file picker (e.g. from the gamepad menu).
+     * @param {Function} [onResult] - ({ok:boolean, message:string}) => void.
+     *        Called after a NON-ROM import (success/error) so gamepad mode can show a
+     *        confirmation screen. NOT called for ROMs (those transition to EMULATION).
+     */
+    openFilePicker(onResult = null) {
+        this.#openFile(onResult);
+    }
+
+    #openFile(onResult = null) {
         const self = this;
 
         var input = document.createElement('input');
@@ -224,7 +261,7 @@ export class OpenCommand extends CommandBase {
             self.cli.clear();
             self.cli.print("Loading " + filename + " ...");
 
-            self.#import(file, filename);
+            self.#import(file, filename, onResult);
         });
     }
 }

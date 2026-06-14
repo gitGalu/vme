@@ -5,6 +5,7 @@ import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { CustomDropdown } from './components/CustomDropdown.js';
 import { FileUtils } from './utils/FileUtils.js';
+import { t } from './i18n/shellStrings.js';
 
 export class SaveBrowser {
     #vme;
@@ -31,6 +32,10 @@ export class SaveBrowser {
     #uiReady = false;
     #lastGamePosition = null;
     #platformDropdown = null;
+
+    #overlayItems = [];
+    #overlayOptions = [];
+    #overlayFocus = 0;
 
     #urlsToRevoke = new Set();
     #isDestroying = false;
@@ -75,7 +80,7 @@ export class SaveBrowser {
         platformFilterContainer.appendChild(dropdownContainer);
 
         this.#platformDropdown = new CustomDropdown('platformDropdownContainer', [
-            { value: 'all', text: 'All' }
+            { value: 'all', text: 'All platforms' }
         ], 'all');
 
         this.#platformDropdown.onChange((e) => {
@@ -343,7 +348,11 @@ export class SaveBrowser {
         if (this.#platformDropdown) {
             this.#platformDropdown.setValue("all");
         }
-    
+        // Breadcrumb label follows shell language ("Save states" / "Stany gry").
+        const crumbLabel = document.getElementById('saveBrowserCrumbLabel');
+        if (crumbLabel) crumbLabel.textContent = t('crumb.saves');
+        this.#updateCrumbFilter();
+
         let div = document.querySelector('#save-browser');
         div.classList.add('show');
         this.#destroy();
@@ -413,6 +422,16 @@ export class SaveBrowser {
         const gamepadManager = this.#vme.getGamepadManager();
         if (gamepadManager) {
             const buttonIds = ['saveBrowserUiBack', 'platformDropdownContainer', 'saveBrowserUiDelete', 'saveBrowserUiLoad', 'saveBrowserUiOpen'];
+            // Platform-filter overlay (shell style) - only in gamepad skin mode.
+            const overlay = document.body.classList.contains('gamepad-browser-skin') ? {
+                xOpens: true,   // X opens this overlay (platform filter)
+                show: () => this.showPlatformOverlay(),
+                isOpen: () => this.isPlatformOverlayOpen(),
+                navigate: (d) => this.navigatePlatformOverlay(d),
+                select: () => this.selectPlatformOverlay(),
+                hide: () => this.#hidePlatformOverlay()
+            } : null;
+
             gamepadManager.initBrowserNavigation(this.#flicking, buttonIds, () => {
                 if (this.#isGameView) {
                     this.#showGameList(this.#lastGamePosition);
@@ -420,7 +439,9 @@ export class SaveBrowser {
                     this.close();
                     this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
                 }
-            }, this.#platformDropdown);
+            }, this.#platformDropdown, overlay);
+            // Start view = game list -> A = Select (init defaults to 'Load').
+            gamepadManager.setBrowserPanelAction('Select');
         }
 
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
@@ -431,6 +452,8 @@ export class SaveBrowser {
         if (gamepadManager) {
             gamepadManager.clearBrowserNavigation();
         }
+
+        this.#hidePlatformOverlay();
 
         this.#destroy();
         document.removeEventListener("keydown", this.#kb_event_bound);
@@ -445,9 +468,128 @@ export class SaveBrowser {
         }
     }
 
+    /**
+     * Platform-filter overlay in shell style (gamepad mode). Platforms available in
+     * saves (from dropdown options) as .gm-item; D-pad/A/B nav driven by GamepadManager
+     * (handleBrowserNavigation). Selecting filters saves and closes the overlay.
+     */
+    showPlatformOverlay() {
+        if (!this.#platformDropdown) return;
+        const options = this.#platformDropdown.options || [];
+        if (options.length === 0) return;
+
+        let overlay = document.getElementById('savePlatformOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'savePlatformOverlay';
+            overlay.className = 'gm-browser-overlay';
+            document.getElementById('save-browser').appendChild(overlay);
+        }
+        overlay.innerHTML = '';
+
+        // Overlay breadcrumb - identical to the static one (with active filter),
+        // so opening it causes no jump or text change.
+        const current = this.#currentPlatformFilter || 'all';
+        const currentText = (current === 'all')
+            ? t('crumb.allPlatforms')
+            : ((options.find(o => o.value === current) || {}).text || t('crumb.allPlatforms'));
+        const crumb = document.createElement('div');
+        crumb.className = 'gm-browser-overlay-crumb';
+        crumb.innerHTML = '<span class="gm-crumb gm-crumb-app">VM/E</span>'
+            + '<span class="gm-crumb-sep">›</span>'
+            + `<span class="gm-crumb gm-crumb-section">${t('crumb.saves')}</span>`
+            + '<span class="gm-crumb-sep">›</span>'
+            + `<span class="gm-crumb gm-crumb-section">${currentText}</span>`;
+        overlay.appendChild(crumb);
+
+        const list = document.createElement('div');
+        list.className = 'gm-list gm-browser-overlay-list';
+        this.#overlayItems = [];
+        options.forEach((opt, i) => {
+            const row = document.createElement('div');
+            row.className = 'gm-item';
+            row.dataset.value = opt.value;
+            const label = document.createElement('span');
+            label.className = 'gm-item-label';
+            label.textContent = opt.text;
+            row.appendChild(label);
+            if (opt.value === current) {
+                const hint = document.createElement('span');
+                hint.className = 'gm-item-hint';
+                hint.textContent = '✓';
+                row.appendChild(hint);
+            }
+            list.appendChild(row);
+            this.#overlayItems.push(row);
+        });
+        overlay.appendChild(list);
+
+        this.#overlayFocus = Math.max(0, options.findIndex(o => o.value === current));
+        this.#overlayOptions = options;
+        this.#updateOverlayFocus();
+        overlay.classList.add('visible');
+    }
+
+    #updateOverlayFocus() {
+        this.#overlayItems?.forEach((el, i) => {
+            el.classList.toggle('focused', i === this.#overlayFocus);
+        });
+        const el = this.#overlayItems?.[this.#overlayFocus];
+        if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+
+    isPlatformOverlayOpen() {
+        const o = document.getElementById('savePlatformOverlay');
+        return !!o && o.classList.contains('visible');
+    }
+
+    navigatePlatformOverlay(delta) {
+        if (!this.#overlayOptions?.length) return;
+        const n = this.#overlayOptions.length;
+        this.#overlayFocus = (this.#overlayFocus + delta + n) % n;
+        this.#updateOverlayFocus();
+    }
+
+    selectPlatformOverlay() {
+        const opt = this.#overlayOptions?.[this.#overlayFocus];
+        if (!opt) {
+            this.#hidePlatformOverlay();
+            return;
+        }
+        this.#currentPlatformFilter = opt.value;
+        if (this.#platformDropdown) this.#platformDropdown.setValue(opt.value);
+        this.#updateCrumbFilter();
+        // Keep overlay as a curtain until the new carousel is ready - without this the old
+        // view would flash for a moment (async rebuild). Hidden on onReady.
+        this.#showGameList(null, () => this.#hidePlatformOverlay());
+    }
+
+    #hidePlatformOverlay() {
+        const o = document.getElementById('savePlatformOverlay');
+        if (o) o.classList.remove('visible');
+    }
+
+    /** Updates the 3rd breadcrumb segment from the active filter (e.g. 'A800' / 'All platforms'). */
+    #updateCrumbFilter() {
+        const opts = this.#platformDropdown?.options || [];
+        const match = opts.find(o => o.value === this.#currentPlatformFilter);
+        // 'all' / no match -> translated "All platforms"; a specific platform shows its
+        // own name (short_name from dropdown, not translated).
+        this.#setCrumbSegment(
+            (!match || this.#currentPlatformFilter === 'all') ? t('crumb.allPlatforms') : match.text
+        );
+    }
+
+    /** Sets the 3rd breadcrumb segment (platform filter or game title). Ellipsized in CSS. */
+    #setCrumbSegment(text) {
+        const el = document.getElementById('saveBrowserCrumbFilter');
+        if (el) el.textContent = text;
+    }
+
     #filterChangeHandler(event) {
         const selectedPlatformId = event.target.value;
         this.#currentPlatformFilter = selectedPlatformId;
+        this.#updateCrumbFilter();
         this.#showGameList();
     }
 
@@ -546,7 +688,7 @@ export class SaveBrowser {
         this.#eventListeners = [];
 
         if (this.#platformDropdown) {
-            this.#platformDropdown.setOptions([{ value: 'all', text: 'All' }]);
+            this.#platformDropdown.setOptions([{ value: 'all', text: 'All platforms' }]);
             this.#platformDropdown.setValue('all');
         }
 
@@ -749,15 +891,21 @@ export class SaveBrowser {
         return gameMap;
     }
 
-    #showGameList(targetPosition = null) {
-        if (this.#isDestroying) return;
+    #showGameList(targetPosition = null, onReady = null) {
+        if (this.#isDestroying) { onReady?.(); return; }
     
         this.#isGameView = false;
         this.#setUIReady(false);
-    
+
+        // Breadcrumb: back to game list -> 3rd segment shows the platform filter again.
+        this.#updateCrumbFilter();
+
+        // Legend: in game-list view A = Select (enter the game's saves), not Load.
+        this.#vme.getGamepadManager()?.setBrowserPanelAction('Select');
+
         const container = document.querySelector('#save-browser');
-        if (!container) return;
-    
+        if (!container) { onReady?.(); return; }
+
         container.setAttribute('data-view', 'game-list');
     
         const platformFilterContainer = document.querySelector('#platformFilterContainer');
@@ -812,7 +960,10 @@ export class SaveBrowser {
                         const safePosition = Math.min(Math.max(0, targetPosition), maxIndex);
                         await this.#flicking.moveTo(safePosition, 0);
                     }
-    
+
+                    // New carousel ready -> signal to drop the curtain/overlay.
+                    onReady?.();
+
                     setTimeout(() => {
                         if (platformFilterContainer && !this.#isDestroying) {
                             platformFilterContainer.classList.remove('hidden');
@@ -821,6 +972,7 @@ export class SaveBrowser {
                 } else if (emptyElement) {
                     emptyElement.innerHTML = "No save states found.";
                     emptyElement.style.display = "block";
+                    onReady?.();
                 }
     
                 setTimeout(() => {
@@ -847,9 +999,10 @@ export class SaveBrowser {
                     emptyElement.style.display = "block";
                 }
                 this.#setUIReady(true);
+                onReady?.();
             }
         };
-    
+
         loadData();
     }
 
@@ -860,7 +1013,14 @@ export class SaveBrowser {
     
         this.#isGameView = true;
         this.#setUIReady(false);
-    
+
+        // Breadcrumb: 3rd segment = game title (instead of platform filter) in saves view.
+        const title = FileUtils.cleanRomName(gameId);
+        this.#setCrumbSegment(title);
+
+        // Legend: in a game's saves view A = Load.
+        this.#vme.getGamepadManager()?.setBrowserPanelAction('Load');
+
         const container = document.querySelector('#save-browser');
         container.setAttribute('data-view', 'game-saves');
     
