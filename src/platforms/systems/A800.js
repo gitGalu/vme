@@ -162,6 +162,11 @@ const A800 = {
     platform_name: 'Atari 800 / XE / XL',
     short_name: 'A800',
     libretro_thumbnails_system: 'Atari - 8-bit',
+    // Core's REAL render resolution. atari800 renders 384x240 with full overscan border (the
+    // visible area is 336, but the framebuffer is wider - a 336-wide buffer dropped columns).
+    // Low Performance HW mode makes the WebGL backbuffer an exact integer multiple of this, so
+    // every pixel scales equally (no fat/thin columns).
+    native_resolution: { width: 384, height: 240 },
     theme: {
         '--color0': '#005181',
         '--color1': '#60b7e7',

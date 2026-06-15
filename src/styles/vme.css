@@ -443,6 +443,18 @@ canvas {
   backface-visibility: hidden;
 }
 
+/* Low Performance HW mode (weak GPUs / 4K TVs). The small backbuffer cap + fill transform is set
+ * inline by JS (refreshLowPerfBackbuffer); this block removes the per-frame radial mask and lets
+ * the CSS upscale smooth (bilinear) instead of crisp - hiding the fractional-upscale unevenness. */
+body.low-perf-hw canvas {
+  -webkit-mask-image: none;
+  mask-image: none;
+  transform-origin: top left;
+  /* Smooth the CSS upscale (overrides the global crisp-edges): bilinear blurs the fractional
+     upscale so uneven pixel widths become invisible. */
+  image-rendering: auto !important;
+}
+
 @media (orientation: portrait) {
   canvas {
     height: 50% !important;

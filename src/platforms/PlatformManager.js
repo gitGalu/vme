@@ -57,6 +57,7 @@ export class PlatformManager {
     #keyboard_manager;
     #active_theme;
     #nostalgist;
+    #lphLayoutApplied = false;
     #vme;
     #cli;
     #resolved_deps;
@@ -811,6 +812,18 @@ export class PlatformManager {
         const launchCoreConfig = this.#cloneLaunchCoreConfig(this.#launch_core_config)
             || ((typeof this.#selected_platform.guessConfig === 'function') ? this.#selected_platform.guessConfig(romName) : {});
 
+        // Low Performance HW mode (gamepad shell, weak GPUs / 4K TVs): the bottleneck is
+        // fillrate - the WebGL backbuffer otherwise matches the canvas' CSS size (full screen,
+        // i.e. ~4K), so the core's tiny frame is upscaled into a huge buffer every frame. We
+        // cap the backbuffer to ~720p (the compositor then scales it to the canvas for free)
+        // and turn vsync off so heavy frames don't stall waiting for the next refresh.
+        const lowPerfHw = StorageManager.getValue('LOW_PERF_HW') === '1' && this.#vme.isGamepadLaunch?.();
+        // Drops the per-frame radial canvas mask (CSS), another fillrate cost on weak GPUs.
+        // The backbuffer cap itself is done by patching Module.setCanvasSize (see emscriptenModule);
+        // nostalgist's `size` option does NOT work here - RetroArch re-sizes the canvas to the
+        // window on init via setCanvasSize, overriding it.
+        document.body.classList.toggle('low-perf-hw', !!lowPerfHw);
+
         Nostalgist.configure({
             bios: launchBios,
             ...(this.#selected_platform.platform_id === 'dos' ? { sramType: 'pure.zip' } : {}),
@@ -828,7 +841,10 @@ export class PlatformManager {
                 video_scale_integer: (StorageManager.getValue('MAXIMIZE_IMAGE') === '1' && this.#vme.isGamepadLaunch?.())
                     ? false
                     : ((this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale),
-                video_smooth: (this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth,
+                // LPH forces smoothing ON: the small backbuffer is upscaled to the screen with a
+                // fractional factor (uneven pixel widths - a core/RetroArch trait), and bilinear
+                // smoothing blurs those transitions so the unevenness becomes invisible.
+                video_smooth: lowPerfHw ? true : ((this.#selected_platform.video_smooth === undefined) ? true : this.#selected_platform.video_smooth),
                 savestate_thumbnail_enable: (typeof this.#selected_platform.savestate_thumbnail_enable === 'boolean')
                     ? this.#selected_platform.savestate_thumbnail_enable
                     : true,
@@ -838,8 +854,8 @@ export class PlatformManager {
                 input_game_focus_toggle: 'nul',
                 input_auto_game_focus: '0',
 
-                video_adaptive_vsync: true,
-                video_vsync: true,
+                video_adaptive_vsync: lowPerfHw ? false : true,
+                video_vsync: lowPerfHw ? false : true,
                 ...retroarchConfigOverrides
             },
             retroarchCoreConfig: launchCoreConfig,
@@ -853,6 +869,76 @@ export class PlatformManager {
                 };
             },
         });
+    }
+
+    /**
+     * Low Performance HW mode: shrink the WebGL backbuffer on weak GPUs / 4K TVs.
+     *
+     * RetroArch's ResizeObserver sizes the buffer to the canvas' PHYSICAL pixel box
+     * (devicePixelContentBoxSize = CSS layout size x real device DPR), which window.devicePixelRatio
+     * cannot influence. So we shrink the canvas' LAYOUT size so its physical height equals the
+     * target, then scale it back up with a CSS transform (outside the content box, so it doesn't
+     * grow the buffer) to refill the same on-screen box.
+     *
+     * Target = the core's native render height when the platform declares native_resolution
+     * (e.g. A800 = 240): then the backbuffer matches exactly what the core draws, so there's NO
+     * wasted upscale inside the buffer - just one cheap GPU transform to the screen. Falls back
+     * to 720p for platforms that don't declare it.
+     *
+     * Must run AFTER the emulation layout is final (toggleScreen removed the browser skin), hence
+     * it's invoked from VME.emulationStarted via refreshLowPerfBackbuffer().
+     */
+    refreshLowPerfBackbuffer() {
+        const canvas = document.getElementById('canvas');
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+
+        // The visual box we must fill = current client box (canvas is height:100% of the screen).
+        const visualW = canvas.clientWidth;
+        const visualH = canvas.clientHeight;
+        if (!(visualW > 0) || !(visualH > 0)) return;
+
+        // Cap the buffer HEIGHT (the cheap win on weak GPUs: 4K -> ~480 lines). We keep the screen
+        // aspect for the width so the core frame always fits (a too-narrow buffer drops columns),
+        // shrink the canvas layout accordingly, and scale it back up to the same on-screen box.
+        // NOTE: this does NOT make every pixel identical size - RetroArch upscales the core frame
+        // to the canvas with a fractional factor in EVERY mode (visible already in Pixel-perfect),
+        // which is a core/RetroArch-build trait, not something fixable from here. LPH's goal is
+        // FILLRATE (a small backbuffer for smooth playback on a TV), and that it achieves.
+        const nativeH = (this.#selected_platform?.native_resolution?.height) || 240;
+        const targetPhysicalH = nativeH * 2;   // e.g. A800: 480 lines
+        const physicalH = visualH * dpr;
+        if (physicalH <= targetPhysicalH) return;   // screen already small enough
+
+        const shrink = targetPhysicalH / physicalH;   // <1
+        const layoutW = Math.max(1, Math.round(visualW * shrink));
+        const layoutH = Math.max(1, Math.round(visualH * shrink));
+        const scaleX = visualW / layoutW;
+        const scaleY = visualH / layoutH;
+
+        // Inline + important to beat the stylesheet's `height: 100% !important` / centering.
+        canvas.style.setProperty('width', layoutW + 'px', 'important');
+        canvas.style.setProperty('height', layoutH + 'px', 'important');
+        canvas.style.setProperty('transform', `scale(${scaleX}, ${scaleY})`, 'important');
+        canvas.style.setProperty('transform-origin', 'top left', 'important');
+
+        this.#lphLayoutApplied = true;
+    }
+
+    #restoreLowPerfLayout() {
+        if (!this.#lphLayoutApplied) return;
+        const canvas = document.getElementById('canvas');
+        if (canvas) {
+            canvas.style.removeProperty('position');
+            canvas.style.removeProperty('left');
+            canvas.style.removeProperty('top');
+            canvas.style.removeProperty('width');
+            canvas.style.removeProperty('height');
+            canvas.style.removeProperty('transform');
+            canvas.style.removeProperty('transform-origin');
+            canvas.style.removeProperty('image-rendering');
+        }
+        this.#lphLayoutApplied = false;
     }
 
     async #restorePendingDosStatePostLaunch(nostalgist) {
@@ -1522,6 +1608,9 @@ export class PlatformManager {
 
         let self = this;
 
+        // Low Performance HW mode is decided once per launch (see refreshLowPerfBackbuffer).
+        const lowPerfHw = StorageManager.getValue('LOW_PERF_HW') === '1' && this.#vme.isGamepadLaunch?.();
+
         this.#clearSoftwareDirCache();
         this.#vme.clearCollectionCache();
         this.#dos_exec_profile_refresh_token = (this.#dos_exec_profile_refresh_token || 0) + 1;
@@ -1601,6 +1690,9 @@ export class PlatformManager {
             gamepadManager.setGuiNavigationEnabled(false);
         }
 
+        // Low Performance HW backbuffer shrink happens AFTER launch + layout settle
+        // (see refreshLowPerfBackbuffer, called from VME.emulationStarted).
+
         try {
             this.#nostalgist = await Nostalgist.launch({
                 core: nostalgistCore,
@@ -1658,6 +1750,9 @@ export class PlatformManager {
         }
         catch (error) {
             errored = true;
+
+            // Restore canvas layout if launch failed.
+            this.#restoreLowPerfLayout();
 
             if (Debug.isEnabled()) {
                 Debug.updateMessage('error', `Error: ${error.message}`);

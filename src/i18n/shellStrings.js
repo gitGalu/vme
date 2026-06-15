@@ -65,9 +65,13 @@ const STRINGS = {
         'display.authentic': 'Authentic (CRT/LCD effect)',
         'display.pixel': 'Pixel-perfect',
         'display.fill': 'Fill screen',
+        'display.lowperf': 'Performance',
         'settings.language': 'Language',
         'settings.enterCode': 'Enter code',
+        'settings.fpsMeter': 'FPS overlay',
         'settings.exitCli': 'Exit to CLI',
+        'common.on': 'On',
+        'common.off': 'Off',
 
         // Enter code
         'code.title': 'Enter code',
@@ -157,9 +161,13 @@ const STRINGS = {
         'display.authentic': 'Wierny (efekt CRT/LCD)',
         'display.pixel': 'Pixel-perfect',
         'display.fill': 'Wypełnij ekran',
+        'display.lowperf': 'Wydajność',
         'settings.language': 'Język',
         'settings.enterCode': 'Wpisz kod',
+        'settings.fpsMeter': 'Diagnostyka FPS',
         'settings.exitCli': 'Wyjdź do CLI',
+        'common.on': 'Wł.',
+        'common.off': 'Wył.',
 
         'code.title': 'Wpisz kod',
         'code.placeholder': 'Kod…',

@@ -28,6 +28,7 @@ import { HistoryManager } from './history/HistoryManager.js';
 import { t, getShellLang, setShellLang, SHELL_LANGS, formatRelativeShell } from './i18n/shellStrings.js';
 import { UiManager } from './ui/UiManager.js';
 import { ThumbnailPreview, ThumbnailPreviewClass } from './ui/ThumbnailPreview.js';
+import { FpsMeter } from './ui/FpsMeter.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { NetworkManager } from './NetworkManager.js';
 import { isMobile } from 'react-device-detect';
@@ -263,6 +264,14 @@ export class VME {
         this.toggleScreen(VME.CURRENT_SCREEN.EMULATION);
         EnvironmentManager.updateDeviceType();
 
+        // LPH: toggleScreen set the final canvas layout. Now shrink the canvas' layout size so
+        // RetroArch's ResizeObserver sizes the backbuffer to ~720p (then a CSS transform scales
+        // it back up to fill the screen). Two rAFs: let the layout fully settle first.
+        if (document.body.classList.contains('low-perf-hw')) {
+            requestAnimationFrame(() =>
+                requestAnimationFrame(() => this.#pl.refreshLowPerfBackbuffer?.()));
+        }
+
         this.#ui.initTouchControllerMenu();
         this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
@@ -288,6 +297,7 @@ export class VME {
                 this.#pl.clearGamepadFilter?.();
                 document.body.classList.remove('gamepad-emulation');
                 this.#teardownIngameMenu();
+                FpsMeter.hide();   // overlay belongs to emulation only
                 hide('#warningStandalone');
                 hide('#save-browser');
                 hide('#collection-browser');
@@ -348,6 +358,8 @@ export class VME {
                     hide('#mousepads');
                     hide('#toggle-keyboard');
                     this.#setupIngameMenu();   // long-press Start -> in-game menu
+                    // FPS overlay only here: a gamepad-launched game in progress.
+                    FpsMeter.showForEmulation();
                 } else {
                     document.body.classList.remove('gamepad-emulation');
                     if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
@@ -449,16 +461,27 @@ export class VME {
      * Display mode: one setting, 3 mutually exclusive modes, mapped consistently onto the
      * SHADER + MAXIMIZE_IMAGE flags. Takes effect on the next game start.
      */
+    // 'lowPerf' is a 4th, mutually-exclusive mode for weak hardware (4K TVs etc.). It maps
+    // like 'fill' (no shader, fills the screen) but additionally caps the WebGL backbuffer
+    // (see PlatformManager) and disables vsync. Stored in its own flag LOW_PERF_HW because
+    // SHADER + MAXIMIZE_IMAGE only encode 3 of the 4 states.
     #DISPLAY_MODES = [
-        { id: 'authentic', labelKey: 'display.authentic', shader: true,  maximize: false },
-        { id: 'pixel',     labelKey: 'display.pixel',      shader: false, maximize: false },
-        { id: 'fill',      labelKey: 'display.fill',       shader: false, maximize: true }
+        { id: 'authentic', labelKey: 'display.authentic', shader: true,  maximize: false, lowPerf: false },
+        { id: 'pixel',     labelKey: 'display.pixel',      shader: false, maximize: false, lowPerf: false },
+        { id: 'fill',      labelKey: 'display.fill',       shader: false, maximize: true,  lowPerf: false },
+        // lowperf maps like Fill (maximize:true -> video_scale_integer:false): the image fills the
+        // screen with bilinear smoothing, which hides the fractional-upscale pixel unevenness.
+        { id: 'lowperf',   labelKey: 'display.lowperf',    shader: false, maximize: true,  lowPerf: true }
     ];
 
     #currentDisplayMode() {
+        // LPH takes precedence - when set, it wins regardless of SHADER/MAXIMIZE_IMAGE.
+        if (StorageManager.getValue('LOW_PERF_HW') === '1') {
+            return this.#DISPLAY_MODES.find(m => m.lowPerf) || this.#DISPLAY_MODES[0];
+        }
         const shaderOn = StorageManager.getValue('SHADER') !== '0';        // on by default
         const maximizeOn = StorageManager.getValue('MAXIMIZE_IMAGE') === '1';
-        return this.#DISPLAY_MODES.find(m => m.shader === shaderOn && m.maximize === maximizeOn)
+        return this.#DISPLAY_MODES.find(m => !m.lowPerf && m.shader === shaderOn && m.maximize === maximizeOn)
             || this.#DISPLAY_MODES[0];
     }
 
@@ -478,6 +501,7 @@ export class VME {
                         const next = this.#DISPLAY_MODES[(idx + 1) % this.#DISPLAY_MODES.length];
                         StorageManager.storeValue('SHADER', next.shader ? '1' : '0');
                         StorageManager.storeValue('MAXIMIZE_IMAGE', next.maximize ? '1' : '0');
+                        StorageManager.storeValue('LOW_PERF_HW', next.lowPerf ? '1' : '0');
                         this.#gamepad_menu.replaceTop(this.#buildOptionsView());
                     }
                 },
@@ -492,6 +516,15 @@ export class VME {
                         setShellLang(SHELL_LANGS[(idx + 1) % SHELL_LANGS.length]);
                         this.#gamepad_menu.popToRoot(this.#buildGamepadRootView());
                         this.#gamepad_menu.pushView(this.#buildOptionsView());
+                    }
+                },
+                {
+                    id: 'fps-meter',
+                    label: t('settings.fpsMeter'),
+                    hint: FpsMeter.isEnabled() ? t('common.on') : t('common.off'),
+                    onActivate: () => {
+                        FpsMeter.setEnabled(!FpsMeter.isEnabled());
+                        this.#gamepad_menu.replaceTop(this.#buildOptionsView());
                     }
                 },
                 {
