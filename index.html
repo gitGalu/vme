@@ -10,8 +10,8 @@
     <link rel="icon" href="/vme/assets/favicon-CcvJXZ4M.ico" type="image/x-icon">
     <link rel="icon" href="/vme/assets/favicon-32x32-DDiKfeWr.png" type="image/png" sizes="32x32">
     <link rel="icon" href="/vme/assets/favicon-16x16-q6ilooy1.png" type="image/png" sizes="16x16">
-  <script type="module" crossorigin src="/vme/assets/index-Bv7xQkAM.js"></script>
-  <link rel="stylesheet" crossorigin href="/vme/assets/index-BQscbF5d.css">
+  <script type="module" crossorigin src="/vme/assets/index-yig5mV3U.js"></script>
+  <link rel="stylesheet" crossorigin href="/vme/assets/index-Cyyqqo-i.css">
 <link rel="manifest" href="/vme/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/vme/registerSW.js"></script></head>
 <style>
     html {
@@ -95,6 +95,15 @@
         <div class="gm-browser-crumb"><span class="gm-crumb gm-crumb-app">VM/E</span><span class="gm-crumb-sep">›</span><span class="gm-crumb gm-crumb-section" id="collectionBrowserCrumbLabel">Collections</span></div>
         <div id="collection-flicking-background"></div>
         <div id="collectionBrowserEmpty">Loading...</div>
+        <!-- Gamepad-shell grid view (alternative to the Flicking coverflow). Hidden unless grid mode is active. -->
+        <div id="collection-grid" class="collection-grid" style="display:none;">
+            <div class="collection-grid-spacer collection-grid-spacer-top"></div>
+            <div class="collection-grid-cells"></div>
+            <div class="collection-grid-spacer collection-grid-spacer-bottom"></div>
+        </div>
+        <!-- Scroll-fade hints (siblings, NOT inside the scroller -> don't scroll; transform-proof). -->
+        <div id="collectionGridFadeTop" class="collection-grid-fade collection-grid-fade-top"></div>
+        <div id="collectionGridFadeBottom" class="collection-grid-fade collection-grid-fade-bottom"></div>
         <div id="collection-flicking" class="flicking-viewport">
             <div class="flicking-camera">
             </div>
