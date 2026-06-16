@@ -1633,7 +1633,26 @@ export class GamepadManager {
         const axisX = gamepad.axes[0] || 0;
         const axisY = gamepad.axes[1] || 0;
 
-        if (dpadUp && !this.lastDpadState.up) {
+        // Grid mode (Collection grid): up/down move whole rows, not topbar focus. Left/right fall
+        // through to the carousel branch below (prev()/next() == focusPrev/focusNext on the grid).
+        const isGrid = this.browserFlicking && this.browserFlicking.isGrid;
+        if (isGrid) {
+            if (dpadUp && !this.lastDpadState.up) {
+                this.startAutoRepeat(() => this.browserFlicking.verticalNav(-1));
+            } else if (dpadDown && !this.lastDpadState.down) {
+                this.startAutoRepeat(() => this.browserFlicking.verticalNav(1));
+            } else if (!dpadUp && this.lastDpadState.up) {
+                this.stopAutoRepeat();
+            } else if (!dpadDown && this.lastDpadState.down) {
+                this.stopAutoRepeat();
+            } else if (axisY < -this.axisDeadzone && this.lastAxisYValue >= -this.axisDeadzone) {
+                this.startAutoRepeat(() => this.browserFlicking.verticalNav(-1));
+            } else if (axisY > this.axisDeadzone && this.lastAxisYValue <= this.axisDeadzone) {
+                this.startAutoRepeat(() => this.browserFlicking.verticalNav(1));
+            } else if (Math.abs(axisY) <= this.axisDeadzone && Math.abs(this.lastAxisYValue) > this.axisDeadzone) {
+                this.stopAutoRepeat();
+            }
+        } else if (dpadUp && !this.lastDpadState.up) {
             if (!this.browserTopBarFocus) {
                 this.browserTopBarFocus = true;
                 this.updateBrowserButtonFocus();

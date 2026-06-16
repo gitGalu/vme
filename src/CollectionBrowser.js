@@ -7,6 +7,7 @@ import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { StorageManager } from "./storage/StorageManager.js";
 import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 import { t } from './i18n/shellStrings.js';
+import { CollectionGrid } from './CollectionGrid.js';
 
 export class CollectionBrowser {
     #vme;
@@ -38,6 +39,12 @@ export class CollectionBrowser {
     #choiceItems = [];
     #choiceActions = [];
     #choiceFocus = 0;
+
+    // Gamepad-shell grid view (alternative to the Flicking coverflow). When #useGrid is true the
+    // coverflow is not built; #grid renders a uniform thumbnail grid instead. Touch/desktop keep
+    // coverflow. See CollectionGrid.js and plan imperative-singing-turtle.
+    #grid = null;
+    #useGrid = false;
 
     constructor(vme, platform_manager, storage_manager, cli) {
         this.#vme = vme;
@@ -243,6 +250,15 @@ export class CollectionBrowser {
         if (this.#backButton && this.#backHandler) {
             addButtonEventListeners(this.#backButton, this.#backHandler);
             this.#buttonElements.add(this.#backButton);
+        }
+
+        // Gamepad shell opens a grid instead of the coverflow. The shell sets the skin class
+        // before open() (#openBrowserFromShell); the autostart (BOOT_TO) path has no skin yet and
+        // keeps coverflow until first pad use — a deliberate choice (no mid-view re-render).
+        this.#useGrid = document.body.classList.contains('gamepad-browser-skin');
+        if (this.#useGrid) {
+            await this.#openGrid(collectionItemIndex);
+            return;
         }
 
         this.#flicking = new Flicking("#collection-flicking", {
@@ -473,7 +489,7 @@ export class CollectionBrowser {
                 StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
                 this.close();
                 this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
-            }, null, overlay, () => this.#enableGamepadSkin());
+            }, null, overlay, () => this.#switchCoverflowToGrid());
         }
 
         this.#updateCrumbLabel();
@@ -484,6 +500,91 @@ export class CollectionBrowser {
     #updateCrumbLabel() {
         const el = document.getElementById('collectionBrowserCrumbLabel');
         if (el) el.textContent = t('crumb.collection');
+    }
+
+    /** Clear boot-to state and return to the shell menu (shared by grid Back and B button). */
+    #backToShell() {
+        StorageManager.clearValue(BOOT_TO);
+        StorageManager.clearValue(COLLECTION_BROWSER_COLLECTION_INDEX);
+        StorageManager.clearValue(COLLECTION_BROWSER_ITEM_INDEX);
+        this.close();
+        this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+    }
+
+    /**
+     * Grid open path (gamepad shell): fetch the same data as the coverflow, build the grid, and
+     * wire gamepad navigation via the grid's flicking-like facade. Launch + choice-overlay logic
+     * is shared with the coverflow path (activateCurrentGame / showLaunchChoiceOverlay).
+     */
+    async #openGrid(collectionItemIndex) {
+        // Skin is already on (we branched on it), but ensure legend/return-to-shell are armed.
+        this.#enableGamepadSkin();
+
+        const saveMeta = await this.#db.getAllSaveMeta();
+        const items = await this.#db.getCollectionItems();
+
+        items.forEach(item => {
+            const saveAvailable = saveMeta
+                .filter(save => save.platform_id == item.platform_id && save.rom_data_id == item.rom_data_id)
+                .sort((a, b) => b.timestamp - a.timestamp)[0];
+            // IMPORTANT: getSaveData expects saveMeta.id (primary key), NOT save_data_id.
+            // (Same caveat as the coverflow path.)
+            if (saveAvailable != undefined) {
+                item.save_data_id = saveAvailable.id;
+            }
+            // Track blob URLs so #destroy() revokes them (mirrors #createPanelHTML).
+            if (item.image && item.image.startsWith('blob:')) {
+                this.#urlsToRevoke.add(item.image);
+            }
+        });
+
+        this.#items = items;
+
+        document.getElementById('collectionBrowserEmpty').style.display = items.length === 0 ? 'block' : 'none';
+        if (items.length === 0) {
+            document.getElementById('collectionBrowserEmpty').innerHTML = 'No collection found.';
+        }
+
+        const initialIndex = Math.max(0, items.findIndex(it => String(it.id) === String(collectionItemIndex)));
+
+        this.#grid = new CollectionGrid({
+            items,
+            onActivate: () => {
+                // Mirror coverflow behavior: A on a game -> choice overlay (if a save exists) or
+                // start fresh. The grid keeps #selected/#uiReady implicitly true.
+                this.#selected = true;
+                this.#uiReady = true;
+                this.activateCurrentGame();
+            }
+        });
+        this.#grid.open(initialIndex);
+
+        // Grid manages its own focus/launch gating; the coverflow #selected/#uiReady flags should
+        // be "ready" so the shared launch methods run.
+        this.#selected = true;
+        this.#uiReady = true;
+
+        StorageManager.storeValue(BOOT_TO, BOOT_TO_COLLECTION_BROWSER);
+
+        document.addEventListener('keydown', this.#kb_event_bound);
+
+        const gamepadManager = this.#vme.getGamepadManager();
+        if (gamepadManager) {
+            const overlay = {
+                show: () => this.showLaunchChoiceOverlay(),
+                isOpen: () => this.isLaunchChoiceOpen(),
+                navigate: (d) => this.navigateLaunchChoice(d),
+                select: () => this.selectLaunchChoice(),
+                hide: () => this.#hideLaunchChoiceOverlay()
+            };
+            // Pass the grid facade (not Flicking). No top-bar buttons in grid mode.
+            gamepadManager.initBrowserNavigation(
+                this.#grid, [], () => this.#backToShell(), null, overlay, () => this.#enableGamepadSkin()
+            );
+        }
+
+        this.#updateCrumbLabel();
+        this.#vme.toggleScreen(VME.CURRENT_SCREEN.COLLECTION_BROWSER);
     }
 
     close(skipPlatformUpdate = false) {
@@ -526,11 +627,33 @@ export class CollectionBrowser {
     }
 
     /**
+     * First pad use while the coverflow is showing (BOOT_TO autostart opened it before the skin
+     * was on). The gamepad target view is the grid, so reopen as grid — keeping focus on the same
+     * game. Deferred to a microtask because GamepadManager is mid-poll and still touches the
+     * (live) Flicking this frame; tearing it down synchronously here would break that cycle.
+     */
+    #switchCoverflowToGrid() {
+        if (this.#useGrid) return;
+        // Remember the game currently centered in the coverflow so the grid opens on it.
+        const id = this.#flicking?.currentPanel?.element?.getAttribute('data-id');
+        // Enable the skin now (markReturnToShell + legend); open() will branch to the grid.
+        this.#enableGamepadSkin();
+        Promise.resolve().then(() => {
+            this.open(1, id != null ? parseInt(id, 10) : 1);
+        });
+    }
+
+    /**
      * A on a game in gamepad skin mode: if a savestate EXISTS -> show the choice overlay
      * (Continue / Start over / Cancel). No save -> start fresh immediately.
      */
+    /** Current selection as a { element } panel — from the grid in grid mode, else Flicking. */
+    #activePanel() {
+        return this.#useGrid ? this.#grid?.currentPanel : this.#flicking?.currentPanel;
+    }
+
     activateCurrentGame() {
-        const activePanel = this.#flicking?.currentPanel;
+        const activePanel = this.#activePanel();
         const hasSave = !!activePanel && activePanel.element.dataset.save !== "undefined";
         if (hasSave) {
             this.showLaunchChoiceOverlay();
@@ -541,7 +664,7 @@ export class CollectionBrowser {
 
     /** Choice overlay (shell style): Continue (restore latest) / Start over / Cancel. */
     showLaunchChoiceOverlay() {
-        const activePanel = this.#flicking?.currentPanel;
+        const activePanel = this.#activePanel();
         if (!activePanel) return;
         const title = activePanel.element.getAttribute('data-program-name')
             || activePanel.element.querySelector('.flicking-title-name')?.textContent
@@ -619,9 +742,11 @@ export class CollectionBrowser {
 
     async #restoreSelected() {
         if (this.#selected && !this.#launched && this.#uiReady) {
-            const activePanel = this.#flicking.currentPanel;
+            const activePanel = this.#activePanel();
             if (activePanel != null) {
-                if (document.getElementById('collectionBrowserUiRestore').classList.contains('disabled')) {
+                // Grid mode hides the bottom UI buttons; the disabled-class guard only applies
+                // to the coverflow UI.
+                if (!this.#useGrid && document.getElementById('collectionBrowserUiRestore').classList.contains('disabled')) {
                     return;
                 }
                 this.#launched = true;
@@ -676,7 +801,7 @@ export class CollectionBrowser {
     async #loadSelected() {
         if (this.#selected && !this.#launched && this.#uiReady) {
             this.#launched = true;
-            const activePanel = this.#flicking.currentPanel;
+            const activePanel = this.#activePanel();
             if (activePanel != null) {
                 this.#addLaunchVisualFeedback(activePanel.element);
 
@@ -725,7 +850,13 @@ export class CollectionBrowser {
             }
         });
         this.#buttonElements.clear();
-        
+
+        if (this.#grid) {
+            this.#grid.destroy();
+            this.#grid = null;
+        }
+        this.#useGrid = false;
+
         if (this.#flicking) {
             try {
                 const flickingElement = this.#flicking.element;
@@ -772,6 +903,19 @@ export class CollectionBrowser {
         if (event.key === "Escape" || event.key === "Backspace") {
             this.close();
             this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            return;
+        }
+
+        // Grid mode (gamepad shell): arrows move grid focus; Enter (also the pad's synthetic A)
+        // opens the choice overlay or starts fresh. The launch-choice overlay, when open, is
+        // driven by the gamepad poll, so don't double-handle Enter here while it's visible.
+        if (this.#useGrid) {
+            if (!this.#grid) return;
+            if (event.key === "ArrowRight") this.#grid.focusNext();
+            else if (event.key === "ArrowLeft") this.#grid.focusPrev();
+            else if (event.key === "ArrowDown") this.#grid.focusRow(1);
+            else if (event.key === "ArrowUp") this.#grid.focusRow(-1);
+            else if (event.key === "Enter" && !this.isLaunchChoiceOpen()) this.activateCurrentGame();
             return;
         }
 

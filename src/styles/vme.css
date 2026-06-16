@@ -4867,6 +4867,18 @@ i {
    ========================================================================= */
 
 /* Warstwa 1: glebia tla i paleta jak w shellu (zamiast plaskiej czerni). */
+/* Wysokosc globalnego legend bara (glify 24px + padding 12px*2 ~= 48px; +zapas).
+   Uzywane przez grid: dolny padding + dolny scroll-fade siadaja NAD paskiem. */
+body.gamepad-browser-skin {
+  --gm-legend-h: 60px;
+}
+
+@media (min-width: 1024px) {
+  body.gamepad-browser-skin {
+    --gm-legend-h: 70px;   /* glify 30px na duzych ekranach */
+  }
+}
+
 body.gamepad-browser-skin #save-browser,
 body.gamepad-browser-skin #collection-browser {
   background-color: #05070d;
@@ -4899,6 +4911,9 @@ body.gamepad-browser-skin .gm-browser-crumb {
   pointer-events: none;
   white-space: nowrap;
   min-width: 0;
+  /* Drop shadow - breadcrumb (z-index 2001) nachodzi na miniatury podczas scrollowania siatki,
+     wiec musi byc czytelny takze na jasnych okladkach. */
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 /* Prefiks (VM/E, Save states, separatory) sie nie kurczy; ostatni segment ellipsize. */
@@ -4949,10 +4964,210 @@ body.gamepad-browser-skin #collectionBrowserUiRestore {
   display: none !important;
 }
 
+/* Grid (skorka): caly dolny/gorny pasek UI Collection jest pusty (przyciski wyzej ukryte) i ma
+   z-index:2000 - przykrywal gorny scroll-fade. W trybie gridu chowamy go w calosci. */
+body.gamepad-browser-skin #collectionBrowserUi {
+  display: none !important;
+}
+
 /* Tryb skorki: miniaturki karuzeli BEZ pochylenia (inline transform:rotate w JS). */
 body.gamepad-browser-skin #save-browser .flicking-panel img,
 body.gamepad-browser-skin #collection-browser .flicking-panel img {
   transform: none !important;
+}
+
+/* =========================================================================
+   COLLECTION GRID (tryb pada): siatka miniaturek zamiast karuzeli Flicking.
+   Widoczna tylko w skorce; styl spojny z shellem (Avenir, aero focus, glebia
+   tla dziedziczona z #collection-browser). Wirtualizacja: tylko widoczne wiersze
+   sa renderowane, spacery trzymaja calkowita wysokosc scrolla.
+   ========================================================================= */
+.collection-grid {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Gorny padding czysci miejsce na fixed breadcrumb. Boczny = max(12px, safe-area-inset) -> maly
+     oddech od krawedzi + ochrona przed notchem iPhone (landscape). Dolny = wysokosc legend bara
+     (globalny HUD bottom:0, NIE czesc tego widoku) -> przy maks. scrollu ostatni rzad konczy sie
+     NAD paskiem, nie pod nim. #computeLayout czyta padLeft/padRight (getComputedStyle), wiec kafle
+     zwezaja sie automatycznie. --gm-legend-h zadeklarowane na body.gamepad-browser-skin. */
+  padding: calc(env(safe-area-inset-top, 0px) + 88px)
+           max(12px, env(safe-area-inset-right, 0px))
+           calc(env(safe-area-inset-bottom, 0px) + var(--gm-legend-h, 64px))
+           max(12px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  z-index: 1500;   /* nad tlem/karuzela, pod breadcrumb (2001) i overlayem (2100) */
+  scrollbar-width: thin;
+}
+
+/* Cienie krawedziowe (scroll-fade): sygnalizuja, ze nad/pod widokiem jest wiecej tresci.
+   To OSOBNE elementy obok scrollera (NIE pseudo na .collection-grid) - dzieki temu nie scrolluja
+   z trescia i sa odporne na transform przodka (portret skaluje shell). position:absolute wzgledem
+   #collection-browser (full-screen, NIEscrollowany). Widoczne tylko w skorce + gdy JS ustawi
+   .can-scroll-up / .can-scroll-down na #collection-grid (znikaja na samej gorze/dole). */
+.collection-grid-fade {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 1600;   /* nad kaflami (siatka 1500), pod breadcrumb (2001) */
+}
+
+body.gamepad-browser-skin .collection-grid-fade {
+  display: block;
+}
+
+.collection-grid-fade-top {
+  /* Od samej gory ekranu (pod breadcrumbem) - cala gorna strefa przyciemniona przy scrollu.
+     Wyzsza niz dolny, bo obejmuje pas breadcrumba (~88px) + zejscie pod pierwszy rzad. */
+  top: 0;
+  height: calc(env(safe-area-inset-top, 0px) + 124px);
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0.7) 0%,
+      rgba(0, 0, 0, 0.5) 45%,
+      rgba(0, 0, 0, 0) 100%);
+}
+
+.collection-grid-fade-bottom {
+  /* Siega az do dolu ekranu (POD legend bar) - nad paskiem nie ma osobnej ciemnej strefy, tylko
+     delikatne przyciemnienie tresci tuz nad nim. Wysokosc = pasek + zejscie nad nim, wiec gradient
+     zanika powyzej paska. (Pasek ma wlasne, wyzsze tlo i z-index, wiec przykrywa dolna czesc fade.) */
+  bottom: 0;
+  height: calc(env(safe-area-inset-bottom, 0px) + var(--gm-legend-h, 64px) + 44px);
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+#collection-grid.can-scroll-up ~ #collectionGridFadeTop { opacity: 1; }
+#collection-grid.can-scroll-down ~ #collectionGridFadeBottom { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-grid-fade {
+    transition: none;
+  }
+}
+
+.collection-grid-cells {
+  display: grid;
+  /* Dokladnie #cols rownych kolumn wypelniajacych pelna szerokosc (bez bocznego paddingu). */
+  grid-template-columns: repeat(var(--cols, 3), 1fr);
+  gap: 8px;
+  align-content: start;
+}
+
+.collection-grid-spacer {
+  /* Wirtualizacja: rezerwuje wysokosc niewyrenderowanych wierszy. */
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+/* Kafel = okładka 4:3. Bez paddingu/podpisu w stanie spoczynku -> grafika jest duza i wyrazna. */
+.collection-grid-cell {
+  position: relative;
+  width: 100%;          /* wypelnia kolumne 1fr */
+  aspect-ratio: 4 / 3;  /* wysokosc z proporcji (== --cell-h liczone w JS dla wirtualizacji) */
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  /* Cien + subtelna wewnetrzna ramka, by stykajace sie okladki nie zlewaly sie z tlem. */
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  outline: 2px solid transparent;
+  outline-offset: -2px;  /* do wewnatrz - inaczej ramka skrajnych kafli wychodzi za krawedz */
+  transition: outline-color 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.collection-grid-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* 4:3 zrzuty wypelniaja kafel bez listkow */
+  display: block;
+}
+
+/* Znacznik dostepnego savestate'a (rog kafla). */
+.collection-grid-save-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(120, 200, 120, 0.95);
+  box-shadow: 0 0 6px rgba(120, 200, 120, 0.7);
+  z-index: 2;
+}
+
+/* Podpis: overlay na dole okładki, WIDOCZNY TYLKO PRZY FOKUSIE (nie rusza siatki). */
+.collection-grid-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 12px 11px;
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.55) 38%,
+      rgba(0, 0, 0, 0.92) 100%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.collection-grid-cell.focused .collection-grid-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.collection-grid-title {
+  color: #ffffff;
+  font-size: clamp(18px, 2.8vh, 26px);
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95), 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.collection-grid-platform {
+  color: rgba(210, 222, 245, 0.9);
+  font-size: clamp(13px, 2vh, 18px);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Fokus: jasna ramka + WIELOWARSTWOWA niebieska aura (BEZ scale - skrajne kafle stykaja sie z
+   krawedzia, a overflow-x:hidden przycielby powiekszenie). Czytelne z dystansu TV. */
+.collection-grid-cell.focused {
+  outline-color: rgba(150, 205, 255, 1);
+  outline-width: 3px;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(190, 225, 255, 0.45),
+    0 0 0 3px rgba(120, 190, 255, 0.55),
+    0 0 26px 4px rgba(70, 150, 240, 0.65),
+    0 0 60px 8px rgba(50, 120, 220, 0.4);
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-grid-cell,
+  .collection-grid-label {
+    transition: none;
+  }
 }
 
 /* Overlay wyboru platformy (styl shella) nad Save Browserem - tryb skorki. */
