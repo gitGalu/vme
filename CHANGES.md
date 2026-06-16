@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.91] - 2026-06-16
+
+- gamepad shell: use thumbnail grid view in Collection Browser 
+- gamepad shell: add Performance mode image scaling option
+
 ## [0.90] - 2026-06-14
 
 - introduce VM/E Shell for gamepad controls (beta)
