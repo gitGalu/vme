@@ -2797,14 +2797,16 @@ body.selection-mode-active .menu-strip-spacer {
 .launch-settings-dialog__form {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: start;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
 .launch-settings-dialog__field {
-  flex: 1 1 0;
+  /* 2x2 grid in landscape: two fields per row (minus the gap). */
+  flex: 1 1 calc(50% - 10px);
   min-width: 0;
   display: flex;
   flex-direction: column;

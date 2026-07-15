@@ -20,9 +20,15 @@ const A800_VIDEO_STANDARD_OPTIONS = Object.freeze([
     { value: 'NTSC', label: 'NTSC' }
 ]);
 
+const A800_STEREO_OPTIONS = Object.freeze([
+    { value: 'off', label: 'Mono (single POKEY)' },
+    { value: 'on', label: 'Stereo (dual POKEY)' }
+]);
+
 const A800_MODEL_VALUES = new Set(A800_MODEL_OPTIONS.map(option => option.value));
 const A800_BASIC_VALUES = new Set(A800_BASIC_OPTIONS.map(option => option.value));
 const A800_VIDEO_STANDARD_VALUES = new Set(A800_VIDEO_STANDARD_OPTIONS.map(option => option.value));
+const A800_STEREO_VALUES = new Set(A800_STEREO_OPTIONS.map(option => option.value));
 
 function guessA800Model(fileName) {
     const nameU = String(fileName ?? '').toUpperCase();
@@ -98,22 +104,36 @@ function normalizeA800VideoStandard(value, fallback = 'PAL') {
     return A800_VIDEO_STANDARD_VALUES.has(normalized) ? normalized : fallback;
 }
 
+function normalizeA800Stereo(value, fallback = 'off') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    return A800_STEREO_VALUES.has(normalized) ? normalized : fallback;
+}
+
 function buildA800LaunchSettings(fileName, overrides = null) {
     const nameU = String(fileName ?? '').toUpperCase();
     const guessedModel = guessA800Model(fileName);
     const guessedBasic = nameU.includes('[BASIC]') ? 'on' : 'off';
     const guessedVideoStandard = nameU.includes('[REQ OSB]') ? 'NTSC' : 'PAL';
+    const guessedStereo = nameU.includes('[STEREO]') ? 'on' : 'off';
     const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
     const model = normalizeA800Model(overrideInput.model, guessedModel);
     const basic = normalizeA800Basic(overrideInput.basic, guessedBasic);
     const ntscpal = normalizeA800VideoStandard(overrideInput.ntscpal, guessedVideoStandard);
+    const stereo = normalizeA800Stereo(overrideInput.stereo, guessedStereo);
 
     const coreConfig = {
         atari800_f10: 'disabled',
         atari800_ntscpal: ntscpal,
         atari800_resolution: '336x240',
         atari800_system: model,
-        atari800_internalbasic: basic === 'on' ? 'enabled' : 'disabled'
+        atari800_internalbasic: basic === 'on' ? 'enabled' : 'disabled',
+        // Note: the core force-overrides this to mono for the Atari 5200 and
+        // for Bounty Bob Strikes Back (.car), regardless of what we request.
+        atari800_pokey_stereo: stereo === 'on' ? 'enabled' : 'disabled'
     };
 
     if (nameU.includes('.CAS')) {
@@ -126,12 +146,14 @@ function buildA800LaunchSettings(fileName, overrides = null) {
         overrideValues: {
             model,
             basic,
-            ntscpal
+            ntscpal,
+            stereo
         },
         guessedOverrides: {
             model: guessedModel,
             basic: guessedBasic,
-            ntscpal: guessedVideoStandard
+            ntscpal: guessedVideoStandard,
+            stereo: guessedStereo
         },
         overrideSchema: [
             {
@@ -148,6 +170,11 @@ function buildA800LaunchSettings(fileName, overrides = null) {
                 id: 'ntscpal',
                 label: 'Video',
                 options: A800_VIDEO_STANDARD_OPTIONS
+            },
+            {
+                id: 'stereo',
+                label: 'Sound',
+                options: A800_STEREO_OPTIONS
             }
         ]
     };
