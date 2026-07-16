@@ -1,7 +1,243 @@
 
+import JSZip from 'jszip';
 import PlatformBase from '../PlatformBase.js';
 import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE, TOUCH_INPUT } from '../../Constants.js';
 import { KeyMaps } from '../../touch/KeyMaps.js';
+
+// dosbox_pure_memory_size
+const DOS_MEMORY_OPTIONS = Object.freeze([
+    { value: 'none', label: 'No extended memory' },
+    { value: '4', label: '4 MB' },
+    { value: '8', label: '8 MB' },
+    { value: '16', label: '16 MB' },
+    { value: '24', label: '24 MB' },
+    { value: '32', label: '32 MB' },
+    { value: '48', label: '48 MB' },
+    { value: '64', label: '64 MB' },
+    { value: '96', label: '96 MB' },
+    { value: '128', label: '128 MB' },
+    { value: '224', label: '224 MB' },
+    { value: '256', label: '256 MB' }
+]);
+
+// dosbox_pure_cpu_type
+const DOS_CPU_OPTIONS = Object.freeze([
+    { value: 'auto', label: 'Auto' },
+    { value: '386', label: '386' },
+    { value: '386_slow', label: '386 (slow)' },
+    { value: '486_slow', label: '486 (slow)' },
+    { value: 'pentium_slow', label: 'Pentium (slow)' },
+    { value: 'pentium_mmx', label: 'Pentium MMX' }
+]);
+
+// dosbox_pure_machine
+const DOS_MACHINE_OPTIONS = Object.freeze([
+    { value: 'svga', label: 'SVGA' },
+    { value: 'vga', label: 'VGA' },
+    { value: 'ega', label: 'EGA' },
+    { value: 'cga', label: 'CGA' },
+    { value: 'tandy', label: 'Tandy' },
+    { value: 'hercules', label: 'Hercules' },
+    { value: 'pcjr', label: 'PCjr' }
+]);
+
+// 3dfx Voodoo (dosbox_pure_voodoo). Only on/off is exposed; the card RAM is
+// pinned to 8mb (core default, widest game compatibility) and rendering to
+// perf=0 (software single-threaded). The multi-threaded renderer spawns
+// cores-1 detached threads which hang against emscripten's fixed pthread pool.
+const DOS_VOODOO_OPTIONS = Object.freeze([
+    { value: 'off', label: 'Off' },
+    { value: 'on', label: 'On (3dfx)' }
+]);
+
+const DOS_MEMORY_VALUES = new Set(DOS_MEMORY_OPTIONS.map(option => option.value));
+const DOS_CPU_VALUES = new Set(DOS_CPU_OPTIONS.map(option => option.value));
+const DOS_MACHINE_VALUES = new Set(DOS_MACHINE_OPTIONS.map(option => option.value));
+const DOS_VOODOO_VALUES = new Set(DOS_VOODOO_OPTIONS.map(option => option.value));
+
+function normalizeDosMemory(value, fallback = '16') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+    const normalized = value.trim().toLowerCase();
+    return DOS_MEMORY_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeDosCpu(value, fallback = 'auto') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+    const normalized = value.trim().toLowerCase();
+    return DOS_CPU_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeDosMachine(value, fallback = 'svga') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+    const normalized = value.trim().toLowerCase();
+    return DOS_MACHINE_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeDosVoodoo(value, fallback = 'off') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+    const normalized = value.trim().toLowerCase();
+    return DOS_VOODOO_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function buildDosLaunchSettings(fileName, overrides = null) {
+    const guessedMemory = '16';
+    const guessedCpu = 'auto';
+    const guessedMachine = 'svga';
+    const guessedVoodoo = 'off';
+    const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
+    const memory = normalizeDosMemory(overrideInput.memory, guessedMemory);
+    const cpu = normalizeDosCpu(overrideInput.cpu, guessedCpu);
+    const machine = normalizeDosMachine(overrideInput.machine, guessedMachine);
+    const voodoo = normalizeDosVoodoo(overrideInput.voodoo, guessedVoodoo);
+
+    const coreConfig = {
+        dosbox_pure_memory_size: memory,
+        dosbox_pure_cpu_type: cpu,
+        dosbox_pure_machine: machine,
+        // 3dfx Voodoo: only on/off is user-facing. When on, pin the card to 8mb
+        // (core default, widest compatibility) and rendering to software
+        // single-threaded (perf=0). The multi-threaded renderer spawns cores-1
+        // detached threads which hang against emscripten's fixed pthread pool
+        // (no exception, just a freeze), so it's not exposed here.
+        dosbox_pure_voodoo: voodoo === 'on' ? '8mb' : 'off',
+        dosbox_pure_voodoo_perf: '0',
+        dosbox_pure_voodoo_scale: '1',
+        dosbox_pure_savestate: 'load-save',
+        video_gpu_screenshot: 'false'
+    };
+
+    return {
+        coreConfig,
+        overrideValues: { memory, cpu, machine, voodoo },
+        guessedOverrides: {
+            memory: guessedMemory,
+            cpu: guessedCpu,
+            machine: guessedMachine,
+            voodoo: guessedVoodoo
+        },
+        overrideSchema: [
+            {
+                id: 'memory',
+                label: 'Memory',
+                options: DOS_MEMORY_OPTIONS
+            },
+            {
+                id: 'cpu',
+                label: 'CPU',
+                options: DOS_CPU_OPTIONS
+            },
+            {
+                id: 'machine',
+                label: 'Graphics',
+                options: DOS_MACHINE_OPTIONS
+            },
+            {
+                id: 'voodoo',
+                label: '3dfx',
+                options: DOS_VOODOO_OPTIONS
+            }
+        ]
+    };
+}
+
+// Auto-supply the 3dfx Glide driver (GLIDE2X.OVL) when Voodoo is on, WITHOUT
+// repacking the user's game ZIP. Uses dosbox_pure's native ZIP dependency:
+// a child ZIP containing an empty marker file "<parentname>.parent" makes the
+// core mount <parentname> (found in the same dir) as the base C: drive and
+// overlay the child's files on top. So we load a small child ZIP holding
+// GLIDE2X.OVL + the marker; the game ZIP sits beside it as the parent, mounted
+// as the base and left completely untouched. The child is what gets launched.
+async function buildDosVoodooLaunchPackage(gameBlob, romName, execHint = null) {
+    const glideUrl = new URL('../../assets/boot/glide.zip', import.meta.url);
+    const glideArrayBuffer = await (await fetch(glideUrl)).arrayBuffer();
+
+    // Fixed, special-char-free names so the content-dir names match the
+    // ".parent" marker exactly. nostalgist launches rom[0], so the child
+    // (glide) ZIP must be first.
+    const gameName = 'VME3DFX.ZIP';
+    const childName = 'VMEGLID3.ZIP';
+
+    // Resolve the exe to auto-start ONLY when we have an explicit execHint (a
+    // save's LASTRUN.DBP). We deliberately do NOT guess an exe on a first
+    // launch: like the non-3dfx path, a first launch should show dosbox's start
+    // menu so the user picks the program (guessing picks a random EXE — the
+    // installer, a Windows variant, a tool). The hint is only available on
+    // restore, which is exactly when we want to auto-relaunch the same exe.
+    //
+    // Use the hint's path VERBATIM — it is the exact path dosbox ran the exe
+    // from (including any subdirectory, e.g. TRIP\TRIP.EXE). Do NOT look it up
+    // by basename in the game ZIP: that drops the directory and would cd to the
+    // wrong place (running TRIP.EXE from C:\ instead of C:\TRIP).
+    let gameExe = null;
+    if (execHint) {
+        const dosPath = String(execHint)
+            .replace(/\//g, '\\')       // to DOS separators
+            .replace(/^[A-Za-z]:\\/, '') // strip any drive prefix
+            .replace(/^\\+/, '')         // strip leading backslashes
+            .trim();
+        if (/\.(exe|com|bat)$/i.test(dosPath)) {
+            gameExe = dosPath;
+        }
+    }
+
+    // DOSBOX.BAT: dosbox_pure runs C:\DOSBOX.BAT (if present) instead of its
+    // default launcher. PATH C:\ lets a game exe in a subdirectory find
+    // GLIDE2X.OVL in the root.
+    //   - Restore (have exe): cd into the exe's dir and run it, so the game
+    //     boots straight to where the save expects it.
+    //   - First launch (no exe): hand off to the start menu (Z:PUREMENU -BOOT)
+    //     so the user picks the program, exactly like non-3dfx.
+    let dosboxBat;
+    if (gameExe) {
+        const slash = gameExe.lastIndexOf('\\');
+        const exeDir = slash >= 0 ? gameExe.slice(0, slash) : '';
+        const exeFile = slash >= 0 ? gameExe.slice(slash + 1) : gameExe;
+        // No quotes around the cd argument: DOS/dosbox .BAT treats "trip" as a
+        // literal name including the quotes, so cd fails and the exe runs from
+        // C:\ root. DOS dir names have no spaces (8.3), so bare is correct.
+        dosboxBat = '@echo off\r\nPATH C:\\;%PATH%\r\n'
+            + (exeDir ? `cd ${exeDir}\r\n` : '')
+            + `${exeFile}\r\n`;
+    } else {
+        dosboxBat = '@echo off\r\nPATH C:\\;%PATH%\r\nZ:PUREMENU -BOOT\r\n';
+    }
+
+    // Build the child ZIP: GLIDE2X.OVL (driver, C:\ root), DOSBOX.BAT (above),
+    // and an empty "<game>.parent" marker so the core mounts the game ZIP
+    // underneath as the C: base.
+    const glideZip = await JSZip.loadAsync(glideArrayBuffer);
+    const ovl = await glideZip.file(/glide2x\.ovl/i)[0].async('uint8array');
+    const childZip = new JSZip();
+    childZip.file('GLIDE2X.OVL', ovl);
+    childZip.file('DOSBOX.BAT', dosboxBat);
+    childZip.file(`${gameName}.parent`, new Uint8Array(0));
+    const childBlob = await childZip.generateAsync({ type: 'blob' });
+
+    return {
+        launchFiles: [
+            { fileName: childName, fileContent: childBlob },
+            { fileName: gameName, fileContent: gameBlob }
+        ],
+        // primaryFileName = the file nostalgist actually launches (the child).
+        // But game IDENTITY (save states / game profiles: programName, romHash,
+        // archiveHash) must be derived from the GAME, not the child. The child
+        // glide ZIP is identical for every 3dfx title, so using it would collide
+        // all 3dfx games onto one profile and load the wrong save/menu. Set
+        // saveBlob to the game blob and programName to the original game name.
+        primaryFileName: childName,
+        saveBlob: gameBlob,
+        programName: romName,
+        suppressDiskUi: true
+    };
+}
 
 const DOS = {
     ...PlatformBase,
@@ -22,13 +258,23 @@ const DOS = {
         '--cursorwidth': '0.5em',
         '--portrait-fontsize': '100%'
     },
-    guessConfig: (fileName) => {
-        return {
-            dosbox_pure_memory_size: "16",
-            dosbox_pure_voodoo: "off",
-            dosbox_pure_savestate: "load-save",
-            video_gpu_screenshot: "false"
+    resolveLaunchSettings: (fileName, overrides = null) => buildDosLaunchSettings(fileName, overrides),
+    guessConfig: (fileName) => buildDosLaunchSettings(fileName).coreConfig,
+    prepareLaunchRom: async ({ launchRomInput, romName, launchSettings }) => {
+        // Only when 3dfx is enabled AND the content is a plain ZIP blob we can
+        // overlay. Anything else (already a multi-file package, non-Blob) is
+        // passed through untouched.
+        const voodoo = normalizeDosVoodoo(launchSettings?.overrideValues?.voodoo, 'off');
+        if (voodoo !== 'on' || !(launchRomInput instanceof Blob)) {
+            return launchRomInput;
         }
+        if (!String(romName || '').toLowerCase().endsWith('.zip')) {
+            return launchRomInput;
+        }
+        // execHint (from a save's LASTRUN.DBP) lets us auto-start the exact game
+        // exe on restore; absent at first launch (we auto-detect it instead).
+        const execHint = launchSettings?.dosExecHint || null;
+        return buildDosVoodooLaunchPackage(launchRomInput, romName, execHint);
     },
     savestates_disabled: false,
     rewind_disabled: true,

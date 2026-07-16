@@ -3445,7 +3445,7 @@ export class PlatformManager {
         };
     }
 
-    async #prepareDosRestoreLaunch(launchBlob, launchProgramName, dosExecHint) {
+    async #prepareDosRestoreLaunch(launchBlob, launchProgramName, dosExecHint, launchCoreConfig = null) {
         let preparedLaunchBlob = launchBlob;
         let preparedLaunchProgramName = launchProgramName;
         let canAutoLoadState = false;
@@ -3456,6 +3456,49 @@ export class PlatformManager {
                 launchProgramName: preparedLaunchProgramName,
                 canAutoLoadState: true
             };
+        }
+
+        // 3dfx save states: the state was captured against the glide-overlay
+        // content (game + child glide ZIP with GLIDE2X.OVL/DOSBOX.BAT). Restore
+        // MUST rebuild the exact same mount, or dosbox boots plain game content
+        // and the state mismatches (start menu with wrong files / missing DLL).
+        // Reuse the platform's own prepareLaunchRom so the content is identical
+        // to launch time; skip the executable-hint path (which builds a
+        // different, glide-less mount).
+        const voodoo = launchCoreConfig
+            && typeof launchCoreConfig === 'object'
+            && typeof launchCoreConfig.dosbox_pure_voodoo === 'string'
+            ? launchCoreConfig.dosbox_pure_voodoo
+            : 'off';
+        if (voodoo !== 'off' && typeof this.#selected_platform?.prepareLaunchRom === 'function') {
+            try {
+                const prepared = await this.#selected_platform.prepareLaunchRom({
+                    launchRomInput: preparedLaunchBlob,
+                    romName: preparedLaunchProgramName,
+                    caption: preparedLaunchProgramName,
+                    launchSettings: {
+                        overrideValues: { voodoo: 'on' },
+                        // Auto-start the exact exe recorded in the save (the
+                        // overlay's DOSBOX.BAT cd's into it and runs it) so the
+                        // state loads against the right running program.
+                        dosExecHint: dosExecHint || null
+                    }
+                });
+                if (prepared && prepared !== preparedLaunchBlob) {
+                    return {
+                        launchBlob: prepared,
+                        launchProgramName: prepared.primaryFileName || preparedLaunchProgramName,
+                        // DOSBOX.BAT auto-runs the exact exe, so — like the
+                        // non-3dfx executable-launch path — let nostalgist load
+                        // the state at launch (state: option). The post-launch
+                        // retry path races the reboot and aborts; launch-time
+                        // autoload is the reliable route.
+                        canAutoLoadState: true
+                    };
+                }
+            } catch (error) {
+                console.warn('Failed to prepare DOS 3dfx overlay for restore:', error);
+            }
         }
 
         const normalizedHint = (typeof dosExecHint === 'string' && dosExecHint.trim().length > 0)
@@ -3881,7 +3924,7 @@ export class PlatformManager {
                 }
             }
 
-            const prepared = await this.#prepareDosRestoreLaunch(launchBlob, launchProgramName, dosRestoreExec);
+            const prepared = await this.#prepareDosRestoreLaunch(launchBlob, launchProgramName, dosRestoreExec, launchCoreConfig);
             launchBlob = prepared.launchBlob;
             launchProgramName = prepared.launchProgramName;
             dosCanAutoLoadState = prepared.canAutoLoadState;
