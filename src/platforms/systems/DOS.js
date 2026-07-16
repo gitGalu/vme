@@ -20,15 +20,24 @@ const DOS_MEMORY_OPTIONS = Object.freeze([
     { value: '256', label: '256 MB' }
 ]);
 
-// dosbox_pure_cpu_type
-const DOS_CPU_OPTIONS = Object.freeze([
-    { value: 'auto', label: 'Auto' },
-    { value: '386', label: '386' },
-    { value: '386_slow', label: '386 (slow)' },
-    { value: '486_slow', label: '486 (slow)' },
-    { value: 'pentium_slow', label: 'Pentium (slow)' },
-    { value: 'pentium_mmx', label: 'Pentium MMX' }
-]);
+// CPU profile: a single choice that sets BOTH the instruction set
+// (dosbox_pure_cpu_type) AND the emulated speed (dosbox_pure_cycles), so the
+// user picks a period-accurate machine rather than juggling two options.
+// 'auto' cycles effectively means MAX (dosbox switches to max cycles for
+// protected-mode games), i.e. the fastest this WASM build can run — hence
+// "Auto (fastest)". The other profiles SLOW the machine down to a period, which
+// is the real use case (games without a frame limiter are unplayable when the
+// CPU is "too fast").
+const DOS_CPU_PROFILES = Object.freeze({
+    auto:      { label: 'Auto (fastest)',   cpu_type: 'auto',     cycles: 'auto' },
+    '386_20':  { label: '~386 20 MHz',      cpu_type: '386',      cycles: '4720' },
+    '386_33':  { label: '~386DX 33 MHz',    cpu_type: '386',      cycles: '7800' },
+    '486_66':  { label: '~486DX2 66 MHz',   cpu_type: '486_slow', cycles: '26800' }
+});
+
+const DOS_CPU_OPTIONS = Object.freeze(
+    Object.entries(DOS_CPU_PROFILES).map(([value, p]) => ({ value, label: p.label }))
+);
 
 // dosbox_pure_machine
 const DOS_MACHINE_OPTIONS = Object.freeze([
@@ -97,10 +106,14 @@ function buildDosLaunchSettings(fileName, overrides = null) {
     const cpu = normalizeDosCpu(overrideInput.cpu, guessedCpu);
     const machine = normalizeDosMachine(overrideInput.machine, guessedMachine);
     const voodoo = normalizeDosVoodoo(overrideInput.voodoo, guessedVoodoo);
+    // The CPU override is a profile key that maps to both an instruction set
+    // and an emulated speed.
+    const cpuProfile = DOS_CPU_PROFILES[cpu] || DOS_CPU_PROFILES.auto;
 
     const coreConfig = {
         dosbox_pure_memory_size: memory,
-        dosbox_pure_cpu_type: cpu,
+        dosbox_pure_cpu_type: cpuProfile.cpu_type,
+        dosbox_pure_cycles: cpuProfile.cycles,
         dosbox_pure_machine: machine,
         // 3dfx Voodoo: only on/off is user-facing. When on, pin the card to 8mb
         // (core default, widest compatibility) and rendering to software
