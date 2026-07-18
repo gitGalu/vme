@@ -59,10 +59,24 @@ const DOS_VOODOO_OPTIONS = Object.freeze([
     { value: 'on', label: 'On (3dfx)' }
 ]);
 
+// System shell: run the game under a shared OS shell (Windows 3.1) via
+// dosbox_pure's Shared System Shells feature. 'dos' = plain DOS (default).
+// When 'win31', a Windows 3.1 .DOSZ is dropped into the system dir (as an
+// underlay) and auto-activated via AUTOBOOT.DBP. Mutually exclusive with 3dfx.
+const DOS_SHELL_OPTIONS = Object.freeze([
+    { value: 'dos', label: 'DOS' },
+    { value: 'win31', label: 'Windows 3.1' }
+]);
+
+// The DOSZ shell filename dropped into the system dir. dosbox lists it under
+// [Run System Shell] and matches it in AUTOBOOT.DBP by name minus ".dosz".
+const DOS_WIN31_SHELL_NAME = 'Windows 3.1';
+
 const DOS_MEMORY_VALUES = new Set(DOS_MEMORY_OPTIONS.map(option => option.value));
 const DOS_CPU_VALUES = new Set(DOS_CPU_OPTIONS.map(option => option.value));
 const DOS_MACHINE_VALUES = new Set(DOS_MACHINE_OPTIONS.map(option => option.value));
 const DOS_VOODOO_VALUES = new Set(DOS_VOODOO_OPTIONS.map(option => option.value));
+const DOS_SHELL_VALUES = new Set(DOS_SHELL_OPTIONS.map(option => option.value));
 
 function normalizeDosMemory(value, fallback = '16') {
     if (typeof value !== 'string') {
@@ -96,16 +110,40 @@ function normalizeDosVoodoo(value, fallback = 'off') {
     return DOS_VOODOO_VALUES.has(normalized) ? normalized : fallback;
 }
 
-function buildDosLaunchSettings(fileName, overrides = null) {
+function normalizeDosShell(value, fallback = 'dos') {
+    if (typeof value !== 'string') {
+        return fallback;
+    }
+    const normalized = value.trim().toLowerCase();
+    return DOS_SHELL_VALUES.has(normalized) ? normalized : fallback;
+}
+
+function buildDosLaunchSettings(fileName, overrides = null, context = null) {
     const guessedMemory = '16';
     const guessedCpu = 'auto';
     const guessedMachine = 'svga';
     const guessedVoodoo = 'off';
+    const guessedShell = 'dos';
     const overrideInput = overrides && typeof overrides === 'object' ? overrides : {};
+    // The Windows 3.1 shell is a user-provided dependency (key `win31.dosz`).
+    // Only offer it in the "Run under" dropdown when it has actually been imported.
+    const availableDependencyKeys = context?.availableDependencyKeys;
+    const win31Available = availableDependencyKeys instanceof Set
+        && availableDependencyKeys.has('win31.dosz');
+    const shellOptions = win31Available
+        ? DOS_SHELL_OPTIONS
+        : DOS_SHELL_OPTIONS.filter(option => option.value !== 'win31');
     const memory = normalizeDosMemory(overrideInput.memory, guessedMemory);
     const cpu = normalizeDosCpu(overrideInput.cpu, guessedCpu);
     const machine = normalizeDosMachine(overrideInput.machine, guessedMachine);
-    const voodoo = normalizeDosVoodoo(overrideInput.voodoo, guessedVoodoo);
+    // Fall back to 'dos' if win31 was requested but isn't available.
+    const requestedShell = normalizeDosShell(overrideInput.shell, guessedShell);
+    const shell = (requestedShell === 'win31' && !win31Available) ? 'dos' : requestedShell;
+    // Windows 3.1 shell and 3dfx are mutually exclusive (both rewrite the launch
+    // package via the .parent overlay). Under the shell, force 3dfx off.
+    const voodoo = shell === 'win31'
+        ? 'off'
+        : normalizeDosVoodoo(overrideInput.voodoo, guessedVoodoo);
     // The CPU override is a profile key that maps to both an instruction set
     // and an emulated speed.
     const cpuProfile = DOS_CPU_PROFILES[cpu] || DOS_CPU_PROFILES.auto;
@@ -121,22 +159,40 @@ function buildDosLaunchSettings(fileName, overrides = null) {
         // detached threads which hang against emscripten's fixed pthread pool
         // (no exception, just a freeze), so it's not exposed here.
         dosbox_pure_voodoo: voodoo === 'on' ? '8mb' : 'off',
+        // Software single-threaded rendering. The multi-threaded renderer spawns
+        // cores-1 detached threads which hang against emscripten's fixed pthread
+        // pool. Hardware OpenGL (perf=4) WOULD work but only via a WebGL2 build
+        // of RetroArch (the core needs GLES3 depth-stencil textures) — and
+        // WebGL2 breaks DOS entirely in Safari (pthread + WebGL2 in a worker),
+        // so it's not worth it. Verified in Chrome it renders; rejected for
+        // Safari compatibility. Stay on software.
         dosbox_pure_voodoo_perf: '0',
         dosbox_pure_voodoo_scale: '1',
         dosbox_pure_savestate: 'load-save',
-        video_gpu_screenshot: 'false'
+        video_gpu_screenshot: 'false',
+        // Non-core marker (underscore-prefixed keys are stripped before reaching
+        // the core) recording the shell, so save-state restore can rebuild the
+        // same Win3.1 shell overlay. Persisted in the save's launchCoreConfig.
+        ...(shell === 'win31' ? { _vmeShell: 'win31' } : {})
     };
 
     return {
         coreConfig,
-        overrideValues: { memory, cpu, machine, voodoo },
+        overrideValues: { memory, cpu, machine, voodoo, shell },
         guessedOverrides: {
             memory: guessedMemory,
             cpu: guessedCpu,
             machine: guessedMachine,
-            voodoo: guessedVoodoo
+            voodoo: guessedVoodoo,
+            shell: guessedShell
         },
         overrideSchema: [
+            {
+                id: 'shell',
+                label: 'Run under',
+                options: shellOptions,
+                fullWidth: true
+            },
             {
                 id: 'memory',
                 label: 'Memory',
@@ -252,6 +308,60 @@ async function buildDosVoodooLaunchPackage(gameBlob, romName, execHint = null) {
     };
 }
 
+// Run the game under the Windows 3.1 shell WITHOUT repacking the game ZIP.
+// Same .parent overlay trick as 3dfx: a child ZIP holds an AUTOBOOT.DBP that
+// tells dosbox_pure to auto-run the system shell (S*<name>, matched against the
+// .DOSZ in the system dir, which startup_beforelaunch drops there), plus a
+// "<game>.parent" marker so the game ZIP mounts underneath as the C: base. The
+// shell's WIN.COM then boots into Windows, with the game's files visible on C:.
+async function buildDosWin31LaunchPackage(gameBlob, romName) {
+    const gameName = 'VMEWIN31.ZIP';
+    const childName = 'VMEWIN3C.ZIP';
+
+    // AUTOBOOT.DBP first line "S*<shellname>" -> RUN_SHELL. The shell name is the
+    // .dosz filename minus extension (see dosbox_pure_run.h ReadAutoBoot).
+    const autoboot = `S*${DOS_WIN31_SHELL_NAME}\r\n`;
+
+    // If the game ZIP has EXACTLY ONE .exe in its root, auto-start it: inject a
+    // WINDOWS.BAT into the overlay (over-mounts the shell's WINDOWS.BAT, which
+    // dosbox runs first) that does `WIN C:\<exe>` — Windows boots straight into
+    // the game. With zero or multiple root exes we don't guess (same trap as
+    // UEFA); the shell's default WINDOWS.BAT runs, opening File Manager in C:\.
+    let soloExe = null;
+    try {
+        const gameZip = await JSZip.loadAsync(gameBlob);
+        const rootExes = Object.keys(gameZip.files).filter((name) => {
+            const f = gameZip.files[name];
+            return f && !f.dir && !name.includes('/') && /\.exe$/i.test(name);
+        });
+        if (rootExes.length === 1) {
+            soloExe = rootExes[0];
+        }
+    } catch { /* fall back to File Manager if the ZIP can't be read */ }
+
+    const childZip = new JSZip();
+    childZip.file('AUTOBOOT.DBP', autoboot);
+    if (soloExe) {
+        // WIN <path> launches Windows and immediately runs the app. No quotes
+        // (DOS .BAT treats them literally); root exe so just C:\<name>.
+        childZip.file('WINDOWS.BAT', `@echo off\r\nc:\\windows\\win c:\\${soloExe}\r\n`);
+    }
+    childZip.file(`${gameName}.parent`, new Uint8Array(0));
+    const childBlob = await childZip.generateAsync({ type: 'blob' });
+
+    return {
+        launchFiles: [
+            { fileName: childName, fileContent: childBlob },
+            { fileName: gameName, fileContent: gameBlob }
+        ],
+        // Identity from the GAME, not the child (see buildDosVoodooLaunchPackage).
+        primaryFileName: childName,
+        saveBlob: gameBlob,
+        programName: romName,
+        suppressDiskUi: true
+    };
+}
+
 const DOS = {
     ...PlatformBase,
     platform_id: 'dos',
@@ -264,24 +374,37 @@ const DOS = {
         '--color0': '#0000AA',
         '--color1': '#FFFF55',
         '--color2': '#FFFFFF',
-        '--color3': '#AA0101',
-        '--color4': '#FFFF55',
+        '--color3': '#AA0000',
+        '--color4': '#55FFFF',
         '--font': 'VGA',
         '--fontsize': '1.1em',
         '--cursorwidth': '0.5em',
         '--portrait-fontsize': '100%'
     },
-    resolveLaunchSettings: (fileName, overrides = null) => buildDosLaunchSettings(fileName, overrides),
+    resolveLaunchSettings: (fileName, overrides = null, context = null) => buildDosLaunchSettings(fileName, overrides, context),
     guessConfig: (fileName) => buildDosLaunchSettings(fileName).coreConfig,
-    prepareLaunchRom: async ({ launchRomInput, romName, launchSettings }) => {
-        // Only when 3dfx is enabled AND the content is a plain ZIP blob we can
-        // overlay. Anything else (already a multi-file package, non-Blob) is
-        // passed through untouched.
-        const voodoo = normalizeDosVoodoo(launchSettings?.overrideValues?.voodoo, 'off');
-        if (voodoo !== 'on' || !(launchRomInput instanceof Blob)) {
+    prepareLaunchRom: async function ({ launchRomInput, romName, launchSettings }) {
+        // Reset the shell flag each launch; startup_beforelaunch reads it to
+        // decide whether to drop the Win3.1 .DOSZ into the system dir.
+        this._win31ShellActive = false;
+
+        // Only rewrite plain ZIP content. Anything else (already a multi-file
+        // package, non-Blob) passes through untouched.
+        if (!(launchRomInput instanceof Blob) || !String(romName || '').toLowerCase().endsWith('.zip')) {
             return launchRomInput;
         }
-        if (!String(romName || '').toLowerCase().endsWith('.zip')) {
+
+        // Windows 3.1 shell (mutually exclusive with 3dfx; buildDosLaunchSettings
+        // already forces voodoo off when shell=win31).
+        const shell = normalizeDosShell(launchSettings?.overrideValues?.shell, 'dos');
+        if (shell === 'win31') {
+            this._win31ShellActive = true;
+            return buildDosWin31LaunchPackage(launchRomInput, romName);
+        }
+
+        // 3dfx overlay.
+        const voodoo = normalizeDosVoodoo(launchSettings?.overrideValues?.voodoo, 'off');
+        if (voodoo !== 'on') {
             return launchRomInput;
         }
         // execHint (from a save's LASTRUN.DBP) lets us auto-start the exact game
@@ -289,12 +412,39 @@ const DOS = {
         const execHint = launchSettings?.dosExecHint || null;
         return buildDosVoodooLaunchPackage(launchRomInput, romName, execHint);
     },
+    // Drop the Windows 3.1 shell .DOSZ into the system dir so dosbox_pure lists
+    // it as a system shell and the game's AUTOBOOT.DBP (S*Windows 3.1) can
+    // auto-activate it. Only when the Win3.1 shell was selected this launch.
+    startup_beforelaunch: async function (nostalgist, storageManager) {
+        if (!this._win31ShellActive) {
+            return;
+        }
+        // The Windows 3.1 shell .DOSZ is a user-provided dependency (imported via
+        // vme_import under the key `dos.win31.dosz`), not a bundled asset. Read it from
+        // storage; if it isn't there, skip silently so a normal DOS boot still runs.
+        const data = storageManager ? await storageManager.getFile(`${this.platform_id}.win31.dosz`) : null;
+        if (!data) {
+            console.warn('Windows 3.1 shell dependency (dos.win31.dosz) not imported; skipping shell overlay.');
+            return;
+        }
+        const FS = nostalgist.getEmscriptenFS();
+        const sysDir = '/home/web_user/retroarch/userdata/system';
+        FS.mkdirTree(sysDir);
+        const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+        FS.writeFile(`${sysDir}/${DOS_WIN31_SHELL_NAME}.dosz`, bytes);
+    },
     savestates_disabled: false,
     rewind_disabled: true,
     ffd_disabled: true,
     force_scale: true,
     video_smooth: false,
     dependencies: [
+        // Optional Windows 3.1 shell disk. Imported via vme_import (key `win31.dosz`)
+        // and matched by key rather than MD5 (the .DOSZ is a prepared/variable
+        // build, so a fixed hash would be brittle). accepted:[] keeps it out of
+        // the single-file drag&drop MD5 path; required:false so DOS still boots
+        // without it (only the "Run under: Windows 3.1" option needs it).
+        { key: 'win31.dosz', type: 'Windows 3.1', required: false, accepted: [] }
     ],
     arrow_keys: {
         up: { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },

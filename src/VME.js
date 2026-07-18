@@ -178,9 +178,13 @@ export class VME {
     }
 
     #addListeners() {
-        // ROM ready and waiting for a gesture -> show the 'press to start' screen now
-        // (deferred so it can't cover a launch-settings dialog on other paths).
+        // ROM ready and waiting for a gesture. Gamepad/shell launches use the unified
+        // #gamepad-launch box (press-to-start). Plain desktop/mobile launches keep the
+        // CLI "Loading complete / Press any key" that PlatformManager already printed -
+        // don't cover it with the box. (Deferred so it can't cover a launch-settings
+        // dialog on other paths either.)
         document.addEventListener('vme:awaiting-launch-gesture', (e) => {
+            if (!this.#launchedFromGamepad) return;
             const title = this.#pendingLaunchTitle || e.detail?.caption || '';
             this.#showLaunchScreen(title);
             this.#setLaunchAwaiting();

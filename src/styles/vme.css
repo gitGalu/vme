@@ -2813,6 +2813,11 @@ body.selection-mode-active .menu-strip-spacer {
   gap: 3px;
 }
 
+/* A field that spans the whole row (e.g. the DOS Shell selector on top). */
+.launch-settings-dialog__field--full {
+  flex-basis: 100%;
+}
+
 .launch-settings-dialog__label {
   font-size: 0.74rem;
   font-weight: 500;

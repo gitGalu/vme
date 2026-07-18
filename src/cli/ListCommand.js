@@ -1,5 +1,6 @@
 import { CommandBase } from './CommandBase.js';
 import { StorageManager } from '../storage/StorageManager.js';
+import { tagAwareCompare } from '../utils/TagPriority.js';
 
 export class ListCommand extends CommandBase {
 
@@ -42,16 +43,7 @@ export class ListCommand extends CommandBase {
             });
         }
 
-        results.sort((a, b) => {
-            const tagA = model.tags ? model.tags[a[1]] : null;
-            const tagB = model.tags ? model.tags[b[1]] : null;
-
-            if ((tagA && tagB) || (!tagA && !tagB)) {
-                return a[0].localeCompare(b[0]);
-            }
-
-            return tagA ? -1 : 1;
-        });
+        results.sort((a, b) => tagAwareCompare(model, a, b));
 
         let output = results.map(item => {
             const baseIndex = item[1];

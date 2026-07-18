@@ -498,6 +498,9 @@ export class PlatformManager {
             for (const field of launchSettings.overrideSchema) {
                 const row = document.createElement('div');
                 row.className = 'launch-settings-dialog__field';
+                if (field.fullWidth) {
+                    row.classList.add('launch-settings-dialog__field--full');
+                }
 
                 const label = document.createElement('span');
                 label.className = 'launch-settings-dialog__label';
@@ -858,7 +861,11 @@ export class PlatformManager {
                 video_vsync: lowPerfHw ? false : true,
                 ...retroarchConfigOverrides
             },
-            retroarchCoreConfig: launchCoreConfig,
+            // Strip internal underscore-prefixed markers (e.g. _vmeShell) — they
+            // are for vme-vibe's own restore logic, not real core options.
+            retroarchCoreConfig: launchCoreConfig && typeof launchCoreConfig === 'object'
+                ? Object.fromEntries(Object.entries(launchCoreConfig).filter(([k]) => !k.startsWith('_')))
+                : launchCoreConfig,
             resolveBios(file) {
                 let key = self.#selected_platform.platform_id + "." + file;
                 let fileContent = self.#resolved_deps[key];
@@ -3456,6 +3463,34 @@ export class PlatformManager {
                 launchProgramName: preparedLaunchProgramName,
                 canAutoLoadState: true
             };
+        }
+
+        // Windows 3.1 shell save states (EXPERIMENT): the state was captured
+        // under the Win3.1 shell overlay. Rebuild the same overlay so the game
+        // boots back into Windows, matching the saved machine state.
+        const shellMarker = launchCoreConfig
+            && typeof launchCoreConfig === 'object'
+            && typeof launchCoreConfig._vmeShell === 'string'
+            ? launchCoreConfig._vmeShell
+            : null;
+        if (shellMarker === 'win31' && typeof this.#selected_platform?.prepareLaunchRom === 'function') {
+            try {
+                const prepared = await this.#selected_platform.prepareLaunchRom({
+                    launchRomInput: preparedLaunchBlob,
+                    romName: preparedLaunchProgramName,
+                    caption: preparedLaunchProgramName,
+                    launchSettings: { overrideValues: { shell: 'win31' } }
+                });
+                if (prepared && prepared !== preparedLaunchBlob) {
+                    return {
+                        launchBlob: prepared,
+                        launchProgramName: prepared.primaryFileName || preparedLaunchProgramName,
+                        canAutoLoadState: true
+                    };
+                }
+            } catch (error) {
+                console.warn('Failed to prepare Win3.1 shell overlay for restore:', error);
+            }
         }
 
         // 3dfx save states: the state was captured against the glide-overlay

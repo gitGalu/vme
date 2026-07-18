@@ -1,4 +1,5 @@
 import { CommandBase } from './CommandBase.js';
+import { tagAwareCompare } from '../utils/TagPriority.js';
 
 export class FindCommand extends CommandBase {
 
@@ -41,18 +42,8 @@ export class FindCommand extends CommandBase {
             });
         }
     
-        results.sort((a, b) => {
-            const softwareDir = this.#platform_manager.get_software_dir();
-    
-            const tagA = softwareDir.tags ? softwareDir.tags[a[1]] : null;
-            const tagB = softwareDir.tags ? softwareDir.tags[b[1]] : null;
-    
-            if ((tagA && tagB) || (!tagA && !tagB)) {
-                return a[0].localeCompare(b[0]);
-            }
-    
-            return tagA ? -1 : 1;
-        });
+        const softwareDir = this.#platform_manager.get_software_dir();
+        results.sort((a, b) => tagAwareCompare(softwareDir, a, b));
     
         let output = results.map(item => {
             const baseIndex = item[1];
