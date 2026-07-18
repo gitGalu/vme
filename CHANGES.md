@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.92] - 2026-07-18
+
+- DOS: improved DOS game compatibility — all DOS games should now work
+- DOS: added 3dfx voodoo suport
+- DOS: added Windows 3.1 shell support
+- DOS: added Autoconfig options for machine settings override
+- DOS: updated dosbox-pure core to version 1.0-preview6
+- A800: updated libretro-atari800 core to version to 7.0.0
+- A800: add Stereo Pokey override to Autoconfig
+
 ## [0.91] - 2026-06-16
 
 - gamepad shell: use thumbnail grid view in Collection Browser 
