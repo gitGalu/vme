@@ -40,6 +40,7 @@ export class GamepadMenu {
     #onContextChange = null;   // (context) => void; reports context change for the legend bar
     #onFocusChange = null;     // (item, view) => void; reports highlighted-item change (thumbnail)
     #lastFocusKey = null;      // anti-duplicate: don't report the same item repeatedly
+    #onAnyChange = null;       // () => void; ANY visual change (VR shell repaints its canvas)
 
     // Virtualization: how many rows in the window at once and the approximate row height
     // (px) for scroll spacers. ROW_PX is an approximation - scroll may be slightly off,
@@ -74,6 +75,63 @@ export class GamepadMenu {
      */
     setFocusChangeHandler(onFocusChange) {
         this.#onFocusChange = onFocusChange;
+    }
+
+    /**
+     * Callback fired after any visual change of the shell (view change, focus move,
+     * filtering, keyboard focus). The VR shell repaints its canvas mirror from it.
+     * Duplicate calls per action are fine - painting is cheap and idempotent.
+     */
+    setChangeHandler(onAnyChange) {
+        this.#onAnyChange = onAnyChange;
+    }
+
+    /**
+     * Compact, render-agnostic snapshot of the current shell state for the VR
+     * painter: current view metadata, a focus-centered window of rows and (when
+     * the on-screen keyboard is active) the key grid focus. null when closed.
+     */
+    getVrSnapshot(maxRows = 12) {
+        if (!this.#open) return null;
+        const view = this.#currentView();
+        if (!view) return null;
+
+        const total = view.items.length;
+        let start = view.focusIndex - Math.floor(maxRows / 2);
+        start = Math.max(0, Math.min(start, Math.max(0, total - maxRows)));
+        const end = Math.min(total, start + maxRows);
+        const rows = [];
+        for (let i = start; i < end; i++) {
+            const item = view.items[i];
+            rows.push({
+                label: item.label || '',
+                hint: item.hint || '',
+                disabled: !!item.disabled,
+                focused: i === view.focusIndex
+            });
+        }
+
+        return {
+            title: view.title,
+            isRoot: this.#stack.length <= 1,
+            filterable: !!view.filterable,
+            filterText: view.filterText || '',
+            placeholder: view.placeholder || '',
+            focusMode: view.focusMode || 'list',
+            message: view.message || '',
+            isNotice: view.isNotice,
+            emptyHint: (this.#belowMinChars(view) || total === 0) ? (view.emptyHint || '') : '',
+            secondaryLabel: (typeof view.onSecondary === 'function') ? (view.secondaryLabel || 'Filter') : null,
+            total, start, end, rows,
+            // Focused item's thumbnail URL (VR-native views set item.vrThumb)...
+            thumb: view.items[view.focusIndex]?.vrThumb || null,
+            // ...or the Browse channel: the 2D shell's shared <img> keeps loading
+            // thumbnails even in immersive mode - the painter reads it directly.
+            showThumb: !!(view.showThumbnails && view.focusMode !== 'keyboard'),
+            keyboard: (view.focusMode === 'keyboard' && this.#keyboard)
+                ? { rows: GamepadKeyboard.ROWS, focus: this.#keyboard.getFocus() }
+                : null
+        };
     }
 
     #emitFocusChange() {
@@ -177,6 +235,7 @@ export class GamepadMenu {
             this.#lastFocusKey = null;
             this.#onFocusChange(null, null);
         }
+        this.#onAnyChange?.();
     }
 
     /** Exit to the classic CLI (from the root). */
@@ -587,6 +646,7 @@ export class GamepadMenu {
         this.#keyboard = new GamepadKeyboard(kbdHost, {
             onChar: (ch) => this.#applyFilterChar(ch),
             onBackspace: () => this.#applyBackspace(),
+            onFocusMove: () => this.#onAnyChange?.(),
             onSubmit: () => {
                 // The view may take over ↵ (e.g. entered code -> run); by default -> list.
                 const view = this.#currentView();
@@ -616,6 +676,7 @@ export class GamepadMenu {
             hint.className = 'gm-empty-hint';
             hint.textContent = view.emptyHint || `Type at least ${view.minChars} letters to search.`;
             this.#listEl.appendChild(hint);
+            this.#onAnyChange?.();
             return;
         }
 
@@ -629,6 +690,7 @@ export class GamepadMenu {
             hint.className = 'gm-empty-hint';
             hint.textContent = view.emptyHint;
             this.#listEl.appendChild(hint);
+            this.#onAnyChange?.();
             return;
         }
 
@@ -706,5 +768,6 @@ export class GamepadMenu {
         }
 
         this.#emitFocusChange();
+        this.#onAnyChange?.();
     }
 }

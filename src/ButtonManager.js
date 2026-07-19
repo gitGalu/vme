@@ -18,7 +18,6 @@ export class ButtonManager {
         this.addSaveBrowserButton();
         this.addCollectionButton();
         this.addOpenButton();
-        this.addFsButton();
         this.addAboutButton();
         // this.addTourButton();
     }
@@ -59,43 +58,8 @@ export class ButtonManager {
         });
     }
 
-    addFsButton() {
-        if (EnvironmentManager.isQuest()) {
-            createGuiButton('full-screen', 'Fullscreen', 'Fs', () => {
-                let element = document.documentElement;
-
-                const requestFullscreen = () => {
-                    if (element.requestFullscreen) {
-                        element.requestFullscreen();
-                    } else if (element.mozRequestFullScreen) {
-                        element.mozRequestFullScreen();
-                    } else if (element.webkitRequestFullscreen) {
-                        element.webkitRequestFullscreen();
-                    } else if (element.msRequestFullscreen) {
-                        element.msRequestFullscreen();
-                    }
-                };
-
-                const exitFullscreen = () => {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    } else if (document.mozCancelFullScreen) {
-                        document.mozCancelFullScreen();
-                    } else if (document.webkitExitFullscreen) {
-                        document.webkitExitFullscreen();
-                    } else if (document.msExitFullscreen) {
-                        document.msExitFullscreen();
-                    }
-                };
-
-                if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                    requestFullscreen();
-                } else {
-                    exitFullscreen();
-                }
-            });
-        }
-    }
+    // Fullscreen button removed from the CLI strip (was Quest-only) - its slot is
+    // taken by the VR/MR immersive buttons that VME adds after WebXR detection.
 
     addTourButton() {
         createGuiButton('menu-item-tour', '?', '?', () => {

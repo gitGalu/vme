@@ -37,6 +37,9 @@ import { ButtonManager } from './ButtonManager.js';
 import { Debug } from './Debug.js';
 import { GamepadManager } from './gamepad/GamepadManager.js';
 import { GamepadMenu } from './gamepad/GamepadMenu.js';
+import { XrSessionManager } from './xr/XrSessionManager.js';
+import { XrShellPainter } from './xr/XrShellPainter.js';
+import { createGuiButton } from './GuiButton.js';
 
 export class VME {
     #cli;
@@ -61,6 +64,15 @@ export class VME {
     #ingameFocus = 0;
     #ingameJoyState = null;
     #ingameLatestSaveId = null; // null = no save; 'Load state' disabled
+    #xrScreenDirty = false;     // screen placement changed -> persist on menu close
+    #vrThumbUrls = new Set();   // object URLs created for VR thumbnails (revoked in bulk)
+    #reloadAfterXr = false;     // 'Exit game' in XR: reload once the session has ended
+    #vrLaunchToken = 0;         // invalidates a running XR auto-launch pulse
+    #vrDesiredAspect = null;    // measured aspect override (null = platform map)
+    #xr = null;                 // Quest immersive mode (null outside Quest/WebXR)
+    #xr_painter = null;         // canvas mirror of the shell for the VR screen (lazy)
+    #vrShellEntering = false;   // between the VR-shell click and the session opening
+    #current_screen = null;
 
     static whitespace = "&nbsp;";
 
@@ -89,6 +101,18 @@ export class VME {
         BIGGER: 300
     }
 
+    // VR: display aspect per platform (PAR-corrected), 4:3 unless listed. Used to
+    // size the #canvas layout in immersive mode so RetroArch renders WITHOUT
+    // letterbox bars - the VR screen then shows the game image only.
+    static #VR_ASPECTS = {
+        'gb': 10 / 9,
+        'gbc': 10 / 9,
+        'gba': 3 / 2,
+        'lynx': 80 / 51,
+        'pico-8': 1,
+        'tic80': 240 / 136
+    };
+
     constructor() {
         window.onload = function () {
             document.body.classList.add("fade-in-visible");
@@ -113,12 +137,78 @@ export class VME {
         this.#gamepad = new GamepadManager();
         this.#gamepad_menu = new GamepadMenu();
 
+        // Quest immersive mode: probe WebXR support up front so the launch screen
+        // can decide synchronously whether to offer 'Start in VR'.
+        if (EnvironmentManager.isQuest()) {
+            // Immersive entries live in the CLI button strip (replacing the old
+            // Quest-only Fullscreen button); added once support is confirmed.
+            XrSessionManager.detectSupport().then(() => {
+                if (XrSessionManager.isVrAvailable()) {
+                    createGuiButton('menu-item-vr', 'VR', 'V', () => this.#enterVrShell('vr'));
+                }
+                if (XrSessionManager.isArAvailable()) {
+                    createGuiButton('menu-item-mr', 'MR', 'M', () => this.#enterVrShell('ar'));
+                }
+            });
+            this.#xr = new XrSessionManager();
+            // Restore the persisted screen placement (adjusted with the right stick
+            // while the in-game menu is open; saved when the menu closes).
+            this.#xr.setScreenPlacement(
+                parseFloat(StorageManager.getValue('XR_SCREEN_HEIGHT')) || 1.5,
+                parseFloat(StorageManager.getValue('XR_SCREEN_DISTANCE')) || 2.0
+            );
+            this.#xr.setScreenAnchor(
+                StorageManager.getValue('XR_SCREEN_ANCHOR') === 'head' ? 'head' : 'world');
+            // Quest system overlay freezes the XR loop - pause instead of letting
+            // the audio starve. Resume covers both overlay-close and session end
+            // (a session can end from the overlay while the game is still paused).
+            this.#xr.onVisibility = (visible) => {
+                const n = this.#pl.getNostalgist?.();
+                if (visible) n?.resume?.(); else n?.pause?.();
+            };
+            // While the in-game menu is open its long-press shares the stick clicks
+            // with the exit gesture - don't let a continued hold also end the session.
+            this.#xr.suppressExitGesture = () => this.#ingameMenuOpen;
+            // Right stick click = instant in-game menu toggle (never reaches the core).
+            this.#xr.onMenuButton = () => {
+                if (this.#gamepad_menu.isOpen()) return;   // shell drives its own input
+                if (this.#current_screen !== VME.CURRENT_SCREEN.EMULATION) return;
+                if (this.#ingameMenuOpen) {
+                    this.#closeIngameMenu();
+                } else {
+                    this.#ensureIngameMenuForXr();
+                    this.#openIngameMenu();
+                }
+            };
+            this.#xr.onEnd = () => {
+                if (this.#reloadAfterXr) {
+                    location.reload();
+                    return;
+                }
+                this.#vrShellEntering = false;
+                this.#pl.getNostalgist?.()?.resume?.();
+                this.#restoreVrCanvasLayout();
+                this.#revokeVrThumbs();
+                // A shell left open in 2D would be unusable (Quest controllers are
+                // a mouse there) - close it back to the CLI.
+                if (this.#gamepad_menu.isOpen()) this.#gamepad_menu.requestCloseToCli();
+            };
+            // VR shell: the DOM shell is invisible in immersive mode, so every shell
+            // change repaints its canvas mirror shown on the VR screen quad.
+            this.#gamepad_menu.setChangeHandler(() => this.#paintVrShell());
+        }
+
         this.#gamepad.setManagers(this.#kb, this.#cli);
 
         this.#gamepad_thumbnail = new ThumbnailPreviewClass();
         this.#gamepad_thumbnail.init(this.#pl, 'gamepad-menu-thumbnail');
 
-        this.#gamepad_menu.setCloseHandler(() => this.#exitGamepadMenu());
+        this.#gamepad_menu.setCloseHandler(() => {
+            this.#exitGamepadMenu();
+            // Shell closed while in VR (Exit at the root) -> leave immersive too;
+            // the CLI it returns to only exists in 2D.
+            if (this.#xr?.isActive()) this.#xr.exit();
+        });
         this.#gamepad_menu.setRootView(() => this.#buildGamepadRootView());
         this.#gamepad_menu.setContextHandler((ctx) => this.#updateMenuLegend(ctx));
         this.#gamepad_menu.setFocusChangeHandler((item) => this.#updateGamepadThumbnail(item));
@@ -184,11 +274,58 @@ export class VME {
         // don't cover it with the box. (Deferred so it can't cover a launch-settings
         // dialog on other paths either.)
         document.addEventListener('vme:awaiting-launch-gesture', (e) => {
-            if (!this.#launchedFromGamepad) return;
+            // On Quest EVERY launch path uses the unified box - it's the only place
+            // offering 'Start in VR' (CLI launches would otherwise bypass it).
+            if (!this.#launchedFromGamepad && !this.#xr) return;
             const title = this.#pendingLaunchTitle || e.detail?.caption || '';
             this.#showLaunchScreen(title);
             this.#setLaunchAwaiting();
+            // Launched from the VR shell: no click/key gestures exist in immersive
+            // mode and none are needed - audio autoplay was sticky-activated by the
+            // enter-VR click. Pulse the pending body launch listener until it bites.
+            if (this.#xr?.isActive()) {
+                this.#startVrAutoLaunch(title);
+            }
         });
+
+        // Browse thumbnails finish loading asynchronously - repaint the VR shell
+        // mirror so the focused title's picture appears (the shared <img> is the
+        // same one the 2D shell uses; it keeps loading while immersive).
+        document.getElementById('gamepad-menu-thumbnail')?.addEventListener('load', () => {
+            this.#paintVrShell();
+        });
+
+        // 'Start in VR' on the launch screen (Quest only). The click ALSO bubbles to
+        // document.body, where the pending launch listener starts the game - so one
+        // gesture starts the game, unlocks audio AND enters the immersive session.
+        const wireEnter = (id, fn) => document.getElementById(id)?.addEventListener('click', fn);
+        // Launch screen: the click also bubbles to body = the game starts too.
+        // Errors only logged - the game already started in 2D via the bubbled gesture.
+        wireEnter('gamepadLaunchVr', () => {
+            this.#xr?.enter('vr')
+                .then(() => this.#ensureIngameMenuForXr())   // covers the enter-vs-start race
+                .catch((e) => console.warn('[xr] enter failed:', e));
+        });
+        wireEnter('gamepadLaunchMr', () => {
+            this.#xr?.enter('ar')
+                .then(() => this.#ensureIngameMenuForXr())
+                .catch((e) => console.warn('[xr] enter failed:', e));
+        });
+
+        // In-game re-entry (desktop strip, Quest only) - after an XR exit the game
+        // keeps running in 2D and this is the way back without relaunching. The
+        // game was NOT necessarily pad-launched, so mount the in-game menu now.
+        const reenterIngame = (mode) => {
+            this.#xr?.enter(mode)
+                .then(() => {
+                    this.#applyVrCanvasLayout(this.#vrDesiredAspect);
+                    this.#ensureIngameMenuForXr();
+                    this.#scheduleVrAspectRefit();
+                })
+                .catch((e) => console.warn('[xr] enter failed:', e));
+        };
+        wireEnter('desktopUiVr', () => reenterIngame('vr'));
+        wireEnter('desktopUiMr', () => reenterIngame('ar'));
 
         window.addEventListener('resize', () => {
             EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
@@ -279,6 +416,27 @@ export class VME {
         this.#ui.initTouchControllerMenu();
         this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
+
+        if (this.#xr && XrSessionManager.isVrAvailable()) {
+            s('#desktopUiVr')?.style.removeProperty('display');
+        }
+        if (this.#xr && XrSessionManager.isArAvailable()) {
+            s('#desktopUiMr')?.style.removeProperty('display');
+        }
+        // Game started while in XR: switch to the game screen right away and show
+        // the 'right stick = menu' hint as a brief banner OVER the live image
+        // (DOM toasts are invisible in immersive mode). Canvas layout -> game
+        // aspect; the keeper below re-asserts it, because nostalgist's postRun
+        // resize() re-styles the canvas and a plain style assignment wipes our
+        // !important declaration.
+        if (this.#xr?.isActive()) {
+            ++this.#vrLaunchToken;                 // stops the auto-launch pulse
+            this.#vrDesiredAspect = null;          // fresh game - back to the platform map
+            this.#xr.setScreenSource(null);
+            this.#xr.showGameOverlay(t('launch.vrHint'));
+            this.#applyVrCanvasLayout();
+            this.#scheduleVrAspectRefit();
+        }
     }
 
     applyCurrentAutoGameProfile() {
@@ -286,6 +444,7 @@ export class VME {
     }
 
     toggleScreen(mode) {
+        this.#current_screen = mode;
         // Capture whether the gamepad skin was active BEFORE removing it, so EMULATION
         // knows the game was launched via pad (Collection/Save in pad mode).
         const skinWasActive = document.body.classList.contains('gamepad-browser-skin');
@@ -341,8 +500,9 @@ export class VME {
             case VME.CURRENT_SCREEN.EMULATION:
                 this.#return_to_shell = false;
                 this.#hideLaunchScreen();
-                // Pad mode: launched from shell OR browser skin (state before removal).
-                const gamepadEmu = this.#launchedFromGamepad || skinWasActive;
+                // Pad mode: launched from shell OR browser skin (state before removal)
+                // OR into an XR session (pad-only by nature; enables the in-game menu).
+                const gamepadEmu = this.#launchedFromGamepad || skinWasActive || !!this.#xr?.isActive();
                 this.#launchedFromGamepad = false;
                 this.#cli.off();
                 hide('#warningStandalone');
@@ -429,6 +589,11 @@ export class VME {
     #buildGamepadRootView() {
         const noop = (name) => () => console.log(`[gamepad-menu] ${name} (not wired yet)`);
         const current = this.#pl.getSelectedPlatform();
+        // VR shell: Saves/Collections get VR-NATIVE list views (the 2D flicking/grid
+        // screens are DOM, invisible in immersive mode); Open still needs the system
+        // file picker and stays 2D-only.
+        const inVr = this.#xr?.isActive() || this.#vrShellEntering;
+        const vrHint = inVr ? t('menu.vr2dOnly') : '';
 
         return {
             title: t('app.title'),
@@ -439,8 +604,18 @@ export class VME {
                     hint: current ? current.short_name : '',
                     onActivate: () => this.#gamepad_menu.pushView(this.#buildPlatformView())
                 },
-                { id: 'saves', label: t('menu.saves'), onActivate: () => this.#openBrowserFromShell(() => this.#save_browser.open()) },
-                { id: 'collections', label: t('menu.collections'), onActivate: () => this.#openBrowserFromShell(() => this.#collection_browser.open()) },
+                {
+                    id: 'saves', label: t('menu.saves'),
+                    onActivate: () => inVr
+                        ? this.#openVrSavesView()
+                        : this.#openBrowserFromShell(() => this.#save_browser.open())
+                },
+                {
+                    id: 'collections', label: t('menu.collections'),
+                    onActivate: () => inVr
+                        ? this.#openVrCollectionsView()
+                        : this.#openBrowserFromShell(() => this.#collection_browser.open())
+                },
                 {
                     id: 'search', label: t('menu.search'),
                     disabled: !this.#platform_ready,
@@ -455,7 +630,7 @@ export class VME {
                     id: 'recent', label: t('menu.recent'),
                     onActivate: () => this.#gamepad_menu.pushView(this.#buildRecentView())
                 },
-                { id: 'open', label: t('menu.open'), onActivate: () => this.#openImport() },
+                { id: 'open', label: t('menu.open'), disabled: inVr, hint: vrHint, onActivate: () => this.#openImport() },
                 { id: 'options', label: t('menu.settings'), onActivate: () => this.#gamepad_menu.pushView(this.#buildOptionsView()) }
             ]
         };
@@ -916,6 +1091,10 @@ export class VME {
         // defaults (a dedicated shell form will come later).
         this.#pl.skipLaunchSettingsPromptOnce?.();
         this.#showLaunchScreen(label);
+        // Preset the XR canvas size BEFORE the emulator boots - the CSS rule must
+        // hold the right dimensions the moment nostalgist creates the canvas.
+        this.#applyVrCanvasLayout();
+        this.#startVrAutoLaunch(label);   // no-op outside an XR session
         try {
             await this.#pl.loadRomFileFromUrl(url, romName, label);
         } catch (error) {
@@ -970,12 +1149,27 @@ export class VME {
         const s = document.getElementById('gamepadLaunchStatus');
         // One message (remote/keyboard/touch) - no separate hint about the pad.
         if (s) s.textContent = t('launch.press');
+        // Quest with WebXR: offer 'Start in VR' / 'Start in MR' next to the normal prompt.
+        if (this.#xr && XrSessionManager.isAvailable()) {
+            const hint = document.getElementById('gamepadLaunchVrHint');
+            if (hint) hint.textContent = t('launch.vrHint');
+            if (XrSessionManager.isVrAvailable()) {
+                const vr = document.getElementById('gamepadLaunchVr');
+                if (vr) vr.textContent = t('launch.vr');
+                root.classList.add('vr-available');
+            }
+            if (XrSessionManager.isArAvailable()) {
+                const mr = document.getElementById('gamepadLaunchMr');
+                if (mr) mr.textContent = t('launch.mr');
+                root.classList.add('mr-available');
+            }
+        }
         root.classList.add('awaiting');
     }
 
     #hideLaunchScreen() {
         const root = document.getElementById('gamepad-launch');
-        if (root) root.classList.remove('visible', 'awaiting', 'error');
+        if (root) root.classList.remove('visible', 'awaiting', 'error', 'vr-available', 'mr-available');
         document.body.classList.remove('gamepad-launch-active');
     }
 
@@ -987,6 +1181,8 @@ export class VME {
         this.#ingameFocus = 0;
         this.#ingameJoyState = { up: false, down: false, left: false, right: false, fire: false };
         this.#gamepad.setIngameMenu({
+            // In VR the menu opens too - painted onto the XR screen (the DOM overlay
+            // stays invisible there); it has its own 'Back to 2D' item.
             openMenu: () => this.#openIngameMenu(),
             isMenuOpen: () => this.#ingameMenuOpen,
             navigate: (d) => this.#navigateIngameMenu(d),
@@ -995,7 +1191,9 @@ export class VME {
             // Joystick bridge: 'joystick-via-keyboard' platforms (Atari/C64...) don't listen
             // to the joypad for directions, so translate the d-pad/stick into the same
             // synthetic keys as touch (keyboard_joystick_mapping). null = no bridge.
-            joystick: this.#hasIngameJoyBridge() ? (st) => this.#applyIngameJoystick(st) : null
+            joystick: this.#hasIngameJoyBridge() ? (st) => this.#applyIngameJoystick(st) : null,
+            // XR: right stick (free while the menu is open) = screen distance/size.
+            adjustScreen: (dx, dy) => this.#adjustXrScreen(dx, dy)
         });
     }
 
@@ -1044,7 +1242,7 @@ export class VME {
 
     #ingameItems() {
         const hasSave = this.#ingameLatestSaveId != null;
-        return [
+        const items = [
             { label: t('ingame.resume'), run: () => this.#closeIngameMenu() },
             { label: t('ingame.saveState'), run: async () => { await this.#pl.saveState(); this.#closeIngameMenu(); } },
             // Load the newest save of the current game in place; disabled when no save exists.
@@ -1060,8 +1258,196 @@ export class VME {
                     try { n?.sendCommand?.('RESET'); } catch (e) { console.error('[ingame] reset failed', e); }
                 }, 60);
             } },
-            { label: t('ingame.exit'), run: () => { location.reload(); } }
+            { label: t('ingame.exit'), run: () => {
+                // Reloading DURING an immersive session is unreliable - end the
+                // session first and reload from onEnd, back in 2D.
+                if (this.#xr?.isActive()) {
+                    this.#reloadAfterXr = true;
+                    this.#xr.exit();
+                } else {
+                    location.reload();
+                }
+            } }
         ];
+        // In XR: anchor toggle + leave-the-headset (both before 'Exit game').
+        if (this.#xr?.isActive()) {
+            const anchored = this.#xr.getScreenAnchor() !== 'head';
+            items.splice(items.length - 1, 0, {
+                label: t('ingame.anchor'),
+                hint: anchored ? t('ingame.anchorWorld') : t('ingame.anchorHead'),
+                run: () => {
+                    const next = anchored ? 'head' : 'world';
+                    StorageManager.storeValue('XR_SCREEN_ANCHOR', next);
+                    this.#xr.setScreenAnchor(next);
+                    this.#paintIngameVrMenu();   // refresh the hint; menu stays open
+                }
+            }, {
+                label: t('ingame.exitVr'),
+                run: () => {
+                    this.#closeIngameMenu();   // resumes + restores the game screen source
+                    this.#xr.exit();
+                }
+            });
+        }
+        return items;
+    }
+
+    // ===== VR-native Saves / Collections (list views on the shell painter) =====
+
+    /** VR: save states as a shell list - newest first, A loads the save. */
+    async #openVrSavesView() {
+        this.#revokeVrThumbs();
+        let metas = [];
+        try {
+            metas = await this.#db.getAllSaveMeta();   // newest first
+        } catch (e) {
+            console.error('[vr-saves] meta load failed:', e);
+        }
+        const platformName = (id) =>
+            Object.values(SelectedPlatforms).find(p => p.platform_id === id)?.short_name || id;
+        this.#gamepad_menu.pushView({
+            title: t('menu.saves'),
+            emptyHint: t('vr.savesEmpty'),
+            items: metas.map(meta => ({
+                id: String(meta.id),
+                label: meta.caption || meta.program_name,
+                hint: `${platformName(meta.platform_id)} · ${formatRelativeShell(meta.timestamp)}`,
+                vrThumb: this.#vrThumbUrl(meta.screenshot),
+                onActivate: () => this.#loadVrSave(meta)
+            }))
+        });
+    }
+
+    /** Blob -> tracked object URL; string passes through; anything else -> null. */
+    #vrThumbUrl(source) {
+        if (source instanceof Blob) {
+            const url = URL.createObjectURL(source);
+            this.#vrThumbUrls.add(url);
+            return url;
+        }
+        return (typeof source === 'string' && source) ? source : null;
+    }
+
+    /** Launches a save state from the VR shell - same unified launch screen as Browse. */
+    async #loadVrSave(meta) {
+        const label = meta.caption || meta.program_name;
+        this.#gamepad_menu.close();
+        this.#exitGamepadMenu();
+        this.#launchedFromGamepad = true;
+        this.#pendingLaunchTitle = label;
+        this.#pl.skipLaunchSettingsPromptOnce?.();
+        this.#showLaunchScreen(label);
+        this.#applyVrCanvasLayout();
+        this.#startVrAutoLaunch(label);
+        try {
+            const data = await this.#db.getSaveData(meta.id);
+            if (data.caption == undefined) data.caption = data.program_name;
+            // Same call SaveBrowser's Load makes (the close callback has no browser to close here).
+            this.#pl.loadState(
+                data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption,
+                () => { }, data.m3u_disks, data.m3u_disk_index, data.m3u_disk_rom_ids,
+                data.m3u_disk_launch_names, data.dos_sram, data.dos_exec_hint,
+                data.st_state_path, data.launch_bios, data.launch_core_config);
+        } catch (error) {
+            console.error('[vr-saves] load failed:', error);
+            this.#setLaunchError(this.#friendlyLoadError(error));
+        }
+    }
+
+    /** VR: installed collection as a filterable shell list (like Browse). */
+    async #openVrCollectionsView() {
+        this.#revokeVrThumbs();
+        let items = [];
+        try {
+            items = await this.#db.getCollectionItems() || [];
+        } catch (e) {
+            console.error('[vr-collections] load failed:', e);
+        }
+        // Thumbnails resolved ONCE - buildItems reruns on every filter keystroke
+        // and would otherwise mint new object URLs each time.
+        const thumbs = new Map(items.map(item => [item.id, this.#vrThumbUrl(item.image)]));
+        const toItem = (item) => ({
+            id: String(item.id),
+            label: item.title,
+            vrThumb: thumbs.get(item.id),
+            onActivate: () => this.#loadVrCollectionItem(item)
+        });
+        this.#gamepad_menu.pushView({
+            title: t('menu.collections'),
+            emptyHint: t('vr.collectionsEmpty'),
+            ...(items.length > 0 ? {
+                filterable: true,
+                initialFocusMode: 'list',
+                placeholder: t('vr.collectionsFilter'),
+                buildItems: (filterText) => {
+                    const f = filterText.trim().toLowerCase();
+                    const matched = f.length === 0
+                        ? items
+                        : items.filter(it => {
+                            const idx = it.title.toLowerCase().indexOf(f);
+                            return idx >= 0;
+                        });
+                    return matched.map(toItem);
+                }
+            } : { items: [] })
+        });
+    }
+
+    /** Launches a collection entry from the VR shell (CollectionBrowser's Load path). */
+    async #loadVrCollectionItem(item) {
+        if (item.platform_id == 'md') item.platform_id = 'smd';   // same temp fix as CollectionBrowser
+        this.#gamepad_menu.close();
+        this.#exitGamepadMenu();
+        this.#launchedFromGamepad = true;
+        this.#pendingLaunchTitle = item.title;
+        this.#pl.skipLaunchSettingsPromptOnce?.();
+        this.#showLaunchScreen(item.title);
+        this.#applyVrCanvasLayout();
+        this.#startVrAutoLaunch(item.title);
+        try {
+            const rom = await this.#db.getRomData(item.rom_data_id);
+            this.#pl.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, null, () => { });
+        } catch (error) {
+            console.error('[vr-collections] launch failed:', error);
+            this.#setLaunchError(this.#friendlyLoadError(error));
+        }
+    }
+
+    /**
+     * XR screen placement: stick down = closer, up = farther; right = bigger,
+     * left = smaller. Streamed per poll frame - the increments keep it smooth.
+     */
+    #adjustXrScreen(dx, dy) {
+        if (!this.#xr?.isActive()) return;
+        const p = this.#xr.getScreenPlacement();
+        this.#xr.setScreenPlacement(p.height + dx * 0.015, p.distance - dy * 0.03);
+        this.#xrScreenDirty = true;
+    }
+
+    /**
+     * Mirrors the in-game menu onto the XR screen (the DOM overlay is invisible
+     * in immersive mode) - same painter as the VR shell, repainted on focus moves.
+     */
+    #paintIngameVrMenu() {
+        if (!this.#xr?.isActive() || !this.#ingameMenuOpen) return;
+        this.#ensureVrPainter();
+        const items = this.#ingameItems();
+        this.#xr.setScreenSource(this.#xr_painter.canvas);
+        this.#xr_painter.paint({
+            title: this.#pendingLaunchTitle || 'VM/E',
+            isRoot: false,
+            filterable: false, filterText: '', placeholder: '',
+            focusMode: 'list', message: '', isNotice: null, emptyHint: '',
+            secondaryLabel: null,
+            total: items.length, start: 0, end: items.length,
+            rows: items.map((item, i) => ({
+                label: item.label, hint: item.hint || '', disabled: !!item.disabled,
+                focused: i === this.#ingameFocus
+            })),
+            keyboard: null,
+            footnote: t('ingame.screenHint')
+        });
+        this.#xr.invalidateScreen();
     }
 
     async #openIngameMenu() {
@@ -1109,6 +1495,11 @@ export class VME {
             });
         }
         root.classList.add('visible');
+        this.#paintIngameVrMenu();
+        // The paint above lands OUTSIDE an XR frame (we just awaited the save
+        // lookup) - on-device it wasn't visible until the next input. Repeat it
+        // from inside the frame loop for a few frames.
+        this.#repaintVrFrames(() => this.#paintIngameVrMenu());
     }
 
     #navigateIngameMenu(delta) {
@@ -1125,6 +1516,7 @@ export class VME {
         document.querySelectorAll('#gamepadIngameList .gm-item').forEach((el, i) => {
             el.classList.toggle('focused', i === this.#ingameFocus);
         });
+        this.#paintIngameVrMenu();
     }
 
     #activateIngameMenu() {
@@ -1166,9 +1558,213 @@ export class VME {
         this.#ingameMenuOpen = false;
         const root = document.getElementById('gamepad-ingame');
         if (root) root.classList.remove('visible');
+        // In XR: hand the screen back to the game canvas + persist an adjusted placement.
+        if (this.#xr?.isActive()) this.#xr.setScreenSource(null);
+        if (this.#xrScreenDirty && this.#xr) {
+            const p = this.#xr.getScreenPlacement();
+            StorageManager.storeValue('XR_SCREEN_HEIGHT', String(p.height));
+            StorageManager.storeValue('XR_SCREEN_DISTANCE', String(p.distance));
+            this.#xrScreenDirty = false;
+        }
         // Resume the game (unless the action already did - e.g. restart()).
         if (!skipResume) this.#pl.getNostalgist()?.resume?.();
     }
+
+    /**
+     * Quest: opens the gamepad shell WITH an immersive session showing its canvas
+     * mirror. Must be called from a user gesture (requestSession). The synthetic
+     * XR pad then drives the existing shell logic unchanged.
+     */
+    /**
+     * Mounts the in-game menu machinery if a game is running - games entered
+     * into XR mid-play (or via the launch-screen race) were not pad-launched,
+     * so toggleScreen(EMULATION) didn't set it up.
+     */
+    #ensureIngameMenuForXr() {
+        if (this.#current_screen === VME.CURRENT_SCREEN.EMULATION) {
+            this.#setupIngameMenu();
+        }
+    }
+
+    /**
+     * Paints a 'Loading…' card on the XR screen while a game starts from the VR
+     * shell - otherwise the user stares at a frozen last shell frame with no
+     * feedback (the DOM launch screen is invisible in immersive mode).
+     * The seconds counter doubles as remote diagnostics: counting without a
+     * start = emulator init stalled; a frozen counter = the frame loop died.
+     */
+    #paintVrLoading(label, seconds = 0) {
+        if (!this.#xr?.isActive()) return;
+        this.#ensureVrPainter();
+        this.#xr.setScreenSource(this.#xr_painter.canvas);
+        this.#xr_painter.paint({
+            title: label || '', isRoot: false,
+            filterable: false, filterText: '', placeholder: '',
+            focusMode: 'list',
+            message: seconds > 0 ? `${t('launch.loading')} ${seconds}s` : t('launch.loading'),
+            isNotice: null, emptyHint: '', secondaryLabel: null,
+            total: 0, start: 0, end: 0, rows: [], keyboard: null
+        });
+        this.#xr.invalidateScreen();
+    }
+
+    /**
+     * XR auto-start: shows the loading card and PULSES a synthetic body click
+     * (~every 0.6s) until the emulation starts - a single click proved lossy
+     * on-device (listener registration races the event), and in some launch
+     * branches the awaiting-gesture event never fires at all. The pulse is
+     * idempotent: the launch listeners are {once:true} and a click on a bare
+     * body is a no-op before they exist.
+     */
+    #startVrAutoLaunch(label) {
+        if (!this.#xr?.isActive()) return;
+        const token = ++this.#vrLaunchToken;
+        const startedAt = performance.now();
+        this.#paintVrLoading(label, 0);
+        const step = () => {
+            if (token !== this.#vrLaunchToken) return;           // superseded
+            if (!this.#xr?.isActive()) return;                   // back in 2D
+            if (this.#current_screen === VME.CURRENT_SCREEN.EMULATION) return;
+            if (this.#gamepad_menu.isOpen()) return;             // user is back in the shell
+            const elapsed = performance.now() - startedAt;
+            if (elapsed > 60000) return;                         // give up quietly
+            document.body.click();
+            this.#paintVrLoading(label, Math.round(elapsed / 1000));
+            let n = 45;   // ~0.6s at 72Hz, all on the bridged rAF
+            const wait = () => {
+                if (token !== this.#vrLaunchToken) return;
+                if (--n > 0) requestAnimationFrame(wait); else step();
+            };
+            requestAnimationFrame(wait);
+        };
+        step();
+    }
+
+    /**
+     * Repaints for a few XR frames via the BRIDGED rAF (runs inside the XR frame
+     * flush) - paints issued from outside the frame loop (db promises, timers)
+     * proved unreliable on-device until the next input-driven repaint.
+     */
+    #repaintVrFrames(fn, frames = 3) {
+        let n = frames;
+        const tick = () => {
+            fn();
+            if (--n > 0) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
+    /** Painter accessor - wires the thumb-loaded repaint on first creation. */
+    #ensureVrPainter() {
+        if (!this.#xr_painter) {
+            this.#xr_painter = new XrShellPainter();
+            this.#xr_painter.onThumbLoad = () => this.#paintVrShell();
+        }
+        return this.#xr_painter;
+    }
+
+    /** Releases object URLs created for VR thumbnails (painter cache keeps decoded images). */
+    #revokeVrThumbs() {
+        for (const url of this.#vrThumbUrls) {
+            try { URL.revokeObjectURL(url); } catch { }
+        }
+        this.#vrThumbUrls.clear();
+    }
+
+    async #enterVrShell(mode = 'vr') {
+        if (!this.#xr || this.#xr.isActive()) return;
+        this.#ensureVrPainter();
+        this.#vrShellEntering = true;
+        this.#enterGamepadMenu();
+        this.#xr.setScreenSource(this.#xr_painter.canvas);
+        this.#paintVrShell();
+        try {
+            await this.#xr.enter(mode);
+        } catch (e) {
+            console.warn('[xr] enter failed:', e);
+            this.#vrShellEntering = false;
+            // Back out to a usable 2D CLI (the shell can't be driven by a pointer).
+            this.#gamepad_menu.requestCloseToCli();
+        }
+    }
+
+    /** Repaints the VR canvas mirror of the shell (no-op outside a VR shell context). */
+    #paintVrShell() {
+        if (!this.#xr_painter || !this.#xr) return;
+        if (!this.#xr.isActive() && !this.#vrShellEntering) return;
+        // A late repaint (thumbnail load) must not blank the in-game menu's screen.
+        if (!this.#gamepad_menu.isOpen()) return;
+        this.#xr_painter.paint(this.#gamepad_menu.getVrSnapshot());
+        this.#xr.invalidateScreen();
+    }
+
+    /**
+     * VR letterbox fix: in immersive mode the 2D layout is invisible, so the
+     * #canvas layout box can be resized to the GAME's aspect - RetroArch's
+     * ResizeObserver then sizes the backbuffer to it and renders without the
+     * pillarbox bars that a window-shaped canvas bakes into the VR texture.
+     * (Same mechanism the LPH backbuffer cap uses.)
+     */
+    #applyVrCanvasLayout(aspectOverride = null) {
+        if (!this.#xr?.isActive()) return;
+        const aspect = aspectOverride
+            || VME.#VR_ASPECTS[this.#pl.getSelectedPlatform()?.platform_id] || 4 / 3;
+        const h = 1080;   // generous backbuffer for VR sharpness (cores upscale via RetroArch)
+        // Only the CSS variables move - the actual sizing lives in a stylesheet
+        // rule (body.xr-active #canvas, vme.css) whose !important outranks every
+        // inline restyle and applies from the moment the canvas exists, so even
+        // a hidden-page emulator boot latches the right size (a ResizeObserver
+        // never fires while immersive; direct setCanvasSize desynced RetroArch's
+        // viewport - the bottom-left-corner bug).
+        document.documentElement.style.setProperty('--xr-canvas-w', Math.round(h * aspect) + 'px');
+        document.documentElement.style.setProperty('--xr-canvas-h', h + 'px');
+    }
+
+    /**
+     * The static per-platform aspect is a guess - when it misses the core's real
+     * output, RetroArch letterboxes wide bars into the canvas. A few seconds
+     * after start, measure the picture's true aspect (twice, 1s apart - must
+     * agree, so dynamic-overscan platforms don't cause refit churn) and refit
+     * the canvas layout ONCE so RetroArch fills it without bars.
+     */
+    #scheduleVrAspectRefit() {
+        const token = this.#vrLaunchToken;
+        let firstSample = null;
+        const sample = (delay) => setTimeout(() => {   // bridged timer - runs in XR frames
+            if (token !== this.#vrLaunchToken || !this.#xr?.isActive()) return;
+            const a = this.#xr.measureGameAspect();
+            if (!a || a < 0.5 || a > 2.4) return;
+            if (firstSample === null) {
+                firstSample = a;
+                sample(1000);
+                return;
+            }
+            if (Math.abs(a - firstSample) / firstSample > 0.02) return;   // unstable picture
+            const canvas = document.getElementById('canvas');
+            const current = canvas && canvas.height > 0 ? canvas.width / canvas.height : 0;
+            if (current && Math.abs(a - current) / current > 0.03) {
+                this.#vrDesiredAspect = a;   // the keeper re-asserts this from now on
+                this.#applyVrCanvasLayout(a);
+            }
+        }, delay);
+        sample(3000);
+    }
+
+
+    /** Undoes #applyVrCanvasLayout after the session ends (2D layout is visible again). */
+    #restoreVrCanvasLayout() {
+        const canvas = document.getElementById('canvas');
+        if (!canvas) return;
+        canvas.style.removeProperty('width');
+        canvas.style.removeProperty('height');
+        EnvironmentManager.resizeCanvas(this.#pl.getNostalgist?.());
+        // LPH mode owns the canvas layout in 2D - let it re-apply its 720p cap.
+        if (document.body.classList.contains('low-perf-hw')) {
+            requestAnimationFrame(() =>
+                requestAnimationFrame(() => this.#pl.refreshLowPerfBackbuffer?.()));
+        }
+    }
+
 
     #enterGamepadMenu() {
         if (this.#gamepad_menu.isOpen()) return;
@@ -1276,6 +1872,12 @@ export class VME {
 
     getGamepadManager() {
         return this.#gamepad;
+    }
+
+    /** Whether an immersive XR session is running (PlatformManager tunes the
+     *  RetroArch config at launch: integer scaling is pointless on the XR quad). */
+    isXrActive() {
+        return !!this.#xr?.isActive();
     }
 
     /** Whether the current game launch came from the gamepad shell (Browse/Search) or the

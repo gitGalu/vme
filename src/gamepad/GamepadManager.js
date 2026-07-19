@@ -356,6 +356,15 @@ export class GamepadManager {
 
         if (menuOpen) {
             // Menu open -> navigate with D-pad/left stick, A=select, B=close.
+            // The RIGHT stick is free here - XR uses it for screen placement
+            // (distance/size), streamed continuously while deflected.
+            if (h.adjustScreen) {
+                const rx = gamepad.axes[2] || 0;
+                const ry = gamepad.axes[3] || 0;
+                if (Math.abs(rx) > this.axisDeadzone || Math.abs(ry) > this.axisDeadzone) {
+                    h.adjustScreen(rx, ry);
+                }
+            }
             const up = gamepad.buttons[12]?.pressed || (gamepad.axes[1] || 0) < -this.axisDeadzone;
             const down = gamepad.buttons[13]?.pressed || (gamepad.axes[1] || 0) > this.axisDeadzone;
             const a = gamepad.buttons[0]?.pressed || false;

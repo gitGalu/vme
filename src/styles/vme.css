@@ -4208,6 +4208,60 @@ i {
   color: #9b9b9b;
 }
 
+/* Aktywna sesja WebXR: na goglach DOM w immersive i tak nie istnieje, ale w polyfillu
+   (Immersive Web Emulator na desktopie) nakladki VM/E zaslanialyby kontrolki rozszerzenia
+   i lapaly kliki. visibility (nie display) - bez zmian layoutu, wiec ResizeObserver
+   RetroArcha nie przeskaluje backbuffera #canvas. */
+body.xr-active #desktopUi,
+body.xr-active #toggle-keyboard,
+body.xr-active #fastui,
+body.xr-active #fps-meter,
+body.xr-active #gamepad-legend-bar {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Przycisk 'Start in VR' (Quest + WebXR) - widoczny tylko w stanie 'czekam na gest'. */
+#gamepad-launch .gl-vr {
+  display: none;
+  padding: 10px 26px;
+  border: 1px solid #4d637f;
+  border-radius: 999px;
+  color: #cfe6ff;
+  font-size: clamp(15px, 2.6vh, 22px);
+  letter-spacing: 0.04em;
+}
+
+#gamepad-launch.vr-available.awaiting #gamepadLaunchVr,
+#gamepad-launch.mr-available.awaiting #gamepadLaunchMr {
+  display: inline-block;
+}
+
+/* Podpowiedz gestu wyjscia z VR - mala, przygaszona, pod przyciskiem. */
+#gamepad-launch .gl-vr-hint {
+  display: none;
+  font-size: clamp(12px, 2vh, 16px);
+  color: #6f7f8f;
+}
+
+#gamepad-launch.vr-available.awaiting .gl-vr-hint,
+#gamepad-launch.mr-available.awaiting .gl-vr-hint {
+  display: block;
+}
+
+/* Wejscie w VR/MR z ekranu CLI: przyciski w pasku menu (ButtonManager/createGuiButton,
+   'menu-item-vr'/'menu-item-mr'), dodawane w VME po wykryciu wsparcia WebXR. */
+
+/* XR: layout #canvas sterowany REGULA ARKUSZA (nie inline) - arkuszowe !important
+   wygrywa z kazdym inline'owym restylowaniem nostalgist/RetroArcha i obowiazuje
+   OD UTWORZENIA elementu, wiec ukryta inicjalizacja emulatora (immersive = strona
+   hidden, ResizeObserver martwy) od razu widzi wlasciwy rozmiar - viewport i
+   backbuffer rodza sie zgodne. Proporcje per platforma przez zmienne. */
+body.xr-active #canvas {
+  width: var(--xr-canvas-w, 1440px) !important;
+  height: var(--xr-canvas-h, 1080px) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #gamepad-launch.awaiting .gl-status { animation: none; }
 }

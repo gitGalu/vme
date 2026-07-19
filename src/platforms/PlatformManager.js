@@ -479,6 +479,13 @@ export class PlatformManager {
             return this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
         }
 
+        // Immersive session: DOM dialogs are invisible there and awaiting one
+        // hangs the launch forever. Auto-resolve with the defaults - covers
+        // EVERY launch path at once (the one-shot skip flag doesn't reach all).
+        if (document.body.classList.contains('xr-active')) {
+            return this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
+        }
+
         if (this.#launch_settings_modal) {
             this.#launch_settings_modal.remove();
             this.#launch_settings_modal = null;
@@ -848,9 +855,14 @@ export class PlatformManager {
                 // scales smoothly and fills the screen (keeping aspect ratio), overriding the
                 // per-platform force_scale. Honored ONLY when launched from the gamepad shell
                 // (the CLI only offers Authentic/Pixel-perfect). Default is pixel-perfect.
-                video_scale_integer: (StorageManager.getValue('MAXIMIZE_IMAGE') === '1' && this.#vme.isGamepadLaunch?.())
+                // XR: integer scaling is ALWAYS off - it letterboxes the canvas on every
+                // side (bars no canvas-aspect fix can remove), and pixel-perfectness does
+                // not survive the compositor's quad resampling anyway.
+                video_scale_integer: this.#vme.isXrActive?.()
                     ? false
-                    : ((this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale),
+                    : (StorageManager.getValue('MAXIMIZE_IMAGE') === '1' && this.#vme.isGamepadLaunch?.())
+                        ? false
+                        : ((this.#selected_platform.force_scale === undefined) ? false : this.#selected_platform.force_scale),
                 // LPH forces smoothing ON: the small backbuffer is upscaled to the screen with a
                 // fractional factor (uneven pixel widths - a core/RetroArch trait), and bilinear
                 // smoothing blurs those transitions so the unevenness becomes invisible.

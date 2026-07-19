@@ -31,17 +31,26 @@ export class GamepadKeyboard {
     #onChar = null;
     #onBackspace = null;
     #onSubmit = null;
+    #onFocusMove = null;
 
     /**
      * @param {HTMLElement} container - where to render the grid.
-     * @param {{onChar:Function, onBackspace:Function, onSubmit:Function}} handlers
+     * @param {{onChar:Function, onBackspace:Function, onSubmit:Function,
+     *          onFocusMove?:Function}} handlers - onFocusMove fires on every key-focus
+     *        change (the VR shell repaints its canvas copy of the keyboard from it).
      */
-    constructor(container, { onChar, onBackspace, onSubmit } = {}) {
+    constructor(container, { onChar, onBackspace, onSubmit, onFocusMove } = {}) {
         this.#container = container;
         this.#onChar = onChar;
         this.#onBackspace = onBackspace;
         this.#onSubmit = onSubmit;
+        this.#onFocusMove = onFocusMove;
         this.#render();
+    }
+
+    /** Current key focus (for the VR shell painter). */
+    getFocus() {
+        return { row: this.#row, col: this.#col };
     }
 
     #render() {
@@ -137,6 +146,7 @@ export class GamepadKeyboard {
             });
         });
         this.#moveHighlight();
+        this.#onFocusMove?.();
     }
 
     #moveHighlight() {
