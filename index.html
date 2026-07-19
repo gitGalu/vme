@@ -10,8 +10,8 @@
     <link rel="icon" href="/vme/assets/favicon-CcvJXZ4M.ico" type="image/x-icon">
     <link rel="icon" href="/vme/assets/favicon-32x32-DDiKfeWr.png" type="image/png" sizes="32x32">
     <link rel="icon" href="/vme/assets/favicon-16x16-q6ilooy1.png" type="image/png" sizes="16x16">
-  <script type="module" crossorigin src="/vme/assets/index-52lU_CtU.js"></script>
-  <link rel="stylesheet" crossorigin href="/vme/assets/index-DyL-ofpL.css">
+  <script type="module" crossorigin src="/vme/assets/index-CIx7NwyU.js"></script>
+  <link rel="stylesheet" crossorigin href="/vme/assets/index-X-gwq_3J.css">
 <link rel="manifest" href="/vme/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/vme/registerSW.js"></script></head>
 <style>
     html {
@@ -50,6 +50,13 @@
             <div id="gamepad-launch-inner">
                 <div class="gl-title" id="gamepadLaunchTitle"></div>
                 <div class="gl-status" id="gamepadLaunchStatus">Loading…</div>
+                <!-- Quest z WebXR: dodatkowe wejscie w tryb immersive. Klik startuje gre
+                     (bąbelkuje do body) I otwiera sesje VR w tym samym gescie. -->
+                <div class="gl-vr" id="gamepadLaunchVr"></div>
+                <!-- MR/passthrough (immersive-ar): ekran gry nad realnym pokojem. -->
+                <div class="gl-vr" id="gamepadLaunchMr"></div>
+                <!-- Podpowiedz gestu wyjscia z VR (nieodkrywalny bez niej). -->
+                <div class="gl-vr-hint" id="gamepadLaunchVrHint"></div>
             </div>
         </div>
     </div>
@@ -141,6 +148,9 @@
             </div>
 
             <div class="right-area">
+                <!-- Quest z WebXR: powrot do trybu immersive z gry (bez restartu). -->
+                <div id="desktopUiVr" class="clickable-area" style="display:none;">VR</div>
+                <div id="desktopUiMr" class="clickable-area" style="display:none;">MR</div>
                 <div id="desktopUiControls" class="clickable-area">Special keys</div>
                 <div id="desktopUiFs" class="clickable-area">Fullscreen</div>
                 <div id="controlsMenu" class="dropdown-menu" style="display:none;"></div>
