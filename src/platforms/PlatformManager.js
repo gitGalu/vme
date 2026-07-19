@@ -465,6 +465,13 @@ export class PlatformManager {
         this.#launch_bios = this.#cloneLaunchBios(launchSettings?.bios) || [];
         this.#launch_core_config = this.#cloneLaunchCoreConfig(launchSettings?.coreConfig) || {};
         this.#launch_override_values = this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
+        // libretro-atari800 7.0.0 (stereo POKEY support): in MONO (1x POKEY) the
+        // core fills only the LEFT channel and the right arrives silent. The
+        // patched RWebAudio glue (atari800_libretro.js) mirrors L->R while this
+        // flag is set. Proper fix belongs upstream (mono upmix in the core's
+        // sound wrapper); undefined key on other platforms -> flag false.
+        window.__VME_A800_MONO_MIRROR =
+            this.#launch_core_config.atari800_pokey_stereo === 'disabled';
     }
 
     async #showLaunchSettingsDialog(title, launchSettings) {
