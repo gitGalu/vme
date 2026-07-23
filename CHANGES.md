@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.94] - 2026-07-23
+
+- XR, gamepad shell: allow swapping disks in the in-game menu
+- XR, gamepad shell: allow using B button instead of up for joystick games (jump-on-button)
+- XR, gamepad shell: add Autoconfig overrides GUI
+- XR: add return to VR/XR button
+
+## [0.93] - 2026-07-19
+
+- XR (beta): added immersive VR/MR mode for Meta Quest headsets (WebXR)
+- XR: Quest Touch controllers work as a gamepad (in games and in the shell)
+- XR: MR mode shows the game screen over passthrough (immersive-ar)
+- gamepad shell: added Autoconfig machine settings step before launching a game (DOS, Amiga, A800, …) — previously gamepad/VR launches always used defaults
+- A800: fix mono (1x POKEY) sound playing only from the left speaker after core 7.0.0 update
+
 ## [0.92] - 2026-07-18
 
 - DOS: improved DOS game compatibility — all DOS games should now work
