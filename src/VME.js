@@ -1375,13 +1375,40 @@ export class VME {
                 const list = this.#XR_CONTROL_SCHEMES;
                 const idx = Math.max(0, list.indexOf(scheme));
                 this.#applyControlScheme(list[(idx + dir + list.length) % list.length].id);
-                this.#paintIngameVrMenu();   // refresh hint; menu stays open
+                this.#refreshIngameMenu();   // refresh hint; menu stays open
             };
             items.push({
                 label: t('ingame.controlScheme'),
                 hint: t(scheme.labelKey),
                 run: () => cycleScheme(1),
                 onAdjust: (dir) => cycleScheme(dir)
+            });
+        }
+        // Multi-disk games (Amiga/Atari ST/DOS): cycle the inserted disk. A / left /
+        // right step through the M3U set - same swap path as the desktop dropdown
+        // and the touch DISK button (UiManager.switchM3uDisk). Works in shell + VR.
+        const disks = this.#pl.getCurrentM3uDisks?.() || [];
+        if (disks.length > 1) {
+            const cur = this.#pl.getCurrentM3uDiskIndex?.();
+            const curIdx = Number.isInteger(cur) ? cur : 0;
+            const cycleDisk = (dir) => {
+                const next = (curIdx + dir + disks.length) % disks.length;
+                // The swap sends RetroArch commands (DISK_EJECT/NEXT/PREV) which
+                // are only processed while the core runs frames - but the in-game
+                // menu pauses it. Resume around the swap, then re-pause (menu stays
+                // open). #sleep uses setTimeout, bridged in XR so it still ticks.
+                const n = this.#pl.getNostalgist?.();
+                n?.resume?.();
+                UiManager.switchM3uDisk(next, disks).then((ok) => {
+                    if (this.#ingameMenuOpen) n?.pause?.();
+                    if (ok) this.#refreshIngameMenu();   // refresh 'Disk n / N' hint
+                });
+            };
+            items.push({
+                label: t('ingame.disk'),
+                hint: `${curIdx + 1} / ${disks.length}`,
+                run: () => cycleDisk(1),
+                onAdjust: (dir) => cycleDisk(dir)
             });
         }
         items.push(
@@ -1424,7 +1451,7 @@ export class VME {
                     const next = anchored ? 'head' : 'world';
                     StorageManager.storeValue('XR_SCREEN_ANCHOR', next);
                     this.#xr.setScreenAnchor(next);
-                    this.#paintIngameVrMenu();   // refresh the hint; menu stays open
+                    this.#refreshIngameMenu();   // refresh the hint; menu stays open
                 }
             }, {
                 label: t('ingame.exitVr'),
@@ -1645,27 +1672,46 @@ export class VME {
         this.#ingameFocus = items.findIndex(it => !it.disabled);
         if (this.#ingameFocus < 0) this.#ingameFocus = 0;
 
-        const listEl = document.getElementById('gamepadIngameList');
-        if (listEl) {
-            listEl.innerHTML = '';
-            items.forEach((item, i) => {
-                const row = document.createElement('div');
-                row.className = 'gm-item'
-                    + (i === this.#ingameFocus ? ' focused' : '')
-                    + (item.disabled ? ' gm-item-disabled' : '');
-                const label = document.createElement('span');
-                label.className = 'gm-item-label';
-                label.textContent = item.label;
-                row.appendChild(label);
-                listEl.appendChild(row);
-            });
-        }
+        this.#renderIngameMenuDom(items);
         root.classList.add('visible');
         this.#paintIngameVrMenu();
         // The paint above lands OUTSIDE an XR frame (we just awaited the save
         // lookup) - on-device it wasn't visible until the next input. Repeat it
         // from inside the frame loop for a few frames.
         this.#repaintVrFrames(() => this.#paintIngameVrMenu());
+    }
+
+    /** Renders the in-game menu list into the DOM (2D shell). */
+    #renderIngameMenuDom(items = this.#ingameItems()) {
+        const listEl = document.getElementById('gamepadIngameList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        items.forEach((item, i) => {
+            const row = document.createElement('div');
+            row.className = 'gm-item'
+                + (i === this.#ingameFocus ? ' focused' : '')
+                + (item.disabled ? ' gm-item-disabled' : '');
+            const label = document.createElement('span');
+            label.className = 'gm-item-label';
+            label.textContent = item.label;
+            row.appendChild(label);
+            // Current value (Disk n/N, control scheme, …) - same hint the VR
+            // painter shows; without it the 2D shell menu label is valueless.
+            if (item.hint) {
+                const hint = document.createElement('span');
+                hint.className = 'gm-item-hint';
+                hint.textContent = item.hint;
+                row.appendChild(hint);
+            }
+            listEl.appendChild(row);
+        });
+    }
+
+    /** Refreshes both menu renderers after a value change (2D DOM + VR painter). */
+    #refreshIngameMenu() {
+        if (!this.#ingameMenuOpen) return;
+        this.#renderIngameMenuDom();
+        this.#paintIngameVrMenu();
     }
 
     #navigateIngameMenu(delta) {
