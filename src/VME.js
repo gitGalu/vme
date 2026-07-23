@@ -63,6 +63,7 @@ export class VME {
     #ingameMenuOpen = false;
     #ingameFocus = 0;
     #ingameJoyState = null;
+    #xrControlScheme = 'standard';  // control variant on joystick platforms in XR (current game only)
     #ingameLatestSaveId = null; // null = no save; 'Load state' disabled
     #xrScreenDirty = false;     // screen placement changed -> persist on menu close
     #vrThumbUrls = new Set();   // object URLs created for VR thumbnails (revoked in bulk)
@@ -655,6 +656,14 @@ export class VME {
         { id: 'lowperf',   labelKey: 'display.lowperf',    shader: false, maximize: true,  lowPerf: true }
     ];
 
+    // XR control variants for joystick platforms (in-game menu, current game only).
+    // Add more here (e.g. autofire) - one entry + its mapping rule is enough.
+    // 'jumpOnButton' feeds the B-as-up remap (retropad pad + A800 keyboard bridge).
+    #XR_CONTROL_SCHEMES = [
+        { id: 'standard', labelKey: 'control.standard', jumpOnButton: false },
+        { id: 'jump-b',   labelKey: 'control.jumpB',    jumpOnButton: true }
+    ];
+
     #currentDisplayMode() {
         // LPH takes precedence - when set, it wins regardless of SHADER/MAXIMIZE_IMAGE.
         if (StorageManager.getValue('LOW_PERF_HW') === '1') {
@@ -1225,7 +1234,7 @@ export class VME {
         // Quest with WebXR: offer 'Start in VR' / 'Start in MR' next to the normal prompt.
         if (this.#xr && XrSessionManager.isAvailable()) {
             const hint = document.getElementById('gamepadLaunchVrHint');
-            if (hint) hint.textContent = t('launch.vrHint');
+            if (hint) hint.textContent = t('launch.vrLaunchHint');
             if (XrSessionManager.isVrAvailable()) {
                 const vr = document.getElementById('gamepadLaunchVr');
                 if (vr) vr.textContent = t('launch.vr');
@@ -1252,6 +1261,8 @@ export class VME {
     #setupIngameMenu() {
         this.#ingameMenuOpen = false;
         this.#ingameFocus = 0;
+        this.#xrControlScheme = 'standard';   // control scheme is per-game; reset on (re)setup
+        this.#xr?.setJumpOnButton?.(false);
         this.#ingameJoyState = { up: false, down: false, left: false, right: false, fire: false };
         this.#gamepad.setIngameMenu({
             // In VR the menu opens too - painted onto the XR screen (the DOM overlay
@@ -1259,8 +1270,13 @@ export class VME {
             openMenu: () => this.#openIngameMenu(),
             isMenuOpen: () => this.#ingameMenuOpen,
             navigate: (d) => this.#navigateIngameMenu(d),
+            adjust: (dir) => this.#adjustIngameMenu(dir),
             activate: () => this.#activateIngameMenu(),
             close: () => this.#closeIngameMenu(),
+            // XR: the menu opens on a short right-stick click, so suppress the
+            // trigger long-press (Start = left stick click would fire it while
+            // navigating). Non-XR (BT/TV pads) keep the long-press.
+            suppressLongPress: () => !!this.#xr?.isActive(),
             // Joystick bridge: 'joystick-via-keyboard' platforms (Atari/C64...) don't listen
             // to the joypad for directions, so translate the d-pad/stick into the same
             // synthetic keys as touch (keyboard_joystick_mapping). null = no bridge.
@@ -1274,6 +1290,27 @@ export class VME {
         return !!window.__VME_KB_JOY_MAP;
     }
 
+    /** Whether the current platform offers alternate control schemes (joystick platforms). */
+    #supportsJumpButton() {
+        return !!this.#pl.getSelectedPlatform()?.jump_button_supported;
+    }
+
+    #currentControlScheme() {
+        return this.#XR_CONTROL_SCHEMES.find(s => s.id === this.#xrControlScheme)
+            || this.#XR_CONTROL_SCHEMES[0];
+    }
+
+    /** Applies an XR control variant (current game only): drives both remap paths. */
+    #applyControlScheme(id) {
+        const scheme = this.#XR_CONTROL_SCHEMES.find(s => s.id === id) || this.#XR_CONTROL_SCHEMES[0];
+        this.#xrControlScheme = scheme.id;
+        // Retropad platforms: the synthetic pad reroutes B -> d-pad up when set.
+        this.#xr?.setJumpOnButton?.(scheme.jumpOnButton);
+        // Bridge platforms (A800): #applyIngameJoystick reads jumpOnButton; clear
+        // any held up/fire so the remap takes effect cleanly.
+        if (this.#hasIngameJoyBridge()) this.#releaseIngameJoystick();
+    }
+
     /**
      * Translates pad direction/fire state to the retropad via Nostalgist.pressDown/pressUp -
      * the same path TOUCH uses (QuickshotComponent mode:'nostalgist'). Works in BOTH browsers
@@ -1283,6 +1320,14 @@ export class VME {
     #applyIngameJoystick({ up, down, left, right, fire }) {
         const nostalgist = this.#pl.getNostalgist?.();
         if (!nostalgist) return;
+        // XR 'jump on B' scheme: B (right upper) triggers joystick UP, while fire is
+        // A alone. Read the face buttons RAW (the retropad filter merges/disables
+        // them on these platforms), and override the direction-derived up/fire.
+        if (this.#currentControlScheme().jumpOnButton && this.#xr?.isActive()) {
+            const { lower, upper } = this.#xr.rightFaceButtons();
+            up = up || upper;   // stick-up OR B both jump
+            fire = lower;       // fire is A only (B is now jump, not fire)
+        }
         const prev = this.#ingameJoyState;
         const dirs = [
             ['up', up, 'up'],
@@ -1317,6 +1362,29 @@ export class VME {
         const hasSave = this.#ingameLatestSaveId != null;
         const items = [
             { label: t('ingame.resume'), run: () => this.#closeIngameMenu() },
+        ];
+        // XR joystick platforms: offer mapping B -> jump (joy up) so platformers
+        // don't need pushing the stick up. Current game only. Two paths depending
+        // on how the platform is driven: A800 uses the keyboard-joystick bridge,
+        // the rest (C64/C128/CPC/Amiga…) use the retropad d-pad.
+        if (this.#xr?.isActive() && this.#supportsJumpButton()) {
+            const scheme = this.#currentControlScheme();
+            // A cycles forward; left/right step by dir (both wrap). Same pattern as
+            // the shell's Autoconfig/Options rows.
+            const cycleScheme = (dir) => {
+                const list = this.#XR_CONTROL_SCHEMES;
+                const idx = Math.max(0, list.indexOf(scheme));
+                this.#applyControlScheme(list[(idx + dir + list.length) % list.length].id);
+                this.#paintIngameVrMenu();   // refresh hint; menu stays open
+            };
+            items.push({
+                label: t('ingame.controlScheme'),
+                hint: t(scheme.labelKey),
+                run: () => cycleScheme(1),
+                onAdjust: (dir) => cycleScheme(dir)
+            });
+        }
+        items.push(
             { label: t('ingame.saveState'), run: async () => { await this.#pl.saveState(); this.#closeIngameMenu(); } },
             // Load the newest save of the current game in place; disabled when no save exists.
             { label: t('ingame.loadState'), disabled: !hasSave, run: () => this.#loadIngameState() },
@@ -1345,7 +1413,7 @@ export class VME {
                     location.reload();
                 }
             } }
-        ];
+        );
         // In XR: anchor toggle + leave-the-headset (both before 'Exit game').
         if (this.#xr?.isActive()) {
             const anchored = this.#xr.getScreenAnchor() !== 'head';
@@ -1620,6 +1688,12 @@ export class VME {
     #activateIngameMenu() {
         const item = this.#ingameItems()[this.#ingameFocus];
         if (item && !item.disabled) item.run?.();
+    }
+
+    /** Left/right on the focused in-game item -> its onAdjust (e.g. control scheme). */
+    #adjustIngameMenu(dir) {
+        const item = this.#ingameItems()[this.#ingameFocus];
+        if (item && !item.disabled && typeof item.onAdjust === 'function') item.onAdjust(dir);
     }
 
     /** Load the newest save of the current game in place (no restart), then resume. */

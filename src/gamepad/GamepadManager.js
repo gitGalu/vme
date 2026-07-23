@@ -341,7 +341,7 @@ export class GamepadManager {
         this.ingameMenuHandlers = handlers || null;
         this.ingameStartHeldSince = 0;
         this.ingameLongPressFired = false;
-        this.ingameLast = { up: false, down: false, a: false, b: false };
+        this.ingameLast = { up: false, down: false, left: false, right: false, a: false, b: false };
     }
 
     /**
@@ -367,14 +367,20 @@ export class GamepadManager {
             }
             const up = gamepad.buttons[12]?.pressed || (gamepad.axes[1] || 0) < -this.axisDeadzone;
             const down = gamepad.buttons[13]?.pressed || (gamepad.axes[1] || 0) > this.axisDeadzone;
+            // Left/right (d-pad or LEFT stick) adjust the focused item's value
+            // (e.g. control-scheme variant) - mirrors the shell's onAdjust.
+            const dLeft = gamepad.buttons[14]?.pressed || (gamepad.axes[0] || 0) < -this.axisDeadzone;
+            const dRight = gamepad.buttons[15]?.pressed || (gamepad.axes[0] || 0) > this.axisDeadzone;
             const a = gamepad.buttons[0]?.pressed || false;
             const b = gamepad.buttons[1]?.pressed || false;
             const L = this.ingameLast;
             if (up && !L.up) h.navigate?.(-1);
             if (down && !L.down) h.navigate?.(1);
+            if (dLeft && !L.left) h.adjust?.(-1);
+            if (dRight && !L.right) h.adjust?.(1);
             if (a && !L.a) h.activate?.();
             if (b && !L.b) h.close?.();
-            this.ingameLast = { up, down, a, b };
+            this.ingameLast = { up, down, left: dLeft, right: dRight, a, b };
             // Reset long-press state so it doesn't fire again right after closing.
             this.ingameStartHeldSince = 0;
             this.ingameLongPressFired = false;
@@ -395,12 +401,15 @@ export class GamepadManager {
         }
 
         // Menu closed -> measure the hold of ANY trigger (Start/Select/R3).
+        // In XR the menu opens on a short RIGHT-stick click (handled elsewhere),
+        // so the long-press is suppressed there - otherwise holding the LEFT
+        // stick click (mapped to Start) while navigating would open it too.
         const LONG_PRESS_MS = 550;
-        const triggerHeld =
+        const triggerHeld = !h.suppressLongPress?.() && (
             (gamepad.buttons[9]?.pressed) ||   // Start
             (gamepad.buttons[8]?.pressed) ||   // Select
-            (gamepad.buttons[11]?.pressed) ||  // R3 (right stick click)
-            false;
+            (gamepad.buttons[11]?.pressed)     // R3 (right stick click)
+        ) || false;
 
         if (triggerHeld) {
             if (!this.ingameStartHeldSince) {

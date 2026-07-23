@@ -22,7 +22,8 @@
 // thumbstick click (~0.7s) exits to 2D (in pad-launched games the menu
 // long-press fires first at 550ms - VME redirects it to exit while in VR).
 import { XrScreenRenderer } from './XrScreenRenderer.js';
-import { buildSyntheticGamepad, thumbstickClickHeld, rightStickClicked } from './XrInputAdapter.js';
+import { buildSyntheticGamepad, rightStickClicked,
+    rightUpperButtonPressed, rightLowerButtonPressed } from './XrInputAdapter.js';
 
 export class XrSessionManager {
     // null = not probed yet; probe once at startup (detectSupport), then sync reads.
@@ -107,6 +108,7 @@ export class XrSessionManager {
     #nativeGetGamepads = null;
     #nativeGamepadEvent = null;
     #syntheticPad = null;
+    #jumpOnButton = false;   // route B -> d-pad up in the synthetic pad (retropad joystick platforms)
     #padSlot = 0;
     #padAnnounced = false;  // synthetic 'gamepadconnected' dispatched
     #exitHoldSince = 0;     // thumbstick click held since (exit gesture)
@@ -140,6 +142,27 @@ export class XrSessionManager {
 
     isActive() {
         return this.#session !== null;
+    }
+
+    /**
+     * RAW right-controller face buttons, read from inputSources - bypasses the
+     * retropad filter (which coalesces/disables face buttons on A800/C64…). For
+     * the 'jump on button' option: B -> joystick up, A stays fire.
+     */
+    rightFaceButtons() {
+        return {
+            lower: rightLowerButtonPressed(this.#session),   // A (fire)
+            upper: rightUpperButtonPressed(this.#session)    // B (jump)
+        };
+    }
+
+    /**
+     * Retropad joystick platforms (Amiga…): route B -> d-pad UP in the synthetic
+     * pad so B jumps and no longer fires. (A800/C64 use the keyboard-joystick
+     * bridge instead - see VME.#applyIngameJoystick.) Off = normal B face button.
+     */
+    setJumpOnButton(on) {
+        this.#jumpOnButton = !!on;
     }
 
     /**
@@ -495,7 +518,7 @@ export class XrSessionManager {
     }
 
     #updateInput(session) {
-        this.#syntheticPad = buildSyntheticGamepad(session, this.#padSlot);
+        this.#syntheticPad = buildSyntheticGamepad(session, this.#padSlot, this.#jumpOnButton);
         if (this.#syntheticPad && !this.#padAnnounced) {
             this.#padAnnounced = true;
             this.#dispatchPadEvent('gamepadconnected', this.#syntheticPad);
@@ -511,12 +534,13 @@ export class XrSessionManager {
         }
         this.#rightStickWas = rightNow;
 
-        // Exit gesture: hold any thumbstick click ~0.7s. In games with the in-game
-        // menu the 550ms long-press (same sticks) opens the menu IN VR first - the
-        // veto below stops the continued hold from ALSO ending the session.
+        // Exit gesture: hold the RIGHT thumbstick click ~0.7s (a short click of it
+        // opens the menu). The LEFT stick is navigation only and must never exit -
+        // it used to, since the gesture checked both sticks. suppressExitGesture
+        // still vetoes it while the in-game menu is open.
         if (this.suppressExitGesture?.()) {
             this.#exitHoldSince = 0;
-        } else if (thumbstickClickHeld(session)) {
+        } else if (rightStickClicked(session)) {
             if (!this.#exitHoldSince) {
                 this.#exitHoldSince = performance.now();
             } else if (performance.now() - this.#exitHoldSince >= 700) {

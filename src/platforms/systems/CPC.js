@@ -54,6 +54,7 @@ const CPC = {
         input_player1_a: 'b'
     },
     fire_buttons: 1,
+    jump_button_supported: true,
     keyboard: {
         shiftKey: 1,
         overrides: {

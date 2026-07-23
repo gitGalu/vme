@@ -86,6 +86,7 @@ const C128 = {
     },
     joyport_toggle: true,
     fire_buttons: 1,
+    jump_button_supported: true,
     keyboard: {
         shiftKey: 1,
         overrides: {

@@ -295,6 +295,7 @@ const A800 = {
 
     },
     fire_buttons: 1,
+    jump_button_supported: true,
     keyboard: {
         shiftKey: 2,
         overrides: {

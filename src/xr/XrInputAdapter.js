@@ -45,8 +45,11 @@ function orButton(a, b) {
  * Builds the merged 'standard'-mapping pad for the given XR session, or null
  * while no controller exposes a gamepad (e.g. hand tracking only).
  * Call once per XR frame; consumers read the same snapshot until the next one.
+ * @param {boolean} [jumpOnButton] - retropad joystick platforms (Amiga…): route
+ *   B (right upper) to d-pad UP (jump) and drop it from the face buttons so it no
+ *   longer fires; A stays fire. Lets platformers jump with B instead of stick-up.
  */
-export function buildSyntheticGamepad(session, index) {
+export function buildSyntheticGamepad(session, index, jumpOnButton = false) {
     let left = null, right = null;
     for (const src of session.inputSources || []) {
         if (!src.gamepad) continue;
@@ -56,6 +59,10 @@ export function buildSyntheticGamepad(session, index) {
     if (!left && !right) return null;
 
     const lx = axis(left, AXIS_X), ly = axis(left, AXIS_Y);
+    // In jump-on-button mode B feeds d-pad UP, not the B face button.
+    const rawB = button(right, BTN_UPPER);
+    const bAsButton = jumpOnButton ? digital(false) : rawB;
+    const jumpUp = jumpOnButton && rawB.pressed;
 
     return {
         id: 'VM/E XR (Quest controllers)',
@@ -66,7 +73,7 @@ export function buildSyntheticGamepad(session, index) {
         axes: [lx, ly, axis(right, AXIS_X), axis(right, AXIS_Y)],
         buttons: [
             button(right, BTN_LOWER),   //  0 A
-            button(right, BTN_UPPER),   //  1 B
+            bAsButton,                  //  1 B (dropped in jump-on-button mode)
             button(left, BTN_LOWER),    //  2 X
             button(left, BTN_UPPER),    //  3 Y
             button(left, SQUEEZE),      //  4 LB
@@ -85,7 +92,8 @@ export function buildSyntheticGamepad(session, index) {
             digital(false),             // 11 R3
             // 12-15 d-pad from the left thumbstick - the retropad d-pad is the
             // primary control in most cores (the analog axes are ALSO exposed).
-            digital(ly < -DPAD_THRESHOLD),
+            // UP also fires from B in jump-on-button mode (jump = joystick up).
+            digital(ly < -DPAD_THRESHOLD || jumpUp),
             digital(ly > DPAD_THRESHOLD),
             digital(lx < -DPAD_THRESHOLD),
             digital(lx > DPAD_THRESHOLD)
@@ -93,18 +101,34 @@ export function buildSyntheticGamepad(session, index) {
     };
 }
 
-/** True while any controller's thumbstick is clicked (the exit-VR hold gesture). */
-export function thumbstickClickHeld(session) {
+/**
+ * True while the RIGHT thumbstick is clicked - short click opens the in-game
+ * menu, holding it ~0.7s exits the session. (The LEFT click is navigation only.)
+ */
+export function rightStickClicked(session) {
     for (const src of session.inputSources || []) {
-        if (src.gamepad?.buttons?.[STICK_CLICK]?.pressed) return true;
+        if (src.handedness === 'right' && src.gamepad?.buttons?.[STICK_CLICK]?.pressed) return true;
     }
     return false;
 }
 
-/** True while the RIGHT thumbstick is clicked - the instant in-game-menu trigger. */
-export function rightStickClicked(session) {
-    for (const src of session.inputSources || []) {
-        if (src.handedness === 'right' && src.gamepad?.buttons?.[STICK_CLICK]?.pressed) return true;
+/**
+ * RAW state of the right controller's upper face button (B), read straight from
+ * inputSources - bypasses the retropad filter that coalesces/disables face
+ * buttons on joystick platforms (A800/C64…). Used by the 'jump on button' option
+ * to map B -> joystick up while A stays fire. null session -> false.
+ */
+export function rightUpperButtonPressed(session) {
+    for (const src of session?.inputSources || []) {
+        if (src.handedness === 'right') return !!src.gamepad?.buttons?.[BTN_UPPER]?.pressed;
+    }
+    return false;
+}
+
+/** RAW state of the right controller's lower face button (A) - the fire button. */
+export function rightLowerButtonPressed(session) {
+    for (const src of session?.inputSources || []) {
+        if (src.handedness === 'right') return !!src.gamepad?.buttons?.[BTN_LOWER]?.pressed;
     }
     return false;
 }

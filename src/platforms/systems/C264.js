@@ -75,6 +75,7 @@ const C264 = {
         input_player1_r2: 'nul'
     },
     fire_buttons: 1,
+    jump_button_supported: true,
     keyboard: {
         shiftKey: 1,
         overrides: {
