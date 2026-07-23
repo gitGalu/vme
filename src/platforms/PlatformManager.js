@@ -70,6 +70,11 @@ export class PlatformManager {
     #pending_launch_core_config;
     #launch_settings_modal;
     #skip_launch_settings_prompt_once;
+    // Autoconfig overrides chosen in the gamepad shell (Model/RAM/… as a
+    // {field.id: value} map) for the NEXT launch. When set, the resolver uses
+    // them instead of the guessed defaults AND the desktop dialog is skipped
+    // (the shell already ran the config step). Consumed once per launch.
+    #pending_override_values;
 
     #state;
     #sram;
@@ -1221,15 +1226,20 @@ export class PlatformManager {
                 }
             }
 
+            // Shell-chosen Autoconfig overrides (if any) feed the resolver as if
+            // the desktop dialog had returned them - and suppress that dialog.
+            const shellOverrides = this.#pending_override_values;
+            this.#pending_override_values = null;
             let launchSettings = await this.#resolveLaunchSettings(
                 romName,
-                null,
+                shellOverrides,
                 this.#pending_launch_bios,
                 this.#pending_launch_core_config
             );
             this.#pending_launch_bios = null;
             this.#pending_launch_core_config = null;
             const shouldPromptLaunchSettings = !this.#skip_launch_settings_prompt_once
+                && !shellOverrides
                 && launchSettings.source !== 'saved'
                 && Array.isArray(launchSettings.overrideSchema)
                 && launchSettings.overrideSchema.length > 0;
@@ -1375,15 +1385,19 @@ export class PlatformManager {
     }
 
     async loadRomFile(blob, romName, caption, fromBrowser = false, browserType = null, closeCallback = null) {
+        // Shell-chosen Autoconfig overrides (if any) - see loadRom().
+        const shellOverrides = this.#pending_override_values;
+        this.#pending_override_values = null;
         let launchSettings = await this.#resolveLaunchSettings(
             romName,
-            null,
+            shellOverrides,
             this.#pending_launch_bios,
             this.#pending_launch_core_config
         );
         this.#pending_launch_bios = null;
         this.#pending_launch_core_config = null;
         const shouldPromptLaunchSettings = !this.#skip_launch_settings_prompt_once
+            && !shellOverrides
             && launchSettings.source !== 'saved'
             && Array.isArray(launchSettings.overrideSchema)
             && launchSettings.overrideSchema.length > 0;
@@ -1904,11 +1918,38 @@ export class PlatformManager {
 
     /**
      * Skip the launch-settings (Autoconfig) dialog on the NEXT launch - used when launching
-     * from the gamepad shell (the desktop/mobile form doesn't fit there; a dedicated shell
-     * form will come later). Uses default settings.
+     * from the gamepad shell with its own Autoconfig step (or none). Uses default settings
+     * unless setPendingOverrideValues() was called.
      */
     skipLaunchSettingsPromptOnce() {
         this.#skip_launch_settings_prompt_once = true;
+    }
+
+    /**
+     * The Autoconfig schema + current values for `romName` on the selected platform,
+     * for the gamepad-shell config screen. Returns null when the platform has no
+     * overrides (no Autoconfig step needed). Read-only snapshot - the shell renders
+     * it and later feeds choices back via setPendingOverrideValues().
+     * @returns {?{schema:Array, values:Object, guessed:Object}}
+     */
+    async getLaunchOverrideModel(romName) {
+        const settings = await this.#resolveLaunchSettings(romName, null);
+        if (!Array.isArray(settings.overrideSchema) || settings.overrideSchema.length === 0) {
+            return null;
+        }
+        return {
+            schema: settings.overrideSchema,
+            values: this.#cloneLaunchOverrideValues(settings.overrideValues) || {},
+            guessed: this.#cloneLaunchOverrideValues(settings.guessedOverrides) || {}
+        };
+    }
+
+    /**
+     * Inject the shell's Autoconfig choices ({field.id: value}) for the NEXT launch.
+     * The resolver uses them as overrides and the desktop dialog is skipped. Consumed once.
+     */
+    setPendingOverrideValues(values) {
+        this.#pending_override_values = (values && typeof values === 'object') ? { ...values } : null;
     }
 
     updateGamepadStatus() {

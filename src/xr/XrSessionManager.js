@@ -170,6 +170,11 @@ export class XrSessionManager {
         return this.#quadLayer ? 'quad-layer' : 'fallback';
     }
 
+    /** Session type actually granted: 'vr' | 'ar' (for the return-after-reload flow). */
+    getSessionMode() {
+        return this.#mode;
+    }
+
     /** Shows `text` over the live game image for `ms` (banner at the bottom). */
     showGameOverlay(text, ms = 4000) {
         this.#overlayText = text || null;

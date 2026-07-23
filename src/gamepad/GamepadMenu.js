@@ -327,8 +327,12 @@ export class GamepadMenu {
     }
 
     /**
-     * navigate(delta) - list (up/down) when focusMode='list'.
-     * The second argument (deltaCol) is used only in keyboard mode (2D).
+     * navigate(deltaRow, deltaCol) - list up/down (deltaRow) when focusMode='list'.
+     * In list mode a horizontal move (deltaRow 0, deltaCol != 0) adjusts the
+     * focused item's value via its optional onAdjust(dir) - used by settings
+     * rows (Autoconfig, Options) to cycle a value with left/right. Rows without
+     * onAdjust ignore horizontal input (no accidental scroll). deltaCol also
+     * drives 2D keyboard navigation.
      */
     navigate(delta, deltaCol = 0) {
         const view = this.#currentView();
@@ -340,6 +344,16 @@ export class GamepadMenu {
         }
 
         if (view.items.length === 0) return;
+
+        // Horizontal-only move in a list = value adjust on the focused row.
+        if (delta === 0 && deltaCol !== 0) {
+            const item = view.items[view.focusIndex];
+            if (item && !item.disabled && typeof item.onAdjust === 'function') {
+                item.onAdjust(deltaCol > 0 ? 1 : -1);
+            }
+            return;
+        }
+        if (delta === 0) return;
 
         const step = delta >= 0 ? 1 : -1;
         const next = this.#nextEnabledIndex(view, view.focusIndex, step);

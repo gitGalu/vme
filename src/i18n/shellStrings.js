@@ -60,6 +60,8 @@ const STRINGS = {
         'recent.cancel': 'Cancel',
 
         // Settings
+        'autoconfig.title': 'Autoconfig',
+        'autoconfig.start': 'Start game',
         'settings.title': 'Settings',
         'settings.display': 'Display',
         'display.authentic': 'Authentic (CRT/LCD effect)',
@@ -96,6 +98,7 @@ const STRINGS = {
         'launch.mr': 'Start in MR (passthrough)',
         'launch.vrHint': 'In VR: click the right stick for the menu',
         'menu.vr2dOnly': 'Not in VR',
+        'xr.return': 'Click to return to VR',
 
         // In-game menu
         'ingame.resume': 'Resume',
@@ -169,6 +172,8 @@ const STRINGS = {
         'recent.startOver': 'Od początku',
         'recent.cancel': 'Anuluj',
 
+        'autoconfig.title': 'Autoconfig',
+        'autoconfig.start': 'Uruchom grę',
         'settings.title': 'Ustawienia',
         'settings.display': 'Obraz',
         'display.authentic': 'Wierny (efekt CRT/LCD)',
@@ -202,6 +207,7 @@ const STRINGS = {
         'launch.mr': 'Uruchom w MR (passthrough)',
         'launch.vrHint': 'W VR: klik prawej gałki otwiera menu',
         'menu.vr2dOnly': 'Niedostępne w VR',
+        'xr.return': 'Kliknij, aby wrócić do VR',
 
         'ingame.resume': 'Wznów',
         'ingame.saveState': 'Zapisz stan',

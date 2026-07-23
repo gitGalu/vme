@@ -149,6 +149,7 @@ export class VME {
                 if (XrSessionManager.isArAvailable()) {
                     createGuiButton('menu-item-mr', 'MR', 'M', () => this.#enterVrShell('ar'));
                 }
+                this.#offerXrReturn();
             });
             this.#xr = new XrSessionManager();
             // Restore the persisted screen placement (adjusted with the right stick
@@ -186,6 +187,7 @@ export class VME {
                     return;
                 }
                 this.#vrShellEntering = false;
+                this.#persistXrScreen();   // shell adjustments made without opening the in-game menu
                 this.#pl.getNostalgist?.()?.resume?.();
                 this.#restoreVrCanvasLayout();
                 this.#revokeVrThumbs();
@@ -668,6 +670,28 @@ export class VME {
     #buildOptionsView() {
         const current = this.#currentDisplayMode();
         const lang = getShellLang();
+        // A (onActivate) cycles forward; left/right (onAdjust) step by dir. All wrap.
+        const cycleDisplay = (dir) => {
+            const idx = this.#DISPLAY_MODES.indexOf(current);
+            const n = this.#DISPLAY_MODES.length;
+            const next = this.#DISPLAY_MODES[(idx + dir + n) % n];
+            StorageManager.storeValue('SHADER', next.shader ? '1' : '0');
+            StorageManager.storeValue('MAXIMIZE_IMAGE', next.maximize ? '1' : '0');
+            StorageManager.storeValue('LOW_PERF_HW', next.lowPerf ? '1' : '0');
+            this.#gamepad_menu.replaceTop(this.#buildOptionsView());
+        };
+        const cycleLang = (dir) => {
+            // Rebuild the WHOLE shell in the new language: root (underneath) +
+            // Settings (on top) + legend (via #emitContext).
+            const idx = SHELL_LANGS.indexOf(lang);
+            setShellLang(SHELL_LANGS[(idx + dir + SHELL_LANGS.length) % SHELL_LANGS.length]);
+            this.#gamepad_menu.popToRoot(this.#buildGamepadRootView());
+            this.#gamepad_menu.pushView(this.#buildOptionsView());
+        };
+        const toggleFps = () => {
+            FpsMeter.setEnabled(!FpsMeter.isEnabled());
+            this.#gamepad_menu.replaceTop(this.#buildOptionsView());
+        };
         return {
             title: t('settings.title'),
             items: [
@@ -675,36 +699,22 @@ export class VME {
                     id: 'display',
                     label: t('settings.display'),
                     hint: t(current.labelKey),
-                    onActivate: () => {
-                        const idx = this.#DISPLAY_MODES.indexOf(current);
-                        const next = this.#DISPLAY_MODES[(idx + 1) % this.#DISPLAY_MODES.length];
-                        StorageManager.storeValue('SHADER', next.shader ? '1' : '0');
-                        StorageManager.storeValue('MAXIMIZE_IMAGE', next.maximize ? '1' : '0');
-                        StorageManager.storeValue('LOW_PERF_HW', next.lowPerf ? '1' : '0');
-                        this.#gamepad_menu.replaceTop(this.#buildOptionsView());
-                    }
+                    onActivate: () => cycleDisplay(1),
+                    onAdjust: (dir) => cycleDisplay(dir)
                 },
                 {
                     id: 'language',
                     label: t('settings.language'),
                     hint: lang === 'pl' ? 'Polski' : 'English',
-                    onActivate: () => {
-                        // Rebuild the WHOLE shell in the new language: root (underneath) +
-                        // Settings (on top) + legend (via #emitContext).
-                        const idx = SHELL_LANGS.indexOf(lang);
-                        setShellLang(SHELL_LANGS[(idx + 1) % SHELL_LANGS.length]);
-                        this.#gamepad_menu.popToRoot(this.#buildGamepadRootView());
-                        this.#gamepad_menu.pushView(this.#buildOptionsView());
-                    }
+                    onActivate: () => cycleLang(1),
+                    onAdjust: (dir) => cycleLang(dir)
                 },
                 {
                     id: 'fps-meter',
                     label: t('settings.fpsMeter'),
                     hint: FpsMeter.isEnabled() ? t('common.on') : t('common.off'),
-                    onActivate: () => {
-                        FpsMeter.setEnabled(!FpsMeter.isEnabled());
-                        this.#gamepad_menu.replaceTop(this.#buildOptionsView());
-                    }
+                    onActivate: toggleFps,
+                    onAdjust: toggleFps   // on/off toggle: either direction flips
                 },
                 {
                     id: 'import-library',
@@ -933,7 +943,9 @@ export class VME {
                 this.#pl.updatePlatform({ printStatus: false });
             }
         }
-        this.#loadBrowseRom(entry.romPath, entry.romName, entry.label || entry.romName);
+        const label = entry.label || entry.romName;
+        this.#launchViaShell(entry.romName, label,
+            () => this.#loadBrowseRom(entry.romPath, entry.romName, label));
     }
 
     /** Continue: load the newest savestate (like Save Browser restore), in shell mode. */
@@ -1050,7 +1062,8 @@ export class VME {
                     matchStart,
                     matchLen: f.length,
                     romName,   // for the thumbnail (ThumbnailPreview resolves by file name)
-                    onActivate: () => this.#loadBrowseRom(url, romName, label)
+                    onActivate: () => this.#launchViaShell(romName, label,
+                        () => this.#loadBrowseRom(url, romName, label))
                 });
             }
             return result;
@@ -1076,6 +1089,66 @@ export class VME {
         this.#open_command.openFilePicker((result) => {
             this.#gamepad_menu.notify(result);
         });
+    }
+
+    /**
+     * Shell launch entry point with the Autoconfig step: if the platform exposes
+     * override options for this ROM, push a config view (A cycles a field's value,
+     * 'Start' launches); otherwise launch straight away. `launch` performs the
+     * actual load and MUST call skipLaunchSettingsPromptOnce (the shell owns the
+     * config step). Chosen overrides are injected via setPendingOverrideValues.
+     */
+    async #launchViaShell(romName, title, launch) {
+        let model = null;
+        try {
+            model = romName ? await this.#pl.getLaunchOverrideModel(romName) : null;
+        } catch (e) {
+            console.error('[autoconfig] model lookup failed:', e);
+        }
+        if (!model || !this.#gamepad_menu.isOpen()) {
+            launch();
+            return;
+        }
+        // Working copy of the values the user edits; seeded from current defaults.
+        const values = { ...model.values };
+        this.#gamepad_menu.pushView(this.#buildAutoconfigView(model, values, title, launch));
+    }
+
+    /**
+     * Autoconfig config view: a Start row FIRST (focused by default -> one A press
+     * launches with defaults), then one row per override field below it (scroll
+     * down to tweak; A cycles a field's value).
+     */
+    #buildAutoconfigView(model, values, title, launch) {
+        const rows = [{
+            id: '_start',
+            label: t('autoconfig.start'),
+            onActivate: () => {
+                this.#pl.setPendingOverrideValues(values);
+                launch();
+            }
+        }];
+        for (const field of model.schema) {
+            const opts = field.options || [];
+            const opt = opts.find(o => o.value === values[field.id]) || opts[0];
+            // A cycles forward; left/right step by dir (both wrap).
+            const cycle = (dir) => {
+                if (opts.length === 0) return;
+                const idx = Math.max(0, opts.findIndex(o => o.value === values[field.id]));
+                const next = opts[(idx + dir + opts.length) % opts.length];
+                if (next) values[field.id] = next.value;
+                this.#gamepad_menu.replaceTop(this.#buildAutoconfigView(model, values, title, launch));
+            };
+            rows.push({
+                id: `cfg_${field.id}`,
+                label: field.label,
+                hint: opt ? opt.label : '',
+                onActivate: () => cycle(1),
+                onAdjust: (dir) => cycle(dir)
+            });
+        }
+        // focusIndex 0 = Start row (kept across replaceTop while editing fields).
+        return { title: t('autoconfig.title'), items: rows, focusIndex: 0 };
     }
 
     async #loadBrowseRom(url, romName, label) {
@@ -1260,8 +1333,12 @@ export class VME {
             } },
             { label: t('ingame.exit'), run: () => {
                 // Reloading DURING an immersive session is unreliable - end the
-                // session first and reload from onEnd, back in 2D.
+                // session first and reload from onEnd, back in 2D. The whole app
+                // exits games via reload (no emulator teardown path exists), and
+                // WebXR can't re-enter without a user gesture - so remember the
+                // mode and offer a one-click return after the reload.
                 if (this.#xr?.isActive()) {
+                    StorageManager.storeValue('XR_RETURN', this.#xr.getSessionMode());
                     this.#reloadAfterXr = true;
                     this.#xr.exit();
                 } else {
@@ -1370,7 +1447,19 @@ export class VME {
             id: String(item.id),
             label: item.title,
             vrThumb: thumbs.get(item.id),
-            onActivate: () => this.#loadVrCollectionItem(item)
+            onActivate: () => {
+                // Autoconfig only when the item's platform is the selected one
+                // (getLaunchOverrideModel reads the SELECTED platform; collection
+                // launch may switch it later). Otherwise launch with defaults.
+                const pid = item.platform_id == 'md' ? 'smd' : item.platform_id;
+                const samePlatform = pid === this.#pl.getSelectedPlatform()?.platform_id;
+                if (samePlatform) {
+                    this.#launchViaShell(item.rom_name, item.title,
+                        () => this.#loadVrCollectionItem(item));
+                } else {
+                    this.#loadVrCollectionItem(item);
+                }
+            }
         });
         this.#gamepad_menu.pushView({
             title: t('menu.collections'),
@@ -1422,6 +1511,15 @@ export class VME {
         const p = this.#xr.getScreenPlacement();
         this.#xr.setScreenPlacement(p.height + dx * 0.015, p.distance - dy * 0.03);
         this.#xrScreenDirty = true;
+    }
+
+    /** Persists an adjusted XR screen placement (from shell or in-game menu). */
+    #persistXrScreen() {
+        if (!this.#xrScreenDirty || !this.#xr) return;
+        const p = this.#xr.getScreenPlacement();
+        StorageManager.storeValue('XR_SCREEN_HEIGHT', String(p.height));
+        StorageManager.storeValue('XR_SCREEN_DISTANCE', String(p.distance));
+        this.#xrScreenDirty = false;
     }
 
     /**
@@ -1560,12 +1658,7 @@ export class VME {
         if (root) root.classList.remove('visible');
         // In XR: hand the screen back to the game canvas + persist an adjusted placement.
         if (this.#xr?.isActive()) this.#xr.setScreenSource(null);
-        if (this.#xrScreenDirty && this.#xr) {
-            const p = this.#xr.getScreenPlacement();
-            StorageManager.storeValue('XR_SCREEN_HEIGHT', String(p.height));
-            StorageManager.storeValue('XR_SCREEN_DISTANCE', String(p.distance));
-            this.#xrScreenDirty = false;
-        }
+        this.#persistXrScreen();
         // Resume the game (unless the action already did - e.g. restart()).
         if (!skipResume) this.#pl.getNostalgist()?.resume?.();
     }
@@ -1654,6 +1747,32 @@ export class VME {
         requestAnimationFrame(tick);
     }
 
+    /**
+     * After 'Exit game' in XR the app reloads (the only game-exit path) and the
+     * session is gone - WebXR can't re-enter without a gesture. Offer a single
+     * prominent click that goes straight back to the XR shell in the last mode.
+     */
+    #offerXrReturn() {
+        const mode = StorageManager.getValue('XR_RETURN');
+        if (mode !== 'vr' && mode !== 'ar') return;
+        StorageManager.storeValue('XR_RETURN', '');
+        if (!XrSessionManager.isAvailable()) return;
+        const overlay = document.getElementById('xrReturn');
+        const btn = document.getElementById('xrReturnBtn');
+        if (!overlay || !btn) return;
+        btn.textContent = t('xr.return');
+        overlay.style.display = 'flex';
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            overlay.style.display = 'none';
+            this.#enterVrShell(mode);
+        }, { once: true });
+        // Backdrop click = stay in 2D.
+        overlay.addEventListener('click', () => {
+            overlay.style.display = 'none';
+        }, { once: true });
+    }
+
     /** Painter accessor - wires the thumb-loaded repaint on first creation. */
     #ensureVrPainter() {
         if (!this.#xr_painter) {
@@ -1694,7 +1813,14 @@ export class VME {
         if (!this.#xr.isActive() && !this.#vrShellEntering) return;
         // A late repaint (thumbnail load) must not blank the in-game menu's screen.
         if (!this.#gamepad_menu.isOpen()) return;
-        this.#xr_painter.paint(this.#gamepad_menu.getVrSnapshot());
+        const snap = this.#gamepad_menu.getVrSnapshot();
+        // Discoverability: the right stick sizes/positions the screen here too
+        // (same as the in-game menu). Only in an active session (not while the
+        // on-screen keyboard has focus - that legend is already full).
+        if (snap && this.#xr.isActive() && !snap.keyboard) {
+            snap.footnote = t('ingame.screenHint');
+        }
+        this.#xr_painter.paint(snap);
         this.#xr.invalidateScreen();
     }
 
@@ -1778,7 +1904,10 @@ export class VME {
             activate: () => this.#gamepad_menu.activate(),
             back: () => this.#gamepad_menu.back(),
             toggleFilter: () => this.#gamepad_menu.toggleFilter(),
-            backspace: () => this.#gamepad_menu.backspaceExternal()
+            backspace: () => this.#gamepad_menu.backspaceExternal(),
+            // XR only: right stick sizes/positions the virtual screen (the shell
+            // is mirrored onto it). #adjustXrScreen no-ops outside a session.
+            adjustScreen: (dx, dy) => this.#adjustXrScreen(dx, dy)
         });
         // open() triggers #emitContext -> #updateMenuLegend sets the right legend.
         this.#gamepad_menu.open();

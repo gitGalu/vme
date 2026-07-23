@@ -4252,6 +4252,30 @@ body.xr-active #gamepad-legend-bar {
 /* Wejscie w VR/MR z ekranu CLI: przyciski w pasku menu (ButtonManager/createGuiButton,
    'menu-item-vr'/'menu-item-mr'), dodawane w VME po wykryciu wsparcia WebXR. */
 
+/* Powrot do XR po 'Zakoncz gre' (reload): backdrop + centralna piguła. Klik w tlo
+   zostaje w 2D. */
+#xrReturn {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483645;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 7, 13, 0.72);
+  cursor: pointer;
+}
+
+#xrReturnBtn {
+  padding: 18px 42px;
+  border: 1px solid #4d637f;
+  border-radius: 999px;
+  color: #cfe6ff;
+  background: rgba(5, 7, 13, 0.9);
+  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: clamp(18px, 3vh, 26px);
+  letter-spacing: 0.04em;
+}
+
 /* XR: layout #canvas sterowany REGULA ARKUSZA (nie inline) - arkuszowe !important
    wygrywa z kazdym inline'owym restylowaniem nostalgist/RetroArcha i obowiazuje
    OD UTWORZENIA elementu, wiec ukryta inicjalizacja emulatora (immersive = strona

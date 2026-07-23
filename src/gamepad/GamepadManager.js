@@ -460,6 +460,18 @@ export class GamepadManager {
         const axisX = gamepad.axes[0] || 0;
         const axisY = gamepad.axes[1] || 0;
 
+        // XR: the RIGHT stick is free in the shell (navigation uses the LEFT
+        // stick/d-pad), so it adjusts the virtual screen's distance/size - same
+        // as the in-game menu. Streamed continuously, outside the waitIdle gate
+        // (it's an analog nudge, not a discrete edge action).
+        if (h.adjustScreen) {
+            const rx = gamepad.axes[2] || 0;
+            const ry = gamepad.axes[3] || 0;
+            if (Math.abs(rx) > this.axisDeadzone || Math.abs(ry) > this.axisDeadzone) {
+                h.adjustScreen(rx, ry);
+            }
+        }
+
         // Until the pad returns to idle, ignore input (see gamepadMenuWaitIdle).
         // IMPORTANT: we check ONLY buttons/axes used by the shell (A/B/X/Y, d-pad, sticks),
         // NOT Start/Select/bumpers etc. Otherwise a Start button (9) "stuck" in getGamepads
