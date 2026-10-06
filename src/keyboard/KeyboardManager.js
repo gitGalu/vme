@@ -376,9 +376,7 @@ export class KeyboardManager {
     initButtons() {
         createGuiButton('toggle-keyboard', 'Show Keyboard', 'Kb', () => {
             this.initAudioContext();
-            setTimeout(() => {
-                this.showTouchKeyboard();
-            }, 50);
+            this.showTouchKeyboard();
         }, true, ".xx", "settings");
     }
 
