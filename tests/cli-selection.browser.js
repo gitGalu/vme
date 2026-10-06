@@ -2,6 +2,7 @@ import { CLI } from '../src/cli/CLI.js';
 import { FindCommand } from '../src/cli/FindCommand.js';
 import { ListCommand } from '../src/cli/ListCommand.js';
 import { RandomCommand } from '../src/cli/RandomCommand.js';
+import { NextCommand } from '../src/cli/NextCommand.js';
 import { ThumbnailPreview } from '../src/ui/ThumbnailPreview.js';
 
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -15,12 +16,14 @@ export function runCliSelectionTest() {
     const previews = [];
     const manager = {
         get_software_dir: () => directory,
+        getSelectedPlatform: () => ({ platform_id: 'cli-selection-test' }),
         loadRomFileFromUrl: async (...args) => { launched.push(args); }
     };
     const cli = new CLI();
     cli.register_command(new FindCommand(manager));
     cli.register_command(new ListCommand(manager));
     cli.register_command(new RandomCommand(manager));
+    cli.register_command(new NextCommand(manager));
     const originalShow = ThumbnailPreview.show;
     ThumbnailPreview.show = title => { previews.push(title); };
     const container = document.getElementById('cors_results');
@@ -42,6 +45,13 @@ export function runCliSelectionTest() {
         const previewCount = previews.length;
         cli.update();
         assert(previews.length === previewCount, 'Updating the same selection preserves the thumbnail');
+        for (const ignored of ['a', 'Backspace', ' ']) {
+            key(ignored);
+            expectSelected(0);
+            assert(document.getElementById('cors_query').textContent === 'list', 'Ignored selection input preserves the query');
+            assert(rows.every((row, index) => row === container.children[index]), 'Ignored selection input preserves visible rows');
+            assert(previews.length === previewCount, 'Ignored selection input preserves the thumbnail');
+        }
         key('ArrowUp'); expectSelected(2);
         key('ArrowDown'); expectSelected(0);
         cli.move_selection('down'); expectSelected(1);
@@ -75,11 +85,19 @@ export function runCliSelectionTest() {
         cli.inject('rnd', false);
         key('Enter'); expectSelected(0);
         const randomRow = container.firstElementChild;
+        key('a');
+        assert(container.firstElementChild === randomRow, 'Ignored typing does not discard the random program');
         key('ArrowDown'); expectSelected(0);
         assert(container.firstElementChild !== randomRow, 'RND arrows still reroll and highlight the replacement result');
+
+        cli.reset();
+        cli.inject('nxt', false);
+        assert(container.textContent.includes('Alpha'), 'NXT previews the first program');
+        key(' ');
+        assert(container.textContent.includes('Beta') && document.getElementById('cors_query').textContent === 'nxt', 'NXT still consumes SPACE to advance its preview');
     } finally {
         cli.off(); cli.reset();
         ThumbnailPreview.show = originalShow;
     }
-    return 'CLI selection: retained rows, keyboard/touch navigation, wraparound, thumbnails, ENTER/ESC, filtering, LIST and RND';
+    return 'CLI selection: retained rows, keyboard/touch navigation, wraparound, thumbnails, ignored edits, ENTER/ESC, filtering, LIST/RND/NXT';
 }

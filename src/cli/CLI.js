@@ -258,6 +258,13 @@ export class CLI {
             && this.selected_command.consumes_space()
             && this.selected_command.get_keywords().includes(currentQuery);
 
+        // Normal result selection ignores text edits; keep its rows and thumbnail intact.
+        // Temporary choosers handle filtering above, and commands such as NXT consume SPACE.
+        if (this.#currentIndex >= 0 && !activeCommandConsumesSpace
+            && (value.length === 1 || value === 'backspace' || value === 'Backspace' || value === 'space')) {
+            return;
+        }
+
         if (value.length === 1) {
             if (value === ' ' && activeCommandConsumesSpace) {
                 this.parse_input(CLI.#corsQuery.textContent, false, { advanceBySpace: true });
