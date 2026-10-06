@@ -39,6 +39,7 @@ import { EnvironmentManager } from '../EnvironmentManager.js';
 import { StorageManager } from '../storage/StorageManager.js';
 import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
+import { prepareSoftwareDirectory } from '../utils/TagPriority.js';
 import { HistoryManager } from '../history/HistoryManager.js';
 import { DiskSetBuilder } from '../utils/DiskSetBuilder.js';
 import { archiveProgramChoices, buildAtari800DiskSet } from '../utils/Atari800DiskSets.js';
@@ -2226,6 +2227,7 @@ export class PlatformManager {
                 });
             }
 
+            prepareSoftwareDirectory(json);
             this.#model = json;
         } catch (error) {
             console.log(error);
@@ -2244,6 +2246,7 @@ export class PlatformManager {
                 tryItems.push(item);
             });
 
+            prepareSoftwareDirectory(json);
             this.#model = json;
             this.#storage_manager.storeFile(key, json);
         } catch (error) {

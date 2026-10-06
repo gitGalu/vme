@@ -1,5 +1,5 @@
 import { CommandBase } from './CommandBase.js';
-import { tagAwareCompare } from '../utils/TagPriority.js';
+import { getSortedSoftwareItems } from '../utils/TagPriority.js';
 
 export class FindCommand extends CommandBase {
 
@@ -19,7 +19,8 @@ export class FindCommand extends CommandBase {
     }
 
     process_input(parameters) {
-        if (this.#platform_manager.get_software_dir() == undefined) {
+        const softwareDir = this.#platform_manager.get_software_dir();
+        if (softwareDir == undefined) {
             this.cli.soft_msg('To use FIND command please import SOFTWARE DIRECTORY first.');
             return;
         }
@@ -34,7 +35,7 @@ export class FindCommand extends CommandBase {
     
             var re = new RegExp(expr, "i");
     
-            results = this.#platform_manager.get_software_dir().items.filter((val) => {
+            results = getSortedSoftwareItems(softwareDir).filter((val) => {
                 if (val[4]) {
                     return re.test(val[4]);
                 }
@@ -42,12 +43,8 @@ export class FindCommand extends CommandBase {
             });
         }
     
-        const softwareDir = this.#platform_manager.get_software_dir();
-        results.sort((a, b) => tagAwareCompare(softwareDir, a, b));
-    
         let output = results.map(item => {
             const baseIndex = item[1];
-            const softwareDir = this.#platform_manager.get_software_dir();
             const tag = softwareDir.tags ? softwareDir.tags[baseIndex] : null;
     
             let romName = item[0];

@@ -1,6 +1,5 @@
 import { CommandBase } from './CommandBase.js';
-import { StorageManager } from '../storage/StorageManager.js';
-import { tagAwareCompare } from '../utils/TagPriority.js';
+import { getSortedSoftwareItems } from '../utils/TagPriority.js';
 
 export class ListCommand extends CommandBase {
 
@@ -20,12 +19,12 @@ export class ListCommand extends CommandBase {
     }
 
     process_input(parameters, is_enter_pressed) {
-        if (this.#platform_manager.get_software_dir() == undefined) {
+        const model = this.#platform_manager.get_software_dir();
+        if (model == undefined) {
             this.cli.soft_msg('To use LIST command please import SOFTWARE DIRECTORY first.');
             return;
         }
 
-        let model = this.#platform_manager.get_software_dir();
         let results = [];
         var tokens = parameters.filter(Boolean);
         if (tokens.length == 0) {
@@ -33,17 +32,15 @@ export class ListCommand extends CommandBase {
                 this.cli.soft_msg('Press ENTER to list all software for this platform.');
                 return;
             }
-            results = model.items;
+            results = getSortedSoftwareItems(model);
         } else if (tokens.length > 0) {
-            results = model.items.filter((val) => {
+            results = getSortedSoftwareItems(model).filter((val) => {
                 if (val[4]) {
                     return val[4].toLowerCase().startsWith(tokens[0].toLowerCase());
                 }
                 return val[0].toLowerCase().startsWith(tokens[0].toLowerCase());
             });
         }
-
-        results.sort((a, b) => tagAwareCompare(model, a, b));
 
         let output = results.map(item => {
             const baseIndex = item[1];

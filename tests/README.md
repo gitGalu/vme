@@ -12,6 +12,8 @@ local history exclusion, and restoring new and legacy saves. The core launch is
 captured rather than running WASM. Actual emulation should also be checked manually.
 The suite also checks CLI selection with keyboard and touch controls, preserved
 result rows and thumbnails, wraparound, filtering, and the LIST/RND commands.
+FIND/LIST ordering checks cover tag priorities, regular expressions, directory
+reloading/import, and platform changes.
 
 Only Atari 800 opts into `archive_program_extensions`. New saves keep the selected
 file, or a deterministic ZIP containing a playlist and the selected set's disks.

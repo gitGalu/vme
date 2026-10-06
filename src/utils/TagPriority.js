@@ -17,6 +17,7 @@
 
 const DEFAULT_TAGGED_PRIORITY = -1;
 const UNTAGGED_PRIORITY = 0;
+const sortedDirectories = new WeakMap();
 
 function tagRank(model, item) {
     const tag = model && model.tags ? model.tags[item[1]] : null;
@@ -39,4 +40,21 @@ export function tagAwareCompare(model, a, b) {
         return rankA - rankB;
     }
     return a[0].localeCompare(b[0]);
+}
+
+// Rebuild whenever a directory is loaded/imported, after applying name overrides.
+// Keep the original item order intact for other directory consumers.
+export function prepareSoftwareDirectory(model) {
+    const source = model.items;
+    const items = source.slice().sort((a, b) => tagAwareCompare(model, a, b));
+    sortedDirectories.set(model, { source, count: source.length, items });
+    return items;
+}
+
+export function getSortedSoftwareItems(model) {
+    const cached = sortedDirectories.get(model);
+    if (cached?.source === model.items && cached.count === model.items.length) {
+        return cached.items;
+    }
+    return prepareSoftwareDirectory(model);
 }
