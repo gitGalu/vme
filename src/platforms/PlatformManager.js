@@ -1787,6 +1787,11 @@ export class PlatformManager {
                 },
                 emscriptenModule: emscriptenModule
             });
+
+            if (platform.platform_id === 'cpc' && self.#state instanceof Blob && launchRom.diskNames.length > 1 && launchRom.diskIndex > 0) {
+                // Cap32 always inserts the first M3U disk on launch; its savestate does not restore disk control.
+                await this.#restoreCpcDiskIndex(this.#nostalgist, launchRom.diskIndex);
+            }
         }
         catch (error) {
             errored = true;
@@ -2739,8 +2744,33 @@ export class PlatformManager {
         return lower.endsWith('.atr') || lower.endsWith('.atx') || lower.endsWith('.xfd') || lower.endsWith('.dcm') || lower.endsWith('.pro');
     }
 
+    #isCpcDiskImageName(fileName) {
+        return String(fileName || '').toLowerCase().endsWith('.dsk');
+    }
+
+    async #restoreCpcDiskIndex(nostalgist, index) {
+        let ejected = false;
+        try {
+            nostalgist.sendCommand('DISK_EJECT_TOGGLE');
+            ejected = true;
+            await this.sleep(80);
+            for (let i = 0; i < index; i++) {
+                nostalgist.sendCommand('DISK_NEXT');
+                await this.sleep(70);
+            }
+            await this.sleep(80);
+        } catch (error) {
+            this.#current_m3u_disk_index = 0;
+            console.warn('Failed to restore Cap32 disk selection:', error);
+        } finally {
+            if (ejected) {
+                nostalgist.sendCommand('DISK_EJECT_TOGGLE');
+            }
+        }
+    }
+
     async #resolveM3uLaunchFileFromSource(sourceFileName, sourceBlob) {
-        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800') {
+        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800' && this.#selected_platform.core !== 'cap32') {
             return {
                 sourceFileName,
                 launchFileName: sourceFileName,
@@ -2754,6 +2784,9 @@ export class PlatformManager {
             }
             if (this.#selected_platform.core === 'atari800') {
                 return this.#isAtari800DiskImageName(name);
+            }
+            if (this.#selected_platform.core === 'cap32') {
+                return this.#isCpcDiskImageName(name);
             }
             return false;
         };
@@ -2793,7 +2826,10 @@ export class PlatformManager {
         }
 
         const launchBlob = await diskEntry.async('blob');
-        const launchFileName = diskEntryName.split('/').pop() || diskEntryName;
+        // Tagged ZIPs can contain identically named disk files, so use each ZIP name for the M3U entry.
+        const launchFileName = this.#selected_platform.core === 'cap32'
+            ? sourceFileName.replace(/(?:\.dsk)?\.zip$/i, '.dsk')
+            : (diskEntryName.split('/').pop() || diskEntryName);
         return {
             sourceFileName,
             launchFileName,
@@ -2815,7 +2851,7 @@ export class PlatformManager {
         if (!this.#isZipFile(selectedRomName)) {
             return null;
         }
-        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800') {
+        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800' && this.#selected_platform.core !== 'cap32') {
             return null;
         }
 

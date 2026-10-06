@@ -145,9 +145,8 @@ export class UiManager {
     initDesktopUI() {
         const desktopUi = document.getElementById('desktopUi');
 
-        if (UiManager.#platform_manager.getSelectedPlatform().savestates_disabled) {
-            document.getElementById('desktopUiSave').style.display = "none";
-        }
+        document.getElementById('desktopUiSave').style.display =
+            UiManager.#platform_manager.getSelectedPlatform().savestates_disabled ? 'none' : '';
 
         if (UiManager.#platform_manager.getSelectedPlatform().rewind_disabled) {
             document.getElementById('desktopUiRewind').style.display = "none";

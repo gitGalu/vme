@@ -1004,6 +1004,15 @@ async function patchCoreJs({ js, name }) {
     ).replace(
       /new Worker\(new URL\("/g,
       'new Worker(Module["mainScriptUrlOrBlob"] ?? new URL("'
+    ).replace(
+      /;return Module}export default ([\w$]+);?\s*$/,
+      `;return {
+        AL: typeof AL === 'undefined' ? null : AL,
+        Browser: typeof Browser === 'undefined' ? null : Browser,
+        JSEvents,
+        Module,
+        exit: _emscripten_force_exit
+      }}export default $1;`
     )};
     export function getEmscripten({ Module }) {
       const fnA = (typeof libretro_${name} === "function") ? libretro_${name} : null;
@@ -1627,7 +1636,8 @@ const coreInfoMap = {
   bsnes2014_balanced: { cheats: true, corename: "bsnes 2014 Balanced", savestate: true },
   bsnes2014_performance: { cheats: true, corename: "bsnes 2014 Performance", savestate: true },
   cannonball: { corename: "Cannonball", supportsNoGame: true },
-  cap32: { corename: "Caprice32", savestate: true, supportsNoGame: true },
+  // This build reports library_name="cap32", which RetroArch uses for the state directory.
+  cap32: { corename: "cap32", savestate: true, supportsNoGame: true },
   cdi2015: { corename: "Philips CDi 2015" },
   chailove: { cheats: true, corename: "ChaiLove", savestate: true },
   chimerasnes: { cheats: true, corename: "ChimeraSNES", savestate: true },
@@ -2240,10 +2250,14 @@ class Emulator {
     }
   }
   resize({ height, width }) {
-    const { Module } = this.getEmscripten();
+    const { Browser, Module } = this.getEmscripten();
     if (typeof width === "number" && typeof height === "number") {
       try {
-        Module.setCanvasSize(width, height);
+        if (typeof Module.setCanvasSize === "function") {
+          Module.setCanvasSize(width, height);
+        } else {
+          Browser.setCanvasSize(width, height);
+        }
       } catch (error) {
         if (error && error.name === "InvalidStateError") {
           return;
@@ -2524,7 +2538,7 @@ class Emulator {
       checkIsAborted(this.options.signal);
       const Module = emscripten.Module ?? emscripten;
       this.emscripten = { ...emscripten, Module };
-      await Module.monitorRunDependencies();
+      await Module.monitorRunDependencies(0);
       checkIsAborted(this.options.signal);
     } finally {
       dispose();

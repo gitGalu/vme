@@ -429,7 +429,7 @@ export class StorageManager {
     }
 
     #fixScreenshot(platform_id, blob) {
-        if (platform_id != "atari2600" && platform_id != "amiga" && platform_id != "dos" && platform_id != "st") {
+        if (platform_id != "atari2600" && platform_id != "amiga" && platform_id != "cpc" && platform_id != "dos" && platform_id != "st") {
             return blob;
         }
 
@@ -453,6 +453,10 @@ export class StorageManager {
                 } else if (platform_id == "amiga" && ratio > 2) {
                     targetWidth = width / 2;
                     targetHeight = height;
+                } else if (platform_id == "cpc" && ratio > 2) {
+                    // Cap32 doubles horizontal pixels in its framebuffer; RetroArch displays it at half width.
+                    targetWidth = width / 2;
+                    targetHeight = height;
                 }
 
                 if (platform_id == "dos" || platform_id == "st") {
@@ -465,6 +469,12 @@ export class StorageManager {
                         targetWidth = Math.max(1, Math.round(targetWidth * scale));
                         targetHeight = Math.max(1, Math.round(targetHeight * scale));
                     }
+                }
+
+                if (platform_id == "cpc" && targetWidth === width && targetHeight === height) {
+                    URL.revokeObjectURL(url);
+                    resolve(blob);
+                    return;
                 }
 
                 canvas.width = targetWidth;
