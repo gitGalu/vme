@@ -1620,6 +1620,7 @@ const coreInfoMap = {
   ardens: { corename: "Ardens", savestate: true },
   arduous: { corename: "Arduous" },
   atari800: { corename: "Atari800", savestate: true },
+  applewin: { corename: "AppleWin", savestate: true, supportsNoGame: true },
   bk: { savestate: true },
   blastem: { corename: "BlastEm", savestate: true },
   bluemsx: { corename: "blueMSX", savestate: true },

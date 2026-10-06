@@ -29,6 +29,13 @@
 }
 
 @font-face {
+  font-family: Apple2;
+  src: url('../assets/fonts/Apple2.ttf') format("truetype");
+  font-display: block;
+}
+
+
+@font-face {
   font-family: PICO8;
   src: url('../assets/fonts/PICO-8.ttf') format("truetype");
   font-display: block;
@@ -3185,6 +3192,10 @@ body.selection-mode-active .menu-strip-spacer {
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+#save-browser .flicking-panel[data-platform-id="apple2"] img {
+  max-width: min(384px, 90vw);
 }
 
 .flicking-panel[data-platform-id="dos"] img,

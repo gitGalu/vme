@@ -29,6 +29,7 @@ import PICO8 from './systems/PICO8.js';
 import DOS from './systems/DOS.js';
 import ST from './systems/ST.js';
 import TIC80 from './systems/TIC80.js';
+import Apple2 from './systems/Apple2.js';
 import JSZip from 'jszip';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -46,7 +47,7 @@ import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
 import { ConfigOverrideDropdown } from '../components/ConfigOverrideDropdown.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2
 }
 
 export class PlatformManager {
