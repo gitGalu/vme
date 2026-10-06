@@ -73,7 +73,8 @@ export class CommandBase {
 
     #show_results(results, force_selection) {
         const container = s("#cors_results");
-        container.innerHTML = "";
+        const singleLine = StorageManager.getValue("LINES") === "single";
+        const fragment = document.createDocumentFragment();
     
         results.forEach((item, index) => {
             const p = document.createElement('p');
@@ -84,8 +85,7 @@ export class CommandBase {
             p.classList.add('corsrow');
 
             const span = document.createElement('span');
-            if (StorageManager.getValue("LINES") != "single") {
-            } else {
+            if (singleLine) {
                 span.classList.add('singleline');
             }
 
@@ -110,8 +110,9 @@ export class CommandBase {
                 }
                 this.#commitSelection(item);
             });
-            container.append(p);
+            fragment.append(p);
         });
+        container.replaceChildren(fragment);
     
         if (results.length > 0 && force_selection) {
             this.cli.set_selection_mode(true);
