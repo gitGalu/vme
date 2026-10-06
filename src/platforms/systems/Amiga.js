@@ -149,42 +149,45 @@ const AMIGA_MODEL_PRESET_OPTIONS = Object.freeze([
   { value: 'A1200', label: 'A1200 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A1200'], defaultAvailable: true },
   {
     value: 'A1200_030',
-    label: 'A1200 030 AGA, 2MB Chip + 8MB Fast, KS 3.1',
+    label: 'A1200 030 25MHz AGA, 2MB Chip + 8MB Fast, KS 3.1',
     requiredBios: ['kick40068.A1200'],
     defaultAvailable: true,
     coreConfig: {
       puae_model: 'A1200',
       puae_cpu_model: '68030',
+      _vmeAmigaCpuFrequencyHz: 25000000,
       puae_fastmem_size: '8'
     }
   },
   {
     value: 'A1200_040',
-    label: 'A1200 040 AGA, 2MB Chip + 8MB Fast, KS 3.1',
+    label: 'A1200 040 25MHz AGA, 2MB Chip + 8MB Fast, KS 3.1',
     requiredBios: ['kick40068.A1200'],
     defaultAvailable: true,
     coreConfig: {
       puae_model: 'A1200',
       puae_cpu_model: '68040',
+      _vmeAmigaCpuFrequencyHz: 25000000,
       puae_fpu_model: 'cpu',
       puae_fastmem_size: '8'
     }
   },
   {
     value: 'A1200_060',
-    label: 'A1200 060 AGA, 2MB Chip + 8MB Fast + 128MB Z3, KS 3.1',
+    label: 'A1200 060 50MHz AGA, 2MB Chip + 8MB Fast + 128MB Z3, KS 3.1',
     requiredBios: ['kick40068.A1200'],
     defaultAvailable: true,
     coreConfig: {
       puae_model: 'A1200',
       puae_cpu_model: '68060',
+      _vmeAmigaCpuFrequencyHz: 50000000,
       puae_fpu_model: 'cpu',
       puae_fastmem_size: '8',
       puae_z3mem_size: '128'
     }
   },
-  { value: 'A4030', label: 'A4000/030 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A4000'] },
-  { value: 'A4040', label: 'A4000/040 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A4000'] },
+  { value: 'A4030', label: 'A4000/030 25MHz AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A4000'] },
+  { value: 'A4040', label: 'A4000/040 25MHz AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBios: ['kick40068.A4000'] },
   { value: 'CD32', label: 'CD32 AGA, 2MB Chip, KS 3.1', requiredBiosAny: [['kick40060.CD32.combined'], ['kick40060.CD32', 'kick40060.CD32.ext']] },
   { value: 'CD32FR', label: 'CD32 AGA, 2MB Chip + 8MB Fast, KS 3.1', requiredBiosAny: [['kick40060.CD32.combined'], ['kick40060.CD32', 'kick40060.CD32.ext']] },
   { value: 'A500OG', label: 'A500 OCS, 512K Chip, KS 1.2', requiredBios: ['kick33180.A500'], enabled: false },
@@ -204,6 +207,36 @@ const AMIGA_VIDEO_STANDARD_VALUES = new Set(AMIGA_VIDEO_STANDARD_OPTIONS.map(opt
 const AMIGA_NO_MEDIA_CONFIG_FILE = 'no-media.uae';
 const AMIGA_NO_MEDIA_MODEL_VALUES = new Set(['auto', 'A500', 'A1200']);
 const AMIGA_SYSTEM_DIR = '/home/web_user/retroarch/userdata/system';
+const AMIGA_SAVE_DIR = '/home/web_user/retroarch/userdata/saves/PUAE';
+
+function writeAmigaTimingPresets(FS, coreConfig) {
+  // Old savestates retain their original timing. New launches and saves opt in
+  // via the core option, which is preserved in launch_core_config.
+  if (coreConfig?.puae_cpu_compatibility !== 'exact') {
+    return;
+  }
+
+  // PUAE's core options expose only integer chipset-clock multipliers. Its
+  // per-model UAE presets also accept an absolute CPU frequency in Hz.
+  // These files are read when PUAE selects a model, including Auto path tags.
+  const frequencies = { A4030: 25000000, A4040: 25000000 };
+  const frequency = coreConfig._vmeAmigaCpuFrequencyHz;
+  if (coreConfig.puae_model === 'A1200' && Number.isSafeInteger(frequency) && frequency > 0) {
+    frequencies.A1200 = frequency;
+  }
+
+  FS.mkdirTree(AMIGA_SAVE_DIR);
+  for (const [model, cpuFrequency] of Object.entries(frequencies)) {
+    FS.writeFile(`${AMIGA_SAVE_DIR}/puae_libretro_${model}.uae`, [
+      'cpu_speed=real',
+      'cpu_multiplier=0',
+      `cpu_frequency=${cpuFrequency}`,
+      'cachesize=0',
+      ''
+    ].join('\n'));
+  }
+}
+
 const AMIGA_NO_MEDIA_CONFIGS = Object.freeze({
   A500: Object.freeze({
     kickstart: 'kick34005.A500',
@@ -329,7 +362,17 @@ function buildAmigaLaunchSettings(fileName, overrides = null, context = null) {
     puae_video_vresolution: "single",
     puae_video_resolution: "hires",
     puae_crop_mode: "auto",
-    puae_floppy_multidrive: "disabled"
+    puae_floppy_multidrive: "disabled",
+    // With multiplier 0 PUAE chooses the native clock from the CPU model and
+    // PAL/NTSC region (68000: chipset x2, 68020: x4). Later CPUs use the fixed
+    // clocks in writeAmigaTimingPresets; their cycle timing remains approximate.
+    puae_cpu_compatibility: 'exact',
+    puae_cpu_throttle: '0.0',
+    puae_cpu_multiplier: '0',
+    puae_immediate_blits: 'false',
+    puae_gfx_framerate: 'disabled',
+    puae_floppy_speed: '100',
+    puae_autoloadfastforward: 'disabled'
   };
 
   if (!noMediaBoot) {
@@ -394,8 +437,9 @@ const Amiga = {
     '--cursorwidth': '0.5em',
     '--portrait-fontsize': '100%'
   },
-  startup_beforelaunch: async function (nostalgist, storageManager) {
+  startup_beforelaunch: async function (nostalgist, storageManager, coreConfig = null) {
     const FS = nostalgist.getEmscriptenFS();
+    writeAmigaTimingPresets(FS, coreConfig);
 
     await writeStoredSystemFile(storageManager, FS, 'kick33180.A500');
     await writeStoredSystemFile(storageManager, FS, 'kick34005.A500');

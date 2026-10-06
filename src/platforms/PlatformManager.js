@@ -181,6 +181,12 @@ export class PlatformManager {
         return { ...config };
     }
 
+    #getRetroarchCoreOptions(config) {
+        // VM/E metadata is saved with the launch configuration and passed to
+        // platform startup hooks, but does not belong in RetroArch's options.
+        return Object.fromEntries(Object.entries(config || {}).filter(([key]) => !key.startsWith('_')));
+    }
+
     #cloneLaunchOverrideValues(values) {
         if (!values || typeof values !== 'object' || Array.isArray(values)) {
             return null;
@@ -886,11 +892,7 @@ export class PlatformManager {
                 video_vsync: lowPerfHw ? false : true,
                 ...retroarchConfigOverrides
             },
-            // Strip internal underscore-prefixed markers (e.g. _vmeShell) — they
-            // are for vme-vibe's own restore logic, not real core options.
-            retroarchCoreConfig: launchCoreConfig && typeof launchCoreConfig === 'object'
-                ? Object.fromEntries(Object.entries(launchCoreConfig).filter(([k]) => !k.startsWith('_')))
-                : launchCoreConfig,
+            retroarchCoreConfig: this.#getRetroarchCoreOptions(launchCoreConfig),
             resolveBios(file) {
                 let key = self.#selected_platform.platform_id + "." + file;
                 let fileContent = self.#resolved_deps[key];
@@ -1250,7 +1252,7 @@ export class PlatformManager {
                 Nostalgist.configure({
                     bios: this.#cloneLaunchBios(resolvedLaunchSettings.bios) || [],
                     retroarchCoreConfig: {
-                        ...(this.#cloneLaunchCoreConfig(resolvedLaunchSettings.coreConfig) || {}),
+                        ...this.#getRetroarchCoreOptions(resolvedLaunchSettings.coreConfig),
                         ...(coreConfigOverrides || {})
                     }
                 });
@@ -1407,7 +1409,7 @@ export class PlatformManager {
             this.#applyLaunchSettings(resolvedLaunchSettings);
             Nostalgist.configure({
                 bios: this.#cloneLaunchBios(resolvedLaunchSettings.bios) || [],
-                retroarchCoreConfig: this.#cloneLaunchCoreConfig(resolvedLaunchSettings.coreConfig) || {}
+                retroarchCoreConfig: this.#getRetroarchCoreOptions(resolvedLaunchSettings.coreConfig)
             });
         };
 
@@ -1752,7 +1754,7 @@ export class PlatformManager {
                         if (Debug.isEnabled()) {
                             Debug.updateMessage('load', 'Executing platform-specific startup sequence.');
                         }
-                        await platform.startup_beforelaunch(nostalgist, storageManager);
+                        await platform.startup_beforelaunch(nostalgist, storageManager, self.#launch_core_config);
                     }
                 },
                 state: self.#state,
