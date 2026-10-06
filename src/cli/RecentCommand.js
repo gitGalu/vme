@@ -56,13 +56,14 @@ export class RecentCommand extends CommandBase {
             const tagBase = platform ? platform.short_name : entry.platformId;
             const ago = HistoryManager.formatRelative(entry.ts);
             return {
-                id: entry.romPath,
+                id: JSON.stringify([entry.romPath, entry.platformId, entry.archiveSelection?.entryPath]),
                 romName: entry.romName,
                 label: `${entry.label} — ${ago}`,
                 tag: tagBase,
                 data: entry.romPath,
                 __platformId: entry.platformId,
-                __caption: entry.label
+                __caption: entry.label,
+                __archiveSelection: entry.archiveSelection
             };
         });
 
@@ -93,7 +94,7 @@ export class RecentCommand extends CommandBase {
                     this.cli.print('Loading...');
                 }
             }
-            await this.#platform_manager.loadRomFileFromUrl(item.data, item.romName, item.__caption || item.romName);
+            await this.#platform_manager.loadRomFileFromUrl(item.data, item.romName, item.__caption || item.romName, { archiveSelection: item.__archiveSelection });
         } catch (error) {
             this.cli.message('LOADING...', '&nbsp;', 'Error loading file.');
         }

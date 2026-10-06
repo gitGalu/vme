@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { archiveSelection, sameArchiveProgram } from '../utils/ArchivePrograms.js';
 import { Debug } from '../Debug.js';
 import { computeBlobSha256 } from '../utils/HashUtils.js';
 
@@ -204,14 +205,17 @@ export class StorageManager {
 
     async getCollectionItems() {
         const collectioneDataArray = await this.#db.collectionItemData.toArray();
-        return collectioneDataArray.map(item => {
+        return Promise.all(collectioneDataArray.map(async item => {
+            if (item.platform_id === 'atari800') {
+                item.rom_hash = (await this.#db.romData.get(item.rom_data_id))?.hash;
+            }
             if (item.screenshot) {
                 item.collection_id = item.id;
                 item.name = item.collection_name;
                 item.image = this.base64ToBlob(item.collection_image);
             }
             return item;
-        });
+        }));
     }
 
     async getCollections() {
@@ -313,7 +317,9 @@ export class StorageManager {
             ? m3uData.diskFiles.filter((disk) => disk && this.#isBlobLike(disk.blob))
             : [];
         const hasDiskSet = diskNames.length > 1;
-        const hasLocalDiskSet = hasDiskSet && diskFiles.length === diskNames.length;
+        // Archive bundles already contain every disk. Do not store extra copies alongside them.
+        const hasLocalDiskSet = hasDiskSet && diskFiles.length === diskNames.length
+            && archiveSelection(launchCoreConfigValue)?.storage !== 'bundle';
         const diskFileHashes = hasLocalDiskSet
             ? await Promise.all(diskFiles.map((disk) => this.#computeHash(disk.blob)))
             : [];
@@ -351,7 +357,12 @@ export class StorageManager {
                     const existingQuickSave = await this.#db.saveMeta
                         .where('rom_data_id')
                         .equals(romDataId)
-                        .filter(save => save.is_quicksave === true && save.platform_id === platform_id)
+                        .filter(save => save.is_quicksave === true && save.platform_id === platform_id
+                            && sameArchiveProgram(archiveSelection(save.launch_core_config), archiveSelection(launchCoreConfigValue))
+                            && (!hasLocalDiskSet || (save.program_name === program_name
+                                && Array.isArray(save.m3u_disk_rom_ids)
+                                && save.m3u_disk_rom_ids.length === m3uDiskRomIds.length
+                                && save.m3u_disk_rom_ids.every((id, index) => id === m3uDiskRomIds[index]))))
                         .first();
 
                     if (existingQuickSave) {

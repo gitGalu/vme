@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Atari archive regression tests</title>
+<body><pre id="result">Run window.runArchiveTests() in an isolated browser context.
+Use VITE_BASE=/ npm run dev -- --port 8081, then /@fs/&lt;repository&gt;/tests/archive-programs.html.
+The test refuses to run if a VM/E database already exists.</pre>
+<section id="settings">
+  <div id="cors_interface"><span id="cors_query_caret">Command&gt;</span><span id="cors_query_prefix"></span><span id="cors_query"></span><div id="cursor"></div></div>
+  <div id="cors_results" tabindex="0"></div>
+</section>
+<script type="module">
+import { runArchiveTests } from './archive-programs.browser.js';
+window.runArchiveTests = async () => {
+  try { const result = await Promise.race([runArchiveTests(), new Promise((_, reject) => setTimeout(() => reject(new Error('Regression tests timed out')), 30000))]); document.getElementById('result').textContent = JSON.stringify(result, null, 2); return result; }
+  catch (error) { document.getElementById('result').textContent = error.stack; throw error; }
+};
+</script></body></html>

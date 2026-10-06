@@ -296,6 +296,7 @@ export class GamepadMenu {
         const items = (filterable && (view.minChars || 0) === 0) ? view.buildItems('') : (view.items || []);
         return {
             title: view.title || '',
+            onBack: typeof view.onBack === 'function' ? view.onBack : null,
             filterable,
             buildItems: view.buildItems || null,
             placeholder: view.placeholder || '',
@@ -418,6 +419,8 @@ export class GamepadMenu {
             this.#setFocusMode('list');
             return;
         }
+
+        if (view?.onBack) { view.onBack(); return; }
 
         if (this.#stack.length > 1) {
             this.#stack.pop();

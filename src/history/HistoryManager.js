@@ -26,15 +26,17 @@ export class HistoryManager {
         StorageManager.storeValue(KEY, JSON.stringify(HistoryManager.#cache || []));
     }
 
-    static record({ romPath, romName, label, platformId }) {
+    static record({ romPath, romName, label, platformId, archiveSelection = null }) {
         if (!romPath || !platformId) return;
         const list = HistoryManager.#load();
-        const filtered = list.filter(e => !(e.romPath === romPath && e.platformId === platformId));
+        const filtered = list.filter(e => !(e.romPath === romPath && e.platformId === platformId
+            && (e.archiveSelection?.entryPath || null) === (archiveSelection?.entryPath || null)));
         filtered.unshift({
             romPath,
             romName: romName || '',
             label: label || romName || '',
             platformId,
+            archiveSelection: archiveSelection ? { ...archiveSelection } : null,
             ts: Date.now()
         });
         HistoryManager.#cache = filtered.slice(0, LIMIT);

@@ -1,3 +1,4 @@
+import { archiveSelection, sameArchiveProgram } from '../utils/ArchivePrograms.js';
 import { CommandBase } from './CommandBase.js';
 import JSZip from 'jszip';
 
@@ -92,6 +93,20 @@ export class RestoreBackupCommand extends CommandBase {
                             const saveMetadata = JSON.parse(await zip.file(saveMetadataPath).async('string'));
                             const saveArrayBuffer = await zip.file(saveDataPath).async('arraybuffer');
                             const saveBlob = new Blob([saveArrayBuffer]);
+                            let m3uData = null;
+                            if (Array.isArray(saveMetadata.m3u_disks) && saveMetadata.m3u_disks.length > 1) {
+                                const names = saveMetadata.m3u_disks;
+                                const diskFiles = [];
+                                if (Array.isArray(saveMetadata.m3u_disk_files)) {
+                                    if (saveMetadata.m3u_disk_files.length !== names.length) throw new Error('Incomplete disk set in backup.');
+                                    for (let i = 0; i < names.length; i++) {
+                                        const disk = zip.file(saveMetadata.m3u_disk_files[i]);
+                                        if (!disk) throw new Error('Missing disk in backup.');
+                                        diskFiles.push({ name: names[i], launch_name: saveMetadata.m3u_disk_launch_names?.[i] || names[i], blob: new Blob([await disk.async('arraybuffer')]) });
+                                    }
+                                }
+                                m3uData = { diskNames: names, diskIndex: saveMetadata.m3u_disk_index, diskFiles };
+                            }
 
                             let screenshot = null;
                             const screenshotFile = zip.file(screenshotPath);
@@ -107,6 +122,7 @@ export class RestoreBackupCommand extends CommandBase {
                                 dosSramBlob,
                                 saveBlob,
                                 saveMetadata,
+                                m3uData,
                                 screenshot
                             });
 
@@ -126,6 +142,7 @@ export class RestoreBackupCommand extends CommandBase {
                         save.platform_id === op.platformId &&
                         save.program_name === op.programName &&
                         save.timestamp === op.saveMetadata.timestamp
+                        && sameArchiveProgram(archiveSelection(save.launch_core_config), archiveSelection(op.saveMetadata.launch_core_config))
                     );
 
                     if (existingSave) {
@@ -141,7 +158,7 @@ export class RestoreBackupCommand extends CommandBase {
                         op.programName,
                         op.saveMetadata.caption,
                         false,
-                        null,
+                        op.m3uData,
                         op.dosSramBlob,
                         op.saveMetadata.dos_exec_hint || null,
                         op.saveMetadata.st_state_path || null,

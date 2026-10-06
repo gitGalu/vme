@@ -13,6 +13,8 @@ export class CLI {
     #articleMode;
     #selectionModeActive = false;
     #keyboardManager = null;
+    #pendingChoice = null;
+    #keyboardListening = false;
 
     constructor() {
         this.#currentIndex = -1;
@@ -196,10 +198,12 @@ export class CLI {
     }
 
     on() {
+        this.#keyboardListening = true;
         document.addEventListener('keydown', this.#kb_event_bound);
     }
 
     off() {
+        this.#keyboardListening = false;
         document.removeEventListener('keydown', this.#kb_event_bound);
     }
 
@@ -215,7 +219,9 @@ export class CLI {
                 this.#addFlashingClass(currentItem.querySelector('span'));
                 this.selected_command.selection_changed(currentItem);
                 const platformOverride = currentItem.getAttribute('data-platform-id') || null;
-                ThumbnailPreview.show(this.#extractItemTitle(currentItem), platformOverride);
+                if (this.selected_command.showThumbnails !== false) {
+                    ThumbnailPreview.show(this.#extractItemTitle(currentItem), platformOverride);
+                }
             }
             if (this.#currentIndex != -1) {
                 if (!this.#isElementInContainerViewport(items[this.#currentIndex].querySelector('span'), container)) {
@@ -241,7 +247,9 @@ export class CLI {
     }
 
     process_input(value) {
+        if (this.#pendingChoice) { this.#pendingChoice.input(value); return; }
         let is_enter = false;
+        let enterSelectionRequested = false;
         const currentQuery = CLI.#corsQuery.textContent.trim().toLowerCase();
         const activeCommandConsumesSpace = Boolean(
             value === ' ' || value === 'space'
@@ -301,6 +309,7 @@ export class CLI {
             }
             else
                 if (this.is_command_selectable && this.#currentIndex == -1) {
+                    enterSelectionRequested = true;
                     if (items.length > 0) {
                         this.#currentIndex++;
                         this.set_selection_mode(true);
@@ -313,9 +322,111 @@ export class CLI {
         }
         const justEnteredSelection = is_enter && this.#selectionModeActive && this.#currentIndex >= 0;
         this.parse_input(CLI.#corsQuery.textContent, is_enter);
-        if (justEnteredSelection) {
+        // Cancelling a ZIP chooser leaves the query intact but clears its results.
+        // The command must rebuild them before ENTER can select the first row.
+        if (enterSelectionRequested && this.is_command_selectable && !this.#is_loading
+            && !this.#pendingChoice && this.#currentIndex === -1
+            && s('#cors_results').querySelector('.corsrow')) {
+            this.#currentIndex = 0;
+            this.set_selection_mode(true);
+        }
+        if (justEnteredSelection || (enterSelectionRequested && this.#selectionModeActive)) {
             this.update();
         }
+    }
+
+    // Temporary selection within the normal CLI, without registering a command
+    // or letting its input dispatch another launch while the caller is awaiting it.
+    chooseFromList(items, { title = 'Choose a file', queryLabel = 'File>' } = {}) {
+        if (this.#pendingChoice) throw new Error('A CLI selection is already active.');
+        const caret = s('#cors_query_caret');
+        const prefix = s('#cors_query_prefix');
+        const settings = s('#settings');
+        const buttons = [...document.querySelectorAll('#menu-button-strip button, #menu-button-header-strip button')];
+        const previous = {
+            command: this.selected_command,
+            selectable: this.is_command_selectable,
+            enterRequired: this.is_enter_required,
+            article: this.#articleMode,
+            loading: this.#is_loading,
+            listening: this.#keyboardListening,
+            query: CLI.#corsQuery.textContent,
+            caret: caret.textContent,
+            caretDisplay: caret.style.display,
+            prefix: prefix.textContent,
+            prefixDisplay: prefix.style.display,
+            pointerEvents: settings.style.pointerEvents,
+            buttonPointers: buttons.map(button => button.style.pointerEvents)
+        };
+        this.set_selection_mode(false);
+        this.clear();
+        this.#articleMode = false;
+        this.set_loading(false);
+        // Keep global menu actions disabled while allowing list and touch input.
+        buttons.forEach(button => { button.style.pointerEvents = 'none'; });
+        caret.textContent = queryLabel;
+        caret.style.display = queryLabel ? '' : 'none';
+        prefix.textContent = '';
+        prefix.style.display = 'none';
+        CLI.#corsQuery.textContent = '';
+        const hint = document.createElement('p');
+        hint.className = 'rnd-hint';
+        if (title) hint.append(title, document.createElement('br'));
+        hint.append('↑/↓ and enter to select, type to filter, ESC to cancel', document.createElement('br'), '\u00a0');
+        const container = s('#cors_results');
+        container.before(hint);
+        return new Promise(resolve => {
+            const command = new class extends CommandBase {
+                constructor() { super(); this.showThumbnails = false; }
+                get_keywords() { return []; }
+                is_selection_enabled() { return true; }
+                process_selection(item) { finish(item.data === null ? null : item); }
+            }();
+            command.set_cli(this);
+            this.selected_command = command;
+            this.is_command_selectable = true;
+            this.is_enter_required = false;
+            const finish = item => {
+                if (!this.#pendingChoice) return;
+                this.#pendingChoice = null;
+                this.off();
+                this.set_selection_mode(false);
+                this.clear();
+                this.selected_command = previous.command;
+                this.is_command_selectable = previous.selectable;
+                this.is_enter_required = previous.enterRequired;
+                this.#articleMode = previous.article;
+                CLI.#corsQuery.textContent = previous.query;
+                caret.textContent = previous.caret;
+                caret.style.display = previous.caretDisplay;
+                prefix.textContent = previous.prefix;
+                prefix.style.display = previous.prefixDisplay;
+                this.set_loading(previous.loading);
+                settings.style.pointerEvents = previous.pointerEvents;
+                buttons.forEach((button, index) => { button.style.pointerEvents = previous.buttonPointers[index]; });
+                if (previous.listening) this.on();
+                resolve(item);
+            };
+            const filter = text => {
+                CLI.#corsQuery.textContent = String(text ?? '');
+                const matches = items.filter(item => item.label.toLowerCase().includes(CLI.#corsQuery.textContent.toLowerCase()));
+                this.set_selection_index(0);
+                command.show_results([...matches, { id: '__cancel', label: 'Cancel', data: null }], true);
+                this.update();
+            };
+            this.#pendingChoice = {
+                finish, filter,
+                input: value => {
+                    if (value === 'escape' || value === 'clear') finish(null);
+                    else if (value === 'enter') this.confirm_selection();
+                    else if (value === 'backspace' || value === 'Backspace') filter(CLI.#corsQuery.textContent.slice(0, -1));
+                    else if (value === 'space') filter(CLI.#corsQuery.textContent + ' ');
+                    else if (value.length === 1) filter(CLI.#corsQuery.textContent + value);
+                }
+            };
+            filter('');
+            this.on();
+        });
     }
 
     register_command(command) {
@@ -357,6 +468,7 @@ export class CLI {
     }
 
     parse_input(input, is_enter, extraContext = {}) {
+        if (this.#pendingChoice) { this.#pendingChoice.filter(input); return; }
         const rawInput = String(input ?? '');
         const trailingWhitespaceCount = rawInput.match(/\s+$/)?.[0].length ?? 0;
         input = rawInput.trim().toLowerCase();
@@ -460,6 +572,7 @@ export class CLI {
     }
 
     reset() {
+        if (this.#pendingChoice) { this.#pendingChoice.finish(null); return; }
         this.#currentIndex = -1;
         this.#articleMode = false;
         CLI.#corsQuery.textContent = '';

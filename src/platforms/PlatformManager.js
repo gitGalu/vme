@@ -31,6 +31,8 @@ import ST from './systems/ST.js';
 import TIC80 from './systems/TIC80.js';
 import Apple2 from './systems/Apple2.js';
 import JSZip from 'jszip';
+import { ArchiveSelectionCancelled, readProgramArchive, extractArchiveProgram, restoreArchiveProgram } from '../utils/ArchivePrograms.js';
+import { showArchiveProgramPicker } from '../components/ArchiveProgramPicker.js';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
 import { EnvironmentManager } from '../EnvironmentManager.js';
@@ -39,6 +41,7 @@ import { Debug } from '../Debug.js';
 import { FileUtils } from '../utils/FileUtils.js';
 import { HistoryManager } from '../history/HistoryManager.js';
 import { DiskSetBuilder } from '../utils/DiskSetBuilder.js';
+import { archiveProgramChoices, buildAtari800DiskSet } from '../utils/Atari800DiskSets.js';
 import { resolveGameProfile } from '../utils/GameProfileMatcher.js';
 import { computeBlobSha256 } from '../utils/HashUtils.js';
 import { ToastManager } from '../ui/ToastManager.js';
@@ -65,6 +68,8 @@ export class PlatformManager {
     #program_name;
     #caption;
     #launch_bios;
+    #archive_selection = null;
+    #pending_archive_disk_index = null;
     #launch_core_config;
     #launch_override_values;
     #pending_launch_bios;
@@ -419,7 +424,7 @@ export class PlatformManager {
         return new Set(availability.filter(Boolean));
     }
 
-    async #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null) {
+    async #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null, useArchiveContext = true) {
         const clonedSavedBios = this.#cloneLaunchBios(savedLaunchBios);
         const clonedSavedCoreConfig = this.#cloneLaunchCoreConfig(savedLaunchCoreConfig);
 
@@ -443,7 +448,8 @@ export class PlatformManager {
 
         if (typeof this.#selected_platform.resolveLaunchSettings === 'function') {
             const resolved = this.#selected_platform.resolveLaunchSettings(romName, overrides, {
-                availableDependencyKeys: await this.#getAvailableDependencyKeys()
+                availableDependencyKeys: await this.#getAvailableDependencyKeys(),
+                archiveName: useArchiveContext ? this.#archive_selection?.archiveName : undefined
             });
             return {
                 bios: this.#cloneLaunchBios(resolved?.bios) || [],
@@ -476,6 +482,9 @@ export class PlatformManager {
     #applyLaunchSettings(launchSettings) {
         this.#launch_bios = this.#cloneLaunchBios(launchSettings?.bios) || [];
         this.#launch_core_config = this.#cloneLaunchCoreConfig(launchSettings?.coreConfig) || {};
+        if (this.#archive_selection) {
+            this.#launch_core_config._vmeArchive = { ...this.#archive_selection };
+        }
         this.#launch_override_values = this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
         // libretro-atari800 7.0.0 (stereo POKEY support): in MONO (1x POKEY) the
         // core fills only the LEFT channel and the right arrives silent. The
@@ -489,6 +498,12 @@ export class PlatformManager {
     async #showLaunchSettingsDialog(title, launchSettings) {
         if (!Array.isArray(launchSettings?.overrideSchema) || launchSettings.overrideSchema.length === 0) {
             return this.#cloneLaunchOverrideValues(launchSettings?.overrideValues);
+        }
+
+        if (this.#archive_selection && this.#vme.isGamepadLaunch()) {
+            const overrides = await this.#vme.showArchiveLaunchSettings(title, launchSettings);
+            if (!overrides) throw new ArchiveSelectionCancelled();
+            return overrides;
         }
 
         // Immersive session: DOM dialogs are invisible there and awaiting one
@@ -1073,10 +1088,53 @@ export class PlatformManager {
         const data = {
             filename: filename,
             caption: caption,
-            romName: romName
+            romName: romName,
+            archiveSelection: this.#archive_selection ? { ...this.#archive_selection } : null
         };
         const jsonString = JSON.stringify(data);
         StorageManager.storeValue(this.#selected_platform.platform_id + ".LAST_FILE", jsonString);
+    }
+
+    usesArchiveProgramPicker(romName) {
+        return Array.isArray(this.#selected_platform.archive_program_extensions)
+            && /\.zip$/i.test(romName || '');
+    }
+
+    async #prepareArchiveProgram(blob, romName, remembered = null, restoringSave = false) {
+        this.#archive_selection = null;
+        const savedDiskIndex = this.#pending_archive_disk_index;
+        this.#pending_archive_disk_index = null;
+        if (restoringSave && remembered && ['entry', 'bundle'].includes(remembered.storage)) {
+            const prepared = await restoreArchiveProgram(blob, remembered, savedDiskIndex);
+            this.#archive_selection = prepared.archiveSelection;
+            return prepared;
+        }
+        if (!this.usesArchiveProgramPicker(romName) || (restoringSave && !remembered)) return null;
+        const archive = await readProgramArchive(blob, this.#selected_platform.archive_program_extensions);
+        const choices = archiveProgramChoices(archive.paths);
+        let path = remembered?.entryPath;
+        if (!path) {
+            path = choices.length === 1 ? choices[0].path
+                : await (this.#vme.isGamepadLaunch()
+                    ? this.#vme.chooseArchiveProgram(choices, romName)
+                    : showArchiveProgramPicker(choices, romName, this.#cli, this.#keyboard_manager));
+        }
+        if (!path) throw new ArchiveSelectionCancelled();
+        const prepared = await extractArchiveProgram(archive, blob, romName, path, remembered);
+        this.#archive_selection = prepared.archiveSelection;
+        // The shell cannot choose defaults before it knows the archive member.
+        this.#skip_launch_settings_prompt_once = false;
+        this.#pending_override_values = null;
+        return prepared;
+    }
+
+    #cancelArchiveLaunch() {
+        this.#archive_selection = null;
+        this.#pending_override_values = null;
+        this.#pending_launch_bios = null;
+        this.#pending_launch_core_config = null;
+        this.#skip_launch_settings_prompt_once = false;
+        this.#vme.cancelPendingLaunch();
     }
 
     async loadRom(romSource, caption, isLocal = true, romName = caption, launchOptions = null) {
@@ -1163,9 +1221,15 @@ export class PlatformManager {
                 romBlob = await downloadFile.call(this, romSource, "Loading ...", true);
             }
             let launchRomInput = romBlob;
+            const archiveProgram = await this.#prepareArchiveProgram(romBlob, romName, launchOptions?.archiveSelection);
+            if (archiveProgram) {
+                launchRomInput = archiveProgram;
+                romName = archiveProgram.archiveSelection.entryPath;
+                caption = launchOptions?.archiveSelection ? caption : `${romName} · ${originalCaption}`;
+            }
             let autoDiskSetInfo = null;
 
-            if (!isLocal) {
+            if (!isLocal && !archiveProgram) {
                 const autoDiskSet = await this.#buildAutoDiskM3uPackage(originalRomSource, originalRomName, romBlob, downloadFile);
                 if (autoDiskSet) {
                     launchRomInput = autoDiskSet;
@@ -1276,24 +1340,38 @@ export class PlatformManager {
             const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...", false);
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
 
-            if (!isLocal) {
-                self.#storeLastProgramInfo(originalRomSource, originalCaption, originalRomName);
-            }
+            const recordLaunch = () => {
+                if (isLocal) return;
+                self.#storeLastProgramInfo(originalRomSource, this.#archive_selection ? caption : originalCaption, originalRomName);
+                if (this.#archive_selection) HistoryManager.record({
+                    romPath: originalRomSource,
+                    romName: originalRomName,
+                    label: caption,
+                    platformId: this.#selected_platform.platform_id,
+                    archiveSelection: this.#archive_selection
+                });
+            };
 
             self.#cli.clear();
             self.#cli.print("Loading complete.");
             self.#cli.print("&nbsp;");
 
+            const printLoadedFile = name => {
+                const escaped = String(name).replace(/[&<>]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[character]));
+                self.#cli.print(`- ${escaped}`);
+            };
             if (autoDiskSetInfo) {
                 self.#cli.print(`Auto M3U prepared (${autoDiskSetInfo.selectedNames.length}/${autoDiskSetInfo.totalDisks}):`);
-                autoDiskSetInfo.selectedNames.forEach((name) => self.#cli.print(`- ${name}`));
+                autoDiskSetInfo.selectedNames.forEach(printLoadedFile);
                 self.#cli.print("&nbsp;");
             } else if (launchStatusMessage) {
                 self.#cli.print(launchStatusMessage);
                 self.#cli.print("&nbsp;");
             } else {
                 self.#cli.print("Program loaded:");
-                self.#cli.print(`- ${caption}`);
+                const loadedNames = archiveProgram?.selectedNames?.length
+                    ? archiveProgram.selectedNames : [this.#archive_selection?.entryPath || caption];
+                loadedNames.forEach(printLoadedFile);
                 self.#cli.print("&nbsp;");
             }
             self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
@@ -1321,8 +1399,13 @@ export class PlatformManager {
                 launchSettings = await this.#resolveLaunchSettings(romName, overrides);
                 applyLaunchSettingsToCore(launchSettings);
                 launchRomInput = await prepareLaunchRomInput(launchRomInput, launchSettings);
-                self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
-                return;
+                recordLaunch();
+                if (!this.#vme.isGamepadLaunch()) {
+                    self.startEmulation(launchRomInput, caption, romName, wasmArrayBuffer);
+                    return;
+                }
+            } else {
+                recordLaunch();
             }
 
             launchRomInput = await prepareLaunchRomInput(launchRomInput, launchSettings);
@@ -1348,6 +1431,7 @@ export class PlatformManager {
             }));
 
         } catch (error) {
+            if (error instanceof ArchiveSelectionCancelled) { this.#cancelArchiveLaunch(); return; }
             console.log(error.stack);
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
@@ -1363,7 +1447,7 @@ export class PlatformManager {
         return this.loadRom(romBlob, caption, true, caption, launchOptions);
     }
 
-    async loadRomFileFromUrl(filename, romName, caption) {
+    async loadRomFileFromUrl(filename, romName, caption, launchOptions = null) {
         if (Debug.isEnabled()) {
             Debug.setMessage(`Starting to load ROM file: ${caption}`);
         }
@@ -1377,17 +1461,34 @@ export class PlatformManager {
             "url": `${filename}`
         });
 
-        HistoryManager.record({
-            romPath: filename,
-            romName,
-            label: caption,
-            platformId: this.#selected_platform.platform_id
-        });
-
-        return this.loadRom(filename, caption, false, romName);
+        if (!this.usesArchiveProgramPicker(romName)) {
+            HistoryManager.record({ romPath: filename, romName, label: caption, platformId: this.#selected_platform.platform_id });
+        }
+        return this.loadRom(filename, caption, false, romName, launchOptions);
     }
 
     async loadRomFile(blob, romName, caption, fromBrowser = false, browserType = null, closeCallback = null) {
+        try {
+            const originalCaption = caption;
+            const remembered = this.#pending_launch_core_config?._vmeArchive;
+            const archiveProgram = await this.#prepareArchiveProgram(blob, romName, remembered, browserType === 'save');
+            if (archiveProgram) {
+                blob = archiveProgram;
+                romName = archiveProgram.archiveSelection.entryPath;
+                caption = remembered ? caption : `${romName} · ${originalCaption}`;
+            }
+            return await this.#loadPreparedRomFile(blob, romName, caption, fromBrowser, browserType, closeCallback);
+        } catch (error) {
+            if (error instanceof ArchiveSelectionCancelled) {
+                if (closeCallback) closeCallback();
+                this.#cancelArchiveLaunch();
+                return;
+            }
+            throw error;
+        }
+    }
+
+    async #loadPreparedRomFile(blob, romName, caption, fromBrowser, browserType, closeCallback) {
         // Shell-chosen Autoconfig overrides (if any) - see loadRom().
         const shellOverrides = this.#pending_override_values;
         this.#pending_override_values = null;
@@ -1399,7 +1500,7 @@ export class PlatformManager {
         );
         this.#pending_launch_bios = null;
         this.#pending_launch_core_config = null;
-        const shouldPromptLaunchSettings = !this.#skip_launch_settings_prompt_once
+        let shouldPromptLaunchSettings = !this.#skip_launch_settings_prompt_once
             && !shellOverrides
             && launchSettings.source !== 'saved'
             && Array.isArray(launchSettings.overrideSchema)
@@ -1415,6 +1516,12 @@ export class PlatformManager {
 
         this.#prepareNostalgist(romName, caption);
         applyLaunchSettingsToCore(launchSettings);
+        if (shouldPromptLaunchSettings && this.#archive_selection && this.#vme.isGamepadLaunch()) {
+            const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
+            launchSettings = await this.#resolveLaunchSettings(romName, overrides);
+            applyLaunchSettingsToCore(launchSettings);
+            shouldPromptLaunchSettings = false;
+        }
 
         const gamepadManager = this.#vme.getGamepadManager();
         if (gamepadManager) {
@@ -1627,8 +1734,8 @@ export class PlatformManager {
 
         if (platform_id == "md") platform_id = "smd"; //temp fix
         let platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
-        this.#storage_manager.checkFiles(platform)
-            .then(([deps, missingDeps, softFile]) => {
+        return this.#storage_manager.checkFiles(platform)
+            .then(async ([deps, missingDeps, softFile]) => {
                 this.#resolved_deps = deps;
                 let selected = Object.values(SelectedPlatforms).find(platform => platform.platform_id === platform_id);
                 this.setSelectedPlatform(selected);
@@ -1640,7 +1747,7 @@ export class PlatformManager {
                 this.#pending_launch_bios = this.#cloneLaunchBios(launchBios);
                 this.#pending_launch_core_config = this.#cloneLaunchCoreConfig(launchCoreConfig);
                 this.#skip_launch_settings_prompt_once = true;
-                this.loadRomFile(blob, program_name, caption, true, 'collection', closeCallback);
+                return this.loadRomFile(blob, program_name, caption, true, 'collection', closeCallback);
             });
     }
 
@@ -1791,9 +1898,10 @@ export class PlatformManager {
                 emscriptenModule: emscriptenModule
             });
 
-            if (platform.platform_id === 'cpc' && self.#state instanceof Blob && launchRom.diskNames.length > 1 && launchRom.diskIndex > 0) {
-                // Cap32 always inserts the first M3U disk on launch; its savestate does not restore disk control.
-                await this.#restoreCpcDiskIndex(this.#nostalgist, launchRom.diskIndex);
+            if (self.#state instanceof Blob && launchRom.diskNames.length > 1
+                && ((platform.platform_id === 'cpc' && launchRom.diskIndex > 0) || platform.platform_id === 'atari800')) {
+                // These cores initialise libretro disk control at index zero, independently of the restored state.
+                await this.#restoreM3uDiskIndex(this.#nostalgist, launchRom.diskIndex);
             }
         }
         catch (error) {
@@ -1825,6 +1933,10 @@ export class PlatformManager {
 
     getNostalgist() {
         return this.#nostalgist;
+    }
+
+    getArchiveSelection() {
+        return this.#archive_selection ? { ...this.#archive_selection } : null;
     }
 
     getProgramName() {
@@ -1941,7 +2053,7 @@ export class PlatformManager {
      * @returns {?{schema:Array, values:Object, guessed:Object}}
      */
     async getLaunchOverrideModel(romName) {
-        const settings = await this.#resolveLaunchSettings(romName, null);
+        const settings = await this.#resolveLaunchSettings(romName, null, null, null, false);
         if (!Array.isArray(settings.overrideSchema) || settings.overrideSchema.length === 0) {
             return null;
         }
@@ -2751,7 +2863,7 @@ export class PlatformManager {
         return String(fileName || '').toLowerCase().endsWith('.dsk');
     }
 
-    async #restoreCpcDiskIndex(nostalgist, index) {
+    async #restoreM3uDiskIndex(nostalgist, index) {
         let ejected = false;
         try {
             nostalgist.sendCommand('DISK_EJECT_TOGGLE');
@@ -2764,7 +2876,7 @@ export class PlatformManager {
             await this.sleep(80);
         } catch (error) {
             this.#current_m3u_disk_index = 0;
-            console.warn('Failed to restore Cap32 disk selection:', error);
+            console.warn('Failed to restore disk selection:', error);
         } finally {
             if (ejected) {
                 nostalgist.sendCommand('DISK_EJECT_TOGGLE');
@@ -2945,6 +3057,8 @@ export class PlatformManager {
             return null;
         }
 
+        // Atari ZIPs are grouped by the archive chooser, never by taking every disk in the ZIP.
+        if (this.#selected_platform.core === 'atari800' && this.#isZipFile(selectedRomName)) return null;
         const archiveDiskSet = await this.#buildDiskM3uPackageFromArchive(selectedRomName, selectedBlob);
         if (archiveDiskSet) {
             this.#cli.print_progress(`Detected multi-disk archive (${archiveDiskSet.totalDisks} disks). Preparing M3U ...`);
@@ -2956,7 +3070,10 @@ export class PlatformManager {
             return null;
         }
 
-        const diskSet = DiskSetBuilder.buildBestSet(entries, selectedRomName, selectedUrl);
+        const isAtari800 = this.#selected_platform.core === 'atari800';
+        const diskSet = isAtari800
+            ? buildAtari800DiskSet(entries, selectedRomName, selectedUrl)
+            : DiskSetBuilder.buildBestSet(entries, selectedRomName, selectedUrl);
         if (!diskSet || !diskSet.isComplete || !diskSet.isConfident || diskSet.total < 2) {
             return null;
         }
@@ -2982,22 +3099,22 @@ export class PlatformManager {
                 return null;
             }
             selectedFiles.push({
-                fileName: resolved.launchFileName,
+                fileName: isAtari800 ? `vme_disk_${i}.${resolved.launchFileName.split('.').pop().toLowerCase()}` : resolved.launchFileName,
                 fileContent: resolved.launchBlob
             });
             selectedSourceNames.push(file.romName);
-            selectedLaunchNames.push(resolved.launchFileName);
+            selectedLaunchNames.push(selectedFiles[i].fileName);
             selectedLaunchBlobs.push(resolved.launchBlob);
         }
 
-        const m3uName = `${FileUtils.getFilenameWithoutExtension(selectedRomName)}.m3u`;
+        const m3uName = `${FileUtils.getFilenameWithoutExtension(isAtari800 ? diskSet.selected[0].romName : selectedRomName)}.m3u`;
         const m3uBody = selectedFiles.map((file) => file.fileName).join('\n');
         const m3uBlob = new Blob([m3uBody], { type: 'text/plain' });
 
         return {
             launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...selectedFiles],
             primaryBlob: m3uBlob,
-            saveBlob: selectedBlob,
+            saveBlob: isAtari800 ? m3uBlob : selectedBlob,
             primaryFileName: m3uName,
             selectedNames: selectedSourceNames,
             selectedDisplayNames: selectedSourceNames,
@@ -3084,7 +3201,7 @@ export class PlatformManager {
         return {
             launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...launchFiles],
             primaryBlob: m3uBlob,
-            saveBlob: launchFiles[safeIndex]?.fileContent || launchFiles[0].fileContent,
+            saveBlob: this.#selected_platform.core === 'atari800' ? m3uBlob : (launchFiles[safeIndex]?.fileContent || launchFiles[0].fileContent),
             primaryFileName: m3uName,
             selectedNames: [...diskNames],
             selectedDisplayNames: [...diskNames],
@@ -3137,7 +3254,7 @@ export class PlatformManager {
         return {
             launchFiles: [{ fileName: m3uName, fileContent: m3uBlob }, ...launchFiles],
             primaryBlob: m3uBlob,
-            saveBlob: launchFiles[safeIndex]?.fileContent || launchFiles[0].fileContent,
+            saveBlob: this.#selected_platform.core === 'atari800' ? m3uBlob : (launchFiles[safeIndex]?.fileContent || launchFiles[0].fileContent),
             primaryFileName: m3uName,
             selectedNames: [...diskNames],
             selectedDisplayNames: sourceDisplayNames,
@@ -4019,7 +4136,8 @@ export class PlatformManager {
         let launchProgramName = program_name;
         let dosCanAutoLoadState = false;
 
-        if (this.#isMultidiskEnabled() && Array.isArray(m3uDisks) && m3uDisks.length > 1) {
+        if (this.#isMultidiskEnabled() && launchCoreConfig?._vmeArchive?.storage !== 'bundle'
+            && Array.isArray(m3uDisks) && m3uDisks.length > 1) {
             try {
                 let restoredM3uLaunch = null;
                 if (Array.isArray(m3uDiskRomIds) && m3uDiskRomIds.length === m3uDisks.length) {
@@ -4072,6 +4190,7 @@ export class PlatformManager {
         this.#pending_st_state_path = isSt && typeof stStatePath === 'string' ? stStatePath : null;
         this.#pending_launch_bios = this.#cloneLaunchBios(launchBios);
         this.#pending_launch_core_config = this.#cloneLaunchCoreConfig(launchCoreConfig);
+        this.#pending_archive_disk_index = m3uDiskIndex;
         this.#skip_launch_settings_prompt_once = true;
         if (isDos && dosCanAutoLoadState) {
             this.#logDosDebug('DOS restore mode: launch-time state autoload.');

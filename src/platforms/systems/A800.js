@@ -30,7 +30,7 @@ const A800_BASIC_VALUES = new Set(A800_BASIC_OPTIONS.map(option => option.value)
 const A800_VIDEO_STANDARD_VALUES = new Set(A800_VIDEO_STANDARD_OPTIONS.map(option => option.value));
 const A800_STEREO_VALUES = new Set(A800_STEREO_OPTIONS.map(option => option.value));
 
-function guessA800Model(fileName) {
+function guessA800Model(fileName, fallback = '800XL (64K)') {
     const nameU = String(fileName ?? '').toUpperCase();
 
     if (
@@ -63,7 +63,7 @@ function guessA800Model(fileName) {
         return '400/800 (OS B)';
     }
 
-    return '800XL (64K)';
+    return fallback;
 }
 
 function getA800BiosForModel(model) {
@@ -113,9 +113,9 @@ function normalizeA800Stereo(value, fallback = 'off') {
     return A800_STEREO_VALUES.has(normalized) ? normalized : fallback;
 }
 
-function buildA800LaunchSettings(fileName, overrides = null) {
-    const nameU = String(fileName ?? '').toUpperCase();
-    const guessedModel = guessA800Model(fileName);
+function buildA800LaunchSettings(fileName, overrides = null, context = {}) {
+    const nameU = `${fileName ?? ''} ${context.archiveName ?? ''}`.toUpperCase();
+    const guessedModel = guessA800Model(fileName, guessA800Model(context.archiveName));
     const guessedBasic = nameU.includes('[BASIC]') ? 'on' : 'off';
     const guessedVideoStandard = nameU.includes('[REQ OSB]') ? 'NTSC' : 'PAL';
     const guessedStereo = nameU.includes('[STEREO]') ? 'on' : 'off';
@@ -131,14 +131,11 @@ function buildA800LaunchSettings(fileName, overrides = null) {
         atari800_resolution: '336x240',
         atari800_system: model,
         atari800_internalbasic: basic === 'on' ? 'enabled' : 'disabled',
+        atari800_cassboot: /\.cas$/i.test(fileName) ? 'enabled' : 'disabled',
         // Note: the core force-overrides this to mono for the Atari 5200 and
         // for Bounty Bob Strikes Back (.car), regardless of what we request.
         atari800_pokey_stereo: stereo === 'on' ? 'enabled' : 'disabled'
     };
-
-    if (nameU.includes('.CAS')) {
-        coreConfig.atari800_cassboot = 'enabled';
-    }
 
     return {
         bios: getA800BiosForModel(model),
@@ -184,6 +181,9 @@ const A800 = {
     ...PlatformBase,
     platform_id: 'atari800',
     core: 'atari800',
+    multidisk: true,
+    // Explicit opt-in: other platforms retain their existing ZIP handling.
+    archive_program_extensions: ['xfd', 'atr', 'dcm', 'cas', 'bin', 'a52', 'atx', 'car', 'rom', 'com', 'xex', 'm3u'],
     core_asset_version: 'direct-frame-rwebaudio-1',
     bios: ['ATARIXL.ROM', 'ATARIBAS.ROM'],
     platform_name: 'Atari 800 / XE / XL',
@@ -206,7 +206,7 @@ const A800 = {
     force_scale: true,
     video_smooth: false,
     guessBIOS: (fileName) => buildA800LaunchSettings(fileName).bios,
-    resolveLaunchSettings: (fileName, overrides = null) => buildA800LaunchSettings(fileName, overrides),
+    resolveLaunchSettings: (fileName, overrides = null, context = {}) => buildA800LaunchSettings(fileName, overrides, context),
     guessConfig: (fileName) => buildA800LaunchSettings(fileName).coreConfig,
     dependencies: [
         {

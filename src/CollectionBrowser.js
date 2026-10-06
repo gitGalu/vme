@@ -359,7 +359,8 @@ export class CollectionBrowser {
                         
                         items.forEach(item => {
                             const saveAvailable = saveMeta.
-                                filter(save => save.platform_id == item.platform_id && save.rom_data_id == item.rom_data_id)
+                                filter(save => save.platform_id == item.platform_id && (save.rom_data_id == item.rom_data_id
+                                    || (item.rom_hash && save.launch_core_config?._vmeArchive?.archiveHash === item.rom_hash)))
                                 .sort((a, b) => b.timestamp - a.timestamp)[0];
 
                             if (saveAvailable != undefined) {
@@ -525,7 +526,8 @@ export class CollectionBrowser {
 
         items.forEach(item => {
             const saveAvailable = saveMeta
-                .filter(save => save.platform_id == item.platform_id && save.rom_data_id == item.rom_data_id)
+                .filter(save => save.platform_id == item.platform_id && (save.rom_data_id == item.rom_data_id
+                    || (item.rom_hash && save.launch_core_config?._vmeArchive?.archiveHash === item.rom_hash)))
                 .sort((a, b) => b.timestamp - a.timestamp)[0];
             // IMPORTANT: getSaveData expects saveMeta.id (primary key), NOT save_data_id.
             // (Same caveat as the coverflow path.)

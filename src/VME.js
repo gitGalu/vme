@@ -25,6 +25,7 @@ import { CheckFixCommand } from './cli/CheckFixCommand.js';
 import { BootCommand } from './cli/BootCommand.js';
 import { PlatformManager, SelectedPlatforms } from './platforms/PlatformManager.js';
 import { HistoryManager } from './history/HistoryManager.js';
+import { archiveSelection, sameArchiveProgram } from './utils/ArchivePrograms.js';
 import { t, getShellLang, setShellLang, SHELL_LANGS, formatRelativeShell } from './i18n/shellStrings.js';
 import { UiManager } from './ui/UiManager.js';
 import { ThumbnailPreview, ThumbnailPreviewClass } from './ui/ThumbnailPreview.js';
@@ -859,7 +860,7 @@ export class VME {
             const platform = Object.values(SelectedPlatforms).find(p => p.platform_id === entry.platformId);
             const ago = formatRelativeShell(entry.ts);
             return {
-                id: entry.romPath + '|' + entry.platformId,
+                id: JSON.stringify([entry.romPath, entry.platformId, entry.archiveSelection?.entryPath]),
                 label: `${entry.label || entry.romName} — ${ago}`,
                 // Show the platform when unfiltered (cross-platform); pointless to repeat when filtered.
                 hint: filter ? '' : (platform ? platform.short_name : entry.platformId),
@@ -923,7 +924,10 @@ export class VME {
         try {
             const metas = await this.#db.getAllSaveMeta();   // sorted: newest first
             latestSave = metas.find(m =>
-                m.program_name === entry.romName && m.platform_id === entry.platformId) || null;
+                m.platform_id === entry.platformId
+                && (entry.archiveSelection
+                    ? sameArchiveProgram(archiveSelection(m.launch_core_config), entry.archiveSelection)
+                    : m.program_name === entry.romName && !archiveSelection(m.launch_core_config))) || null;
         } catch (e) {
             console.error('[recent] save lookup failed:', e);
         }
@@ -954,7 +958,7 @@ export class VME {
         }
         const label = entry.label || entry.romName;
         this.#launchViaShell(entry.romName, label,
-            () => this.#loadBrowseRom(entry.romPath, entry.romName, label));
+            () => this.#loadBrowseRom(entry.romPath, entry.romName, label, { archiveSelection: entry.archiveSelection }));
     }
 
     /** Continue: load the newest savestate (like Save Browser restore), in shell mode. */
@@ -1108,6 +1112,10 @@ export class VME {
      * config step). Chosen overrides are injected via setPendingOverrideValues.
      */
     async #launchViaShell(romName, title, launch) {
+        if (this.#pl.usesArchiveProgramPicker(romName)) {
+            launch();
+            return;
+        }
         let model = null;
         try {
             model = romName ? await this.#pl.getLaunchOverrideModel(romName) : null;
@@ -1128,12 +1136,12 @@ export class VME {
      * launches with defaults), then one row per override field below it (scroll
      * down to tweak; A cycles a field's value).
      */
-    #buildAutoconfigView(model, values, title, launch) {
+    #buildAutoconfigView(model, values, title, launch, onCancel = null) {
         const rows = [{
             id: '_start',
             label: t('autoconfig.start'),
             onActivate: () => {
-                this.#pl.setPendingOverrideValues(values);
+                if (!onCancel) this.#pl.setPendingOverrideValues(values);
                 launch();
             }
         }];
@@ -1146,7 +1154,7 @@ export class VME {
                 const idx = Math.max(0, opts.findIndex(o => o.value === values[field.id]));
                 const next = opts[(idx + dir + opts.length) % opts.length];
                 if (next) values[field.id] = next.value;
-                this.#gamepad_menu.replaceTop(this.#buildAutoconfigView(model, values, title, launch));
+                this.#gamepad_menu.replaceTop(this.#buildAutoconfigView(model, values, title, launch, onCancel));
             };
             rows.push({
                 id: `cfg_${field.id}`,
@@ -1157,10 +1165,65 @@ export class VME {
             });
         }
         // focusIndex 0 = Start row (kept across replaceTop while editing fields).
-        return { title: t('autoconfig.title'), items: rows, focusIndex: 0 };
+        return { title: onCancel ? `${t('autoconfig.title')} · ${title}` : t('autoconfig.title'), items: rows, focusIndex: 0, onBack: onCancel };
     }
 
-    async #loadBrowseRom(url, romName, label) {
+    #showArchiveLaunchView(title, buildView) {
+        this.#launchedFromGamepad = true;
+        ++this.#vrLaunchToken;
+        this.#hideLaunchScreen();
+        this.#enterGamepadMenu();
+        return new Promise(resolve => {
+            let done = false;
+            const finish = value => {
+                if (done) return;
+                done = true;
+                this.#gamepad_menu.close();
+                this.#exitGamepadMenu();
+                if (value !== null) {
+                    this.#pendingLaunchTitle = title;
+                    this.#showLaunchScreen(title);
+                    this.#startVrAutoLaunch(title);
+                }
+                resolve(value);
+            };
+            this.#gamepad_menu.pushView(buildView(finish));
+        });
+    }
+
+    chooseArchiveProgram(paths, title) {
+        const choices = paths.map(item => typeof item === 'string' ? { path: item, label: item } : item);
+        return this.#showArchiveLaunchView(title, finish => ({
+            title: `Choose a program · ${title}`,
+            filterable: true,
+            initialFocusMode: 'list',
+            placeholder: 'Filter files…',
+            emptyHint: 'No matching files.',
+            buildItems: filter => choices.filter(item => item.label.toLowerCase().includes(filter.toLowerCase()))
+                .map(item => ({ id: item.path, label: item.label, onActivate: () => finish(item.path) })),
+            onBack: () => finish(null)
+        }));
+    }
+
+    showArchiveLaunchSettings(title, settings) {
+        const values = { ...settings.overrideValues };
+        return this.#showArchiveLaunchView(title, finish => this.#buildAutoconfigView(
+            { schema: settings.overrideSchema }, values, title,
+            () => finish({ ...values }), () => finish(null)
+        ));
+    }
+
+    cancelPendingLaunch() {
+        const returnToShell = this.isGamepadLaunch();
+        ++this.#vrLaunchToken;
+        this.#launchedFromGamepad = false;
+        this.#hideLaunchScreen();
+        this.#cli.set_loading(false);
+        this.toggleScreen(VME.CURRENT_SCREEN.MENU);
+        if (returnToShell) this.#enterGamepadMenu();
+    }
+
+    async #loadBrowseRom(url, romName, label, launchOptions = null) {
         // Close the shell and show the launch screen (covers the CLI while loading). It
         // starts in 'Loading…' and switches to 'press to start' on awaiting-launch-gesture.
         // The launch-settings dialog (if any) has a HIGHER z-index and appears above the
@@ -1178,7 +1241,7 @@ export class VME {
         this.#applyVrCanvasLayout();
         this.#startVrAutoLaunch(label);   // no-op outside an XR session
         try {
-            await this.#pl.loadRomFileFromUrl(url, romName, label);
+            await this.#pl.loadRomFileFromUrl(url, romName, label, launchOptions);
         } catch (error) {
             console.error('[gamepad-menu] load failed:', error);
             this.#setLaunchError(this.#friendlyLoadError(error));
@@ -1657,7 +1720,8 @@ export class VME {
             const program = this.#pl.getProgramName?.();
             const platformId = this.#pl.getSelectedPlatform?.()?.platform_id;
             const metas = await this.#db.getAllSaveMeta();   // newest first
-            const m = metas.find(x => x.program_name === program && x.platform_id === platformId);
+            const m = metas.find(x => x.program_name === program && x.platform_id === platformId
+                && sameArchiveProgram(archiveSelection(x.launch_core_config), this.#pl.getArchiveSelection()));
             if (m) this.#ingameLatestSaveId = m.id;
         } catch (e) {
             console.error('[ingame] save lookup failed:', e);

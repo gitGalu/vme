@@ -60,11 +60,12 @@ export class BackupCommand extends CommandBase {
                 const saveData = await this.#storageManager.getSaveData(saveMeta.id);
 
                 const platformDir = saveData.platform_id;
-                const programDir = `${platformDir}/${this.#sanitizeFilename(saveData.program_name)}`;
+                const isArchiveProgram = !!saveData.launch_core_config?._vmeArchive;
+                const programDir = `${platformDir}/${this.#sanitizeFilename(saveData.program_name)}${isArchiveProgram ? '_rom' + saveMeta.rom_data_id : ''}`;
                 const saveTimestamp = new Date(saveData.timestamp).toISOString().replace(/[:]/g, '-');
 
                 const romFilename = `${programDir}/rom_data`;
-                if (!zip.file(romFilename)) {
+                if (!zip.file(`${romFilename}.bin`)) {
                     const romMetadata = {
                         program_name: saveData.program_name,
                         platform_id: saveData.platform_id,
@@ -89,7 +90,18 @@ export class BackupCommand extends CommandBase {
                     }
                 }
 
-                const saveFilename = `${programDir}/save_${saveTimestamp}`;
+                const saveFilename = `${programDir}/save_${saveTimestamp}_${saveMeta.id}`;
+                const diskBackupFiles = [];
+                if (Array.isArray(saveData.m3u_disk_rom_ids)) {
+                    for (const romId of saveData.m3u_disk_rom_ids) {
+                        const diskPath = `${programDir}/disk_data_${romId}.bin`;
+                        if (!zip.file(diskPath)) {
+                            const disk = await this.#storageManager.getRomData(romId);
+                            zip.file(diskPath, await disk.rom_data.arrayBuffer());
+                        }
+                        diskBackupFiles.push(diskPath);
+                    }
+                }
 
                 const saveMetadata = {
                     timestamp: saveData.timestamp,
@@ -99,7 +111,11 @@ export class BackupCommand extends CommandBase {
                     dos_exec_hint: saveData.dos_exec_hint || null,
                     st_state_path: saveData.st_state_path || null,
                     launch_bios: saveData.launch_bios || null,
-                    launch_core_config: saveData.launch_core_config || null
+                    launch_core_config: saveData.launch_core_config || null,
+                    m3u_disks: saveData.m3u_disks || null,
+                    m3u_disk_index: saveData.m3u_disk_index ?? null,
+                    m3u_disk_launch_names: saveData.m3u_disk_launch_names || null,
+                    m3u_disk_files: diskBackupFiles.length ? diskBackupFiles : null
                 };
                 zip.file(`${saveFilename}.json`, JSON.stringify(saveMetadata, null, 2));
 

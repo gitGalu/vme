@@ -617,7 +617,10 @@ body {
 #settings.launch-loading #cors_interface,
 #settings.launch-loading #menu-button-strip,
 #settings.launch-loading #menu-button-header-strip,
-#settings.launch-loading .menu-strip-spacer {
+#settings.launch-loading .menu-strip-spacer,
+#settings.archive-program-choice #menu-button-strip,
+#settings.archive-program-choice #menu-button-header-strip,
+#settings.archive-program-choice .menu-strip-spacer {
   display: none !important;
 }
 

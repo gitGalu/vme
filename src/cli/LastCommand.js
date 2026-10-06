@@ -26,6 +26,9 @@ export class LastCommand extends CommandBase {
             if (data.caption == undefined) {
                 data.caption = data.romName;
             }
+            if (this.#platform_manager.usesArchiveProgramPicker(data.romName)) {
+                data.caption = data.romName;
+            }
 
             this.cli.print("Press ENTER to load:");
             this.cli.print("&nbsp;");

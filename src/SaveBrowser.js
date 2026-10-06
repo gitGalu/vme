@@ -1,3 +1,4 @@
+import { saveGameKey } from './utils/ArchivePrograms.js';
 import { s, addButtonEventListeners, removeButtonEventListeners } from "./dom";
 import { VME } from './VME.js';
 import Flicking from "@egjs/flicking";
@@ -157,7 +158,7 @@ export class SaveBrowser {
                         if (!this.#isGameView) {
                             const programName = panel.getAttribute('data-program-name');
                             const platformId = panel.getAttribute('data-platform-id');
-                            this.#showGameSaves(programName, platformId);
+                            this.#showGameSaves(programName, platformId, panel.getAttribute('data-game-key'));
                         } else {
                             this.#loadSelected();
                         }
@@ -212,10 +213,10 @@ export class SaveBrowser {
         const quicksaveLabel = (this.#isGameView && item.is_quicksave === true) ? `<div class="flicking-title flicking-title-time" style="color: #ff6b9d;">QUICKSAVE</div>` : '';
 
         return `
-            <div class="flicking-panel" data-id="${item.id}" data-program-name="${item.program_name}" data-platform-id="${platform.platform_id}">
-                <img src="${url}" alt="${item.program_name}" loading="lazy" style="transform: rotate(${randomDegree}deg)">
+            <div class="flicking-panel" data-id="${item.id}" data-game-key="${encodeURIComponent(saveGameKey(item))}" data-program-name="${escapeHTML(item.program_name)}" data-platform-id="${platform.platform_id}">
+                <img src="${url}" alt="${escapeHTML(item.program_name)}" loading="lazy" style="transform: rotate(${randomDegree}deg)">
                 ${quicksaveLabel}
-                <div class="flicking-title flicking-title-name">${item.caption} (${platform.short_name})</div>
+                <div class="flicking-title flicking-title-name">${escapeHTML(item.caption)} (${platform.short_name})</div>
                 ${timeDisplay}
             </div>
         `;
@@ -412,7 +413,7 @@ export class SaveBrowser {
                 if (activePanel) {
                     const programName = activePanel.element.getAttribute('data-program-name');
                     const platformId = activePanel.element.getAttribute('data-platform-id');
-                    this.#showGameSaves(programName, platformId);
+                    this.#showGameSaves(programName, platformId, activePanel.element.getAttribute('data-game-key'));
                 }
             }
         };
@@ -597,8 +598,7 @@ export class SaveBrowser {
         const activePanel = this.#flicking.currentPanel;
         if (activePanel != null) {
             const id = activePanel.element.getAttribute('data-id');
-            const programName = activePanel.element.getAttribute('data-program-name');
-            const platformId = activePanel.element.getAttribute('data-platform-id');
+            const gameKey = decodeURIComponent(activePanel.element.getAttribute('data-game-key'));
             const intId = parseInt(id, 10);
             const max = this.#flicking.panelCount - 1;
             const currentIndex = activePanel.index;
@@ -616,8 +616,7 @@ export class SaveBrowser {
                 } else if (this.#isGameView) {
                     this.#db.getAllSaveMeta().then(items => {
                         const gameStillHasSaves = items.some(item =>
-                            item.program_name === programName &&
-                            item.platform_id === platformId
+                            saveGameKey(item) === gameKey
                         );
 
                         if (!gameStillHasSaves) {
@@ -747,7 +746,7 @@ export class SaveBrowser {
                 if (!this.#isGameView) {
                     const programName = activePanel.element.getAttribute('data-program-name');
                     const platformId = activePanel.element.getAttribute('data-platform-id');
-                    this.#showGameSaves(programName, platformId);
+                    this.#showGameSaves(programName, platformId, activePanel.element.getAttribute('data-game-key'));
                 } else {
                     this.#loadSelected();
                 }
@@ -873,7 +872,7 @@ export class SaveBrowser {
         const gameMap = new Map();
 
         items.forEach(item => {
-            const gameKey = `${item.program_name}_${item.platform_id}`;
+            const gameKey = saveGameKey(item);
             if (!gameMap.has(gameKey)) {
                 gameMap.set(gameKey, {
                     latestSave: item,
@@ -1006,7 +1005,8 @@ export class SaveBrowser {
         loadData();
     }
 
-    #showGameSaves(gameId, platformId) {
+    #showGameSaves(gameId, platformId, encodedGameKey) {
+        const gameKey = decodeURIComponent(encodedGameKey);
         this.#lastGamePosition = this.#flicking.currentPanel
           ? this.#flicking.currentPanel.index
           : 0;
@@ -1040,8 +1040,7 @@ export class SaveBrowser {
                 .then(items => {
                     const gameSaves = items
                         .filter(item =>
-                            item.program_name === gameId &&
-                            item.platform_id === platformId
+                            saveGameKey(item) === gameKey
                         )
                         .sort((a, b) => b.timestamp - a.timestamp);
     
@@ -1090,4 +1089,8 @@ export class SaveBrowser {
             timeout = setTimeout(later, wait);
         };
     }
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
