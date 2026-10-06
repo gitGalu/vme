@@ -10,6 +10,8 @@ The suite covers ZIP filtering, CLI member selection/filtering/cancellation with
 M3U bundles, payload deduplication, quicksave isolation, backups, CLI LAST/history,
 local history exclusion, and restoring new and legacy saves. The core launch is
 captured rather than running WASM. Actual emulation should also be checked manually.
+The suite also checks CLI selection with keyboard and touch controls, preserved
+result rows and thumbnails, wraparound, filtering, and the LIST/RND commands.
 
 Only Atari 800 opts into `archive_program_extensions`. New saves keep the selected
 file, or a deterministic ZIP containing a playlist and the selected set's disks.

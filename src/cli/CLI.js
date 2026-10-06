@@ -15,6 +15,7 @@ export class CLI {
     #keyboardManager = null;
     #pendingChoice = null;
     #keyboardListening = false;
+    #highlightedSpan = null;
 
     constructor() {
         this.#currentIndex = -1;
@@ -49,10 +50,7 @@ export class CLI {
             this.#hideCursor();
         } else {
             this.#currentIndex = -1;
-            const container = document.querySelector('#cors_results');
-            if (container) {
-                container.querySelectorAll('span.highlight').forEach(el => el.classList.remove('highlight'));
-            }
+            this.#clearHighlight();
             ThumbnailPreview.hide();
             this.#showCursor();
             if (this.selected_command) {
@@ -155,6 +153,7 @@ export class CLI {
             this.process_input('backspace');
         } else if (event.key == 'Enter') {
             this.process_input('enter');
+            return;
         } else if (event.key === 'Escape') {
             this.process_input('escape');
         } else if (event.key === 'ArrowDown') {
@@ -210,22 +209,24 @@ export class CLI {
     update() {
         if (this.is_command_selectable) {
             const container = s('#cors_results');
-            let items = [...container.children];
-            items = items.filter(item => item.classList.contains('corsrow'));
-            if (items.length == 0) return;
-            items.forEach(item => item.querySelector('span').classList.remove('highlight'));
-            if (this.#currentIndex >= 0) {
-                const currentItem = items[this.#currentIndex];
-                this.#addFlashingClass(currentItem.querySelector('span'));
+            const items = container.getElementsByClassName('corsrow');
+            const currentItem = this.#currentIndex >= 0 ? items[this.#currentIndex] : null;
+            const currentSpan = currentItem?.querySelector('span') ?? null;
+            if (currentSpan === this.#highlightedSpan) return;
+
+            // Read bounds before changing styles; only the old and new rows need updating.
+            const needsScroll = currentSpan && !this.#isElementInContainerViewport(currentSpan, container);
+            this.#clearHighlight();
+            if (currentSpan) {
+                this.#highlightedSpan = currentSpan;
+                currentSpan.classList.add('highlight');
                 this.selected_command.selection_changed(currentItem);
                 const platformOverride = currentItem.getAttribute('data-platform-id') || null;
                 if (this.selected_command.showThumbnails !== false) {
                     ThumbnailPreview.show(this.#extractItemTitle(currentItem), platformOverride);
                 }
-            }
-            if (this.#currentIndex != -1) {
-                if (!this.#isElementInContainerViewport(items[this.#currentIndex].querySelector('span'), container)) {
-                    items[this.#currentIndex].scrollIntoView({ behavior: 'auto', block: 'start', inline: 'start' });
+                if (needsScroll) {
+                    currentItem.scrollIntoView({ behavior: 'auto', block: 'start', inline: 'start' });
                 }
             }
         }
@@ -240,10 +241,9 @@ export class CLI {
         return (clone.textContent || '').trim();
     }
 
-    #addFlashingClass(element) {
-        element.classList.remove('highlight');
-        void element.offsetWidth;
-        element.classList.add('highlight');
+    #clearHighlight() {
+        this.#highlightedSpan?.classList.remove('highlight');
+        this.#highlightedSpan = null;
     }
 
     process_input(value) {
@@ -309,6 +309,13 @@ export class CLI {
             }
             else
                 if (this.is_command_selectable && this.#currentIndex == -1) {
+                    // Select existing results without rerunning the command or rebuilding the list.
+                    if (items[0]?.classList.contains('corsrow')) {
+                        this.#currentIndex = 0;
+                        this.set_selection_mode(true);
+                        this.update();
+                        return;
+                    }
                     enterSelectionRequested = true;
                     if (items.length > 0) {
                         this.#currentIndex++;
@@ -564,6 +571,7 @@ export class CLI {
     }
 
     clear() {
+        this.#clearHighlight();
         this.#lines = [];
         var table = s("#cors_results");
         table.innerHTML = "";
