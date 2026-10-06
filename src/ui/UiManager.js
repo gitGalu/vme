@@ -148,9 +148,8 @@ export class UiManager {
         document.getElementById('desktopUiSave').style.display =
             UiManager.#platform_manager.getSelectedPlatform().savestates_disabled ? 'none' : '';
 
-        if (UiManager.#platform_manager.getSelectedPlatform().rewind_disabled) {
-            document.getElementById('desktopUiRewind').style.display = "none";
-        }
+        document.getElementById('desktopUiRewind').style.display =
+            UiManager.#platform_manager.getSelectedPlatform().rewind_disabled ? 'none' : '';
 
         const TOP_ACTIVATION_Y = 100;
 

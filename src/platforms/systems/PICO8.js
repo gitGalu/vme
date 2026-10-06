@@ -4,7 +4,8 @@ import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
 const PICO8 = {
     ...PlatformBase,
     platform_id: 'pico-8',
-    core: 'retro8',
+    core: 'fake08',
+    core_asset_version: 'fake08-state-3',
     platform_name: 'PICO-8',
     short_name: 'PICO-8',
     theme: {
@@ -17,8 +18,9 @@ const PICO8 = {
         '--cursorwidth': '1em',
         '--portrait-fontsize': '100%'
     },
-    savestates_disabled: true,
-    rewind_disabled: true,
+    savestates_disabled: false,
+    rewind_disabled: false,
+    rewind_granularity: 30,
     force_scale: true,
     video_smooth: false,
     keyboard_controller_info: {
@@ -27,15 +29,14 @@ const PICO8 = {
         "X": "Button X"
     },
     keyboard_controller_mapping: {
-        input_player1_a: 'z',
-        input_player1_b: 'x'
+        input_player1_a: 'x',
+        input_player1_b: 'z'
     },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
     ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
-    fire_buttons: 2,
-    message: ["PICO-8 support is under development and mostly broken or non-functional."]
+    fire_buttons: 2
 };
 
 export default PICO8;
