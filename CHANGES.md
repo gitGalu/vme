@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.95] - 2026-10-07
+
+- add Apple II emulation (uses AppleWin core) with Autoconfig options and multi-disk support - w.i.p.
+- CPC: replace crocods with cap32 core
+- CPC: add savestates, multi-disk support and Autoconfig options (model, RAM, monitor, disk autoboot)
+- PICO-8: replace retro8 with fake-08 core, add savestates and rewind support
+- Amiga: use cycle-exact settings and explicit CPU clocks in Autoconfig presets
+- A800: add CLI selection of supported files inside ZIP archives
+- A800: add multi-disk support for disk images and ZIP archives (incl. disk sides and TOSEC names)
+- CLI: improve responsiveness 
+
 ## [0.94] - 2026-07-23
 
 - XR, gamepad shell: allow swapping disks in the in-game menu
@@ -362,5 +373,4 @@ All notable changes to this project will be documented in this file.
 ## [0.4.1] - 2024-05-16
 
 - Initial (pre)release
-
 
