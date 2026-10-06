@@ -17,6 +17,7 @@ import { runCliArchiveCancelTest } from './cli-archive-cancel.browser.js';
 import { runCliArchiveMenuTest } from './cli-archive-menu.browser.js';
 import { runCliSelectionTest } from './cli-selection.browser.js';
 import { runCliDirectorySortTest } from './cli-directory-sort.browser.js';
+import { runCliKeyRepeatTest } from './cli-key-repeat.browser.js';
 
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 const waitFor = async predicate => {
@@ -218,6 +219,7 @@ export async function runArchiveTests() {
     passed.push(runCliSelectionTest());
     passed.push(runCliDirectorySortTest());
     passed.push(await runCliArchiveMenuTest());
+    passed.push(await runCliKeyRepeatTest());
     passed.push(...await runAtariMultidiskTests(storage, db));
     db.close();
     return { passed: passed.length, cases: passed };

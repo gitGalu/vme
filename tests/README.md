@@ -14,6 +14,8 @@ The suite also checks CLI selection with keyboard and touch controls, preserved
 result rows and thumbnails, wraparound, filtering, and the LIST/RND commands.
 FIND/LIST ordering checks cover tag priorities, regular expressions, directory
 reloading/import, and platform changes.
+Held on-screen Backspace and selection arrows are checked with mouse/touch input,
+cancellation, focus/visibility transitions, loading, and emulator key isolation.
 
 Only Atari 800 opts into `archive_program_extensions`. New saves keep the selected
 file, or a deterministic ZIP containing a playlist and the selected set's disks.

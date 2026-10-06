@@ -13,6 +13,7 @@ import { VME } from '../VME.js';
 import { UiManager } from '../ui/UiManager.js';
 import GameFocusManager from './GameFocusManager.js';
 import { dispatchSyntheticKeyboardEvent } from './SyntheticKeyboard.js';
+import { RepeatPressController } from './RepeatPressController.js';
 
 export class KeyboardManager {
     #mode;
@@ -27,6 +28,7 @@ export class KeyboardManager {
 
     #keyboardConfig;
     #gamepadManager = null;
+    #cliKeyRepeater;
 
     #handleCliInputBound;
     #handleEmulationInputBound;
@@ -77,6 +79,10 @@ export class KeyboardManager {
         this.#handleCliInputBound = this.#handleCliInput.bind(this);
         this.#handleEmulationInputBound = this.#handleEmulationInput.bind(this);
         this.#handleEmulationSpecialBound = this.#handleEmulationSpecial.bind(this);
+
+        this.#cliKeyRepeater = new RepeatPressController(() => !this.#mute
+            && !this.#cli.is_loading()
+            && s('#keyboardContainer')?.classList.contains('visible'));
 
         this.#initTouchKeyboard();
         this.#initSelectionPanel();
@@ -587,11 +593,15 @@ export class KeyboardManager {
             el.addEventListener('touchstart', wrapped, { passive: false });
         };
 
-        bind('#keySelUp', () => {
+        this.#cliKeyRepeater.bind(s('#keyBackspace'), () => {
+            this.playSound('Backspace');
+            this.#cli.process_input('backspace');
+        });
+        this.#cliKeyRepeater.bind(s('#keySelUp'), () => {
             this.playSound('ArrowUp');
             this.#cli.move_selection('up');
         });
-        bind('#keySelDown', () => {
+        this.#cliKeyRepeater.bind(s('#keySelDown'), () => {
             this.playSound('ArrowDown');
             this.#cli.move_selection('down');
         });
@@ -606,6 +616,7 @@ export class KeyboardManager {
         const container = document.querySelector('#keyboardContainer');
         if (!container) return;
         const on = visible === true;
+        if (container.classList.contains('selection-mode') !== on) this.#cliKeyRepeater.cancel();
         container.classList.toggle('selection-mode', on);
         const kbVisible = container.classList.contains('visible');
         document.body.classList.toggle('selection-mode-active', on && kbVisible);
@@ -769,6 +780,7 @@ export class KeyboardManager {
     }
 
     updateMode(mode) {
+        this.#cliKeyRepeater.cancel();
         const keyboard = document.querySelector('#keyboard');
         const kbCtrlClear = document.querySelector('#kbCtrlClear');
 
@@ -869,6 +881,7 @@ export class KeyboardManager {
     }
 
     hideTouchKeyboard(notifyUi = true) {
+        this.#cliKeyRepeater.cancel();
         UiManager.keyboardVisible = false;
         if (this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
             this.#cli.set_selection_mode(false);
