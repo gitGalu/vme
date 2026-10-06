@@ -52,27 +52,6 @@ function addButtonToContainer(button, containerId) {
     }
 }
 
-function debounce(func, wait) {
-    let timeout;
-    let lastTime = 0;
-    return function executedFunction(...args) {
-        const now = Date.now();
-        const timeSinceLastCall = now - lastTime;
-        
-        clearTimeout(timeout);
-        
-        if (timeSinceLastCall >= wait) {
-            func.apply(this, args);
-            lastTime = now;
-        } else {
-            timeout = setTimeout(() => {
-                func.apply(this, args);
-                lastTime = Date.now();
-            }, wait);
-        }
-    };
-}
-
 function isPointInElement(x, y, element) {
     const rect = element.getBoundingClientRect();
     return (
@@ -86,13 +65,6 @@ function isPointInElement(x, y, element) {
 function setupButtonInteractions(button, callback, visualFeedback, feedbackClass) {
     let isPressed = false;
     let touchStartedInside = false;
-    const minTimeBetweenClicks = 300;
-    
-    const debouncedCallback = debounce(() => {
-        if (!button.classList.contains('disabled')) {
-            callback();
-        }
-    }, minTimeBetweenClicks);
 
     function addFeedback() {
         if (visualFeedback && !button.classList.contains('disabled')) {
@@ -104,6 +76,15 @@ function setupButtonInteractions(button, callback, visualFeedback, feedbackClass
         if (visualFeedback) {
             button.classList.remove(feedbackClass);
         }
+    }
+
+    function finishPress(isInside) {
+        const activate = isPressed && touchStartedInside && isInside;
+        isPressed = false;
+        touchStartedInside = false;
+        removeFeedback();
+        // Each press/release gesture invokes its action once, without queuing later actions.
+        if (activate && !button.classList.contains('disabled')) callback();
     }
 
     button.addEventListener('touchstart', (e) => {
@@ -136,20 +117,12 @@ function setupButtonInteractions(button, callback, visualFeedback, feedbackClass
             const touch = e.changedTouches[0];
             const isInside = isPointInElement(touch.clientX, touch.clientY, button);
             
-            if (isInside) {
-                debouncedCallback();
-            }
-            
-            isPressed = false;
-            touchStartedInside = false;
-            removeFeedback();
+            finishPress(isInside);
         }
     }, { passive: false });
 
     button.addEventListener('touchcancel', () => {
-        isPressed = false;
-        touchStartedInside = false;
-        removeFeedback();
+        finishPress(false);
     });
 
     button.addEventListener('mousedown', (e) => {
@@ -177,13 +150,7 @@ function setupButtonInteractions(button, callback, visualFeedback, feedbackClass
         if (isPressed && touchStartedInside) {
             const isInside = isPointInElement(e.clientX, e.clientY, button);
             
-            if (isInside) {
-                debouncedCallback();
-            }
-            
-            isPressed = false;
-            touchStartedInside = false;
-            removeFeedback();
+            finishPress(isInside);
         }
     });
 }

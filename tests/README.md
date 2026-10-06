@@ -16,6 +16,8 @@ FIND/LIST ordering checks cover tag priorities, regular expressions, directory
 reloading/import, and platform changes.
 Held on-screen Backspace and selection arrows are checked with mouse/touch input,
 cancellation, focus/visibility transitions, loading, and emulator key isolation.
+GUI buttons are checked for immediate rapid activations, duplicate releases,
+cancelled gestures, disabled state, and absence of queued delayed actions.
 
 Only Atari 800 opts into `archive_program_extensions`. New saves keep the selected
 file, or a deterministic ZIP containing a playlist and the selected set's disks.
