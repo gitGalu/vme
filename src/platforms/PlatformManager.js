@@ -32,6 +32,7 @@ import TIC80 from './systems/TIC80.js';
 import Apple2 from './systems/Apple2.js';
 import JSZip from 'jszip';
 import { ArchiveSelectionCancelled, readProgramArchive, extractArchiveProgram, restoreArchiveProgram } from '../utils/ArchivePrograms.js';
+import { UnsupportedDiskFormatError, assertSupportedDiskFormat } from '../utils/DiskFormats.js';
 import { showArchiveProgramPicker } from '../components/ArchiveProgramPicker.js';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -1129,6 +1130,23 @@ export class PlatformManager {
         return prepared;
     }
 
+    // CLI wording per unsupported format (the shell uses the i18n key `launch.<format>`).
+    static #UNSUPPORTED_DISK_FORMAT_LINES = {
+        ipf: ['IPF disk images are not supported.', 'Try an ADF version of this program.']
+    };
+
+    #rejectUnsupportedDiskFormat(error) {
+        this.#archive_selection = null;
+        this.#pending_override_values = null;
+        this.#pending_launch_bios = null;
+        this.#pending_launch_core_config = null;
+        this.#skip_launch_settings_prompt_once = false;
+        this.#vme.rejectPendingLaunch(error);
+        const lines = PlatformManager.#UNSUPPORTED_DISK_FORMAT_LINES[error.format]
+            ?? [`${error.format.toUpperCase()} disk images are not supported.`];
+        this.#cli.notice(lines);
+    }
+
     #cancelArchiveLaunch() {
         this.#archive_selection = null;
         this.#pending_override_values = null;
@@ -1222,6 +1240,7 @@ export class PlatformManager {
             } else {
                 romBlob = await downloadFile.call(this, romSource, "Loading program ...", true);
             }
+            await assertSupportedDiskFormat(romBlob, romName, this.#selected_platform.disk_formats);
             let launchRomInput = romBlob;
             const archiveProgram = await this.#prepareArchiveProgram(romBlob, romName, launchOptions?.archiveSelection);
             if (archiveProgram) {
@@ -1434,6 +1453,7 @@ export class PlatformManager {
 
         } catch (error) {
             if (error instanceof ArchiveSelectionCancelled) { this.#cancelArchiveLaunch(); return; }
+            if (error instanceof UnsupportedDiskFormatError) { this.#rejectUnsupportedDiskFormat(error); return; }
             console.log(error.stack);
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
@@ -1473,6 +1493,7 @@ export class PlatformManager {
         try {
             const originalCaption = caption;
             const remembered = this.#pending_launch_core_config?._vmeArchive;
+            await assertSupportedDiskFormat(blob, romName, this.#selected_platform.disk_formats);
             const archiveProgram = await this.#prepareArchiveProgram(blob, romName, remembered, browserType === 'save');
             if (archiveProgram) {
                 blob = archiveProgram;
@@ -1484,6 +1505,11 @@ export class PlatformManager {
             if (error instanceof ArchiveSelectionCancelled) {
                 if (closeCallback) closeCallback();
                 this.#cancelArchiveLaunch();
+                return;
+            }
+            if (error instanceof UnsupportedDiskFormatError) {
+                if (closeCallback) closeCallback();
+                this.#rejectUnsupportedDiskFormat(error);
                 return;
             }
             throw error;

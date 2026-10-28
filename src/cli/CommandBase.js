@@ -58,7 +58,8 @@ export class CommandBase {
         this.cli = cli;
     }
 
-    #commitSelection(item) {
+    #commitSelection(item, index) {
+        this.cli?.remember_selection?.(index);
         const settingsElement = document.getElementById('settings');
         if (settingsElement) {
             settingsElement.style.pointerEvents = 'none';
@@ -101,14 +102,14 @@ export class CommandBase {
             p.addEventListener('click', () => {
                 if (this.cli && this.cli.is_selection_mode_active && this.cli.is_selection_mode_active()) {
                     if (this.cli.get_selection_index && this.cli.get_selection_index() === index) {
-                        this.#commitSelection(item);
+                        this.#commitSelection(item, index);
                     } else {
                         this.cli.set_selection_index(index);
                         this.cli.update();
                     }
                     return;
                 }
-                this.#commitSelection(item);
+                this.#commitSelection(item, index);
             });
             fragment.append(p);
         });

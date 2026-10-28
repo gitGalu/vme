@@ -424,6 +424,12 @@ const Amiga = {
   core: 'puae',
   multidisk: true,
   bios: ['kick1x', 'kick2x', 'kick3x'],
+  // IPF (SPS) needs the CAPS library, which the browser build of PUAE cannot load.
+  disk_formats: {
+    supported: ['adf', 'adz', 'dms', 'fdi', 'raw', 'hdf', 'hdz', 'lha', 'slave', 'uae', 'm3u',
+      'cue', 'ccd', 'nrg', 'mds', 'iso', 'chd'],
+    unsupported: ['ipf']
+  },
   platform_name: 'Commodore Amiga',
   short_name: 'Amiga',
   libretro_thumbnails_system: 'Commodore - Amiga',

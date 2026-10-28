@@ -14,6 +14,8 @@ export class CLI {
     #selectionModeActive = false;
     #keyboardManager = null;
     #pendingChoice = null;
+    #pendingNotice = null;
+    #lastCommitted = null;
     #keyboardListening = false;
     #highlightedSpan = null;
 
@@ -146,6 +148,9 @@ export class CLI {
         if (this.#is_loading) {
             return;
         }
+        if (this.#dismissNotice()) {
+            return;
+        }
 
         if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
             this.process_input(event.key);
@@ -247,6 +252,7 @@ export class CLI {
     }
 
     process_input(value) {
+        if (this.#dismissNotice()) return;
         if (this.#pendingChoice) { this.#pendingChoice.input(value); return; }
         let is_enter = false;
         let enterSelectionRequested = false;
@@ -483,6 +489,7 @@ export class CLI {
 
     parse_input(input, is_enter, extraContext = {}) {
         if (this.#pendingChoice) { this.#pendingChoice.filter(input); return; }
+        this.#lastCommitted = null;
         const rawInput = String(input ?? '');
         const trailingWhitespaceCount = rawInput.match(/\s+$/)?.[0].length ?? 0;
         input = rawInput.trim().toLowerCase();
@@ -595,6 +602,65 @@ export class CLI {
         this.set_selection_mode(false);
         this.set_loading(false);
         this.clear();
+    }
+
+    /**
+     * Shows a message in place of the current results. The next key (physical or on-screen)
+     * or click dismisses it and re-runs the current query, so e.g. a LIST/FIND list comes back.
+     */
+    notice(lines) {
+        const restore = this.#lastCommitted;
+        this.#lastCommitted = null;
+        this.#clearNotice();
+        this.set_selection_mode(false);
+        this.clear();
+        lines.forEach(line => this.#lines.push(line));
+        this.#lines.push('&nbsp;');
+        this.#lines.push('Press any key to continue.');
+        this.redraw();
+
+        const onClick = () => this.#dismissNotice();
+        // Deferred, so the click that started the launch cannot dismiss the notice right away.
+        const timer = setTimeout(() => document.addEventListener('click', onClick, true), 0);
+        this.#pendingNotice = {
+            restore,
+            cleanup: () => {
+                clearTimeout(timer);
+                document.removeEventListener('click', onClick, true);
+            }
+        };
+    }
+
+    // The result rows (live elements, with their handlers) and the committed row index, so a
+    // notice shown after a failed launch can put the list and its selection back.
+    remember_selection(index) {
+        this.#lastCommitted = Number.isInteger(index)
+            ? { index, rows: [...s('#cors_results').children] }
+            : null;
+    }
+
+    #clearNotice() {
+        const pending = this.#pendingNotice;
+        if (!pending) return null;
+        pending.cleanup();
+        this.#pendingNotice = null;
+        return pending;
+    }
+
+    #dismissNotice() {
+        const pending = this.#clearNotice();
+        if (!pending) return false;
+        this.clear();
+        const rows = pending.restore?.rows ?? [];
+        if (rows.length > 0) {
+            s('#cors_results').replaceChildren(...rows);
+            this.set_selection_index(Math.min(pending.restore.index, rows.length - 1));
+            this.set_selection_mode(true);
+            this.update();
+        } else {
+            this.parse_input(CLI.#corsQuery.textContent, false);
+        }
+        return true;
     }
 
     message_clear(...messages) {

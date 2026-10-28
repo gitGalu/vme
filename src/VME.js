@@ -40,6 +40,7 @@ import { GamepadManager } from './gamepad/GamepadManager.js';
 import { GamepadMenu } from './gamepad/GamepadMenu.js';
 import { XrSessionManager } from './xr/XrSessionManager.js';
 import { XrShellPainter } from './xr/XrShellPainter.js';
+import { UnsupportedDiskFormatError } from './utils/DiskFormats.js';
 import { createGuiButton } from './GuiButton.js';
 
 export class VME {
@@ -1215,6 +1216,27 @@ export class VME {
         ));
     }
 
+    /**
+     * A launch was refused before the emulator started (e.g. an unsupported disk image):
+     * the CLI returns to the menu, a shell (pad/VR) launch shows the error screen.
+     */
+    rejectPendingLaunch(error) {
+        const launchScreenVisible = !!document.getElementById('gamepad-launch')?.classList.contains('visible');
+        const returnsToShell = this.#return_to_shell;   // consumed by toggleScreen(MENU)
+        const message = this.#friendlyLoadError(error);
+        ++this.#vrLaunchToken;
+        this.#launchedFromGamepad = false;
+        this.#cli.set_loading(false);
+        this.toggleScreen(VME.CURRENT_SCREEN.MENU);
+        if (launchScreenVisible) {
+            // Shell launch (pad/VR): the launch screen turns into the error screen.
+            this.#setLaunchError(message);
+        } else if (returnsToShell) {
+            // Browser opened from the shell: toggleScreen(MENU) reopens the shell (deferred).
+            setTimeout(() => this.#gamepad_menu.notify({ ok: false, message }), 0);
+        }
+    }
+
     cancelPendingLaunch() {
         const returnToShell = this.isGamepadLaunch();
         ++this.#vrLaunchToken;
@@ -1252,6 +1274,9 @@ export class VME {
 
     /** Maps a raw load error to a concise, readable message. */
     #friendlyLoadError(error) {
+        if (error instanceof UnsupportedDiskFormatError) {
+            return t(`launch.${error.format}`);
+        }
         return t('launch.error');
     }
 
@@ -1265,6 +1290,10 @@ export class VME {
         }
         root.classList.remove('awaiting');
         root.classList.add('visible', 'error');
+        // VR: stop the loading pulses (they would repaint 'Loading…' over the error) and
+        // paint the error card - the DOM launch screen is invisible in immersive mode.
+        ++this.#vrLaunchToken;
+        this.#repaintVrFrames(() => this.#paintVrError(message));
         // The pad MAY now dismiss the error screen and return to the shell - arm the
         // trigger, but pointed at returning to the shell (not reloading).
         this.#gamepad.setMenuTrigger(true, () => {
@@ -1882,6 +1911,20 @@ export class VME {
             focusMode: 'list',
             message: seconds > 0 ? `${t('launch.loading')} ${seconds}s` : t('launch.loading'),
             isNotice: null, emptyHint: '', secondaryLabel: null,
+            total: 0, start: 0, end: 0, rows: [], keyboard: null
+        });
+        this.#xr.invalidateScreen();
+    }
+
+    #paintVrError(message) {
+        if (!this.#xr?.isActive()) return;
+        this.#ensureVrPainter();
+        this.#xr.setScreenSource(this.#xr_painter.canvas);
+        this.#xr_painter.paint({
+            title: this.#pendingLaunchTitle || '', isRoot: false,
+            filterable: false, filterText: '', placeholder: '',
+            focusMode: 'list',
+            message, isNotice: 'error', emptyHint: t('launch.errorBack'), secondaryLabel: null,
             total: 0, start: 0, end: 0, rows: [], keyboard: null
         });
         this.#xr.invalidateScreen();
