@@ -19,116 +19,127 @@ const LAN_HOST = process.env.VITE_LAN_HOST || '192.168.50.41';
 const CERT_KEY = path.resolve('certs/dev-key.pem');
 const CERT_CERT = path.resolve('certs/dev-cert.pem');
 
-export default defineConfig({
-  base,
-  root: 'src',
-  resolve: {
-    alias: {
-      nostalgist: path.resolve(__dirname, 'nostalgist.js'),
+// Import bundles (vme_import.zip, vme_collection.zip, a8_vme_collection.zip - CLI 'OPEN IA/COL/A8')
+// live outside git and are published only by `build:server` (own server, not GitHub Pages).
+const PRIVATE_ASSETS_DIR = path.resolve('private-assets');
+
+export default defineConfig(({ command }) => {
+  const includePrivateAssets = command === 'serve'
+    ? fs.existsSync(PRIVATE_ASSETS_DIR)
+    : process.env.VITE_PRIVATE_ASSETS === '1';
+
+  return {
+    base,
+    root: 'src',
+    resolve: {
+      alias: {
+        nostalgist: path.resolve(__dirname, 'nostalgist.js'),
+      },
     },
-  },
-  minify: 'terser',
-  terserOptions: {
-    compress: {
-      drop_console: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
+      mangle: {
+        reserved: ['Nostalgist'],
+      },
+      obfuscatorOptions: {
+        compact: true,
+        controlFlowFlattening: true,
+        controlFlowFlatteningThreshold: 0.75,
+        deadCodeInjection: true,
+        deadCodeInjectionThreshold: 0.4,
+        debugProtection: true,
+        debugProtectionInterval: true,
+        disableConsoleOutput: true,
+        renameGlobals: false,
+        stringArray: true,
+        stringArrayEncoding: ['base64'],
+        stringArrayThreshold: 0.75,
+      },
     },
-    mangle: {
-      reserved: ['Nostalgist'],
+    define: {
+      __APP_VERSION__: JSON.stringify(version),
     },
-    obfuscatorOptions: {
-      compact: true,
-      controlFlowFlattening: true,
-      controlFlowFlatteningThreshold: 0.75,
-      deadCodeInjection: true,
-      deadCodeInjectionThreshold: 0.4,
-      debugProtection: true,
-      debugProtectionInterval: true,
-      disableConsoleOutput: true,
-      renameGlobals: false,
-      stringArray: true,
-      stringArrayEncoding: ['base64'],
-      stringArrayThreshold: 0.75,
+    esbuild: {
+      exclude: /node_modules/,
     },
-  },
-  define: {
-    __APP_VERSION__: JSON.stringify(version),
-  },
-  esbuild: {
-    exclude: /node_modules/,
-  },
-  plugins: [
-    viteStaticCopy({
-      targets: [
-        { src: 'libretro/*', dest: 'libretro' },
-        { src: 'assets/shaders/*', dest: 'assets/shaders' },
-        { src: 'assets/boot/*', dest: 'assets/boot' },
-        { src: 'assets/images/vme-512.png', dest: '.' },
-        { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
-      ],
-    }),
-    VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
-      manifest: {
-        name: 'VM/E',
-        short_name: 'VM/E',
-        start_url: pwaStartUrl,
-        ...(pwaScope ? { scope: pwaScope } : {}),
-        display: 'fullscreen',
-        theme_color: '#000000',
-        background_color: '#000000',
-        icons: [
-          {
-            src: 'vme-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
+    plugins: [
+      viteStaticCopy({
+        targets: [
+          { src: 'libretro/*', dest: 'libretro' },
+          { src: 'assets/shaders/*', dest: 'assets/shaders' },
+          { src: 'assets/boot/*', dest: 'assets/boot' },
+          { src: 'assets/images/vme-512.png', dest: '.' },
+          { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
+          ...(includePrivateAssets ? [{ src: '../private-assets/*.zip', dest: 'assets' }] : []),
         ],
-      },
-      srcDir: '.',
-      filename: 'sw.js',
-      strategies: 'injectManifest',
-      injectManifest: {
-        globPatterns: ['**/*.{js,css,html,png}'],
-      },
-    }),
-    obfuscator({
-      exclude: ['node_modules/**'],
-    }),
-  ],
+      }),
+      VitePWA({
+        registerType: 'autoUpdate',
+        injectRegister: 'auto',
+        manifest: {
+          name: 'VM/E',
+          short_name: 'VM/E',
+          start_url: pwaStartUrl,
+          ...(pwaScope ? { scope: pwaScope } : {}),
+          display: 'fullscreen',
+          theme_color: '#000000',
+          background_color: '#000000',
+          icons: [
+            {
+              src: 'vme-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+          ],
+        },
+        srcDir: '.',
+        filename: 'sw.js',
+        strategies: 'injectManifest',
+        injectManifest: {
+          globPatterns: ['**/*.{js,css,html,png}'],
+        },
+      }),
+      obfuscator({
+        exclude: ['node_modules/**'],
+      }),
+    ],
 
-  server: {
-    host: true,
-    port: 8080,
-    strictPort: true,
-    open: true,
-
-    https: useHttps
-      ? {
-        key: fs.readFileSync(CERT_KEY),
-        cert: fs.readFileSync(CERT_CERT),
-      }
-      : false,
-
-    hmr: {
-      protocol: useHttps ? 'wss' : 'ws',
-      host: LAN_HOST,
+    server: {
+      host: true,
       port: 8080,
-    },
+      strictPort: true,
+      open: true,
 
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
+      https: useHttps
+        ? {
+          key: fs.readFileSync(CERT_KEY),
+          cert: fs.readFileSync(CERT_CERT),
+        }
+        : false,
 
-  build: {
-    outDir: '../dist',
-    rollupOptions: {
-      input: './src/index.html',
-      output: {
-        format: 'es',
+      hmr: {
+        protocol: useHttps ? 'wss' : 'ws',
+        host: LAN_HOST,
+        port: 8080,
+      },
+
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
       },
     },
-  },
+
+    build: {
+      outDir: '../dist',
+      rollupOptions: {
+        input: './src/index.html',
+        output: {
+          format: 'es',
+        },
+      },
+    },
+  };
 });

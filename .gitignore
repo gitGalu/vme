@@ -11,3 +11,5 @@ package-lock.json
 yarn.lock
 
 /certs/
+# Import bundles published only on the own server (npm run build:server)
+/private-assets/
