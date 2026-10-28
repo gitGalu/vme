@@ -1140,7 +1140,8 @@ export class PlatformManager {
 
     async loadRom(romSource, caption, isLocal = true, romName = caption, launchOptions = null) {
         let core = this.#selected_platform.core;
-        let coreWasm = this.#getCoreAssetPath(core, 'wasm');
+        // Same versioned URL as startEmulation() gives the core JS, so both come from the same build.
+        let coreWasm = this.#appendAssetVersion(this.#getCoreAssetPath(core, 'wasm'), this.#getCoreAssetVersion(core));
 
         let self = this;
         this.#state = null;
@@ -1208,7 +1209,7 @@ export class PlatformManager {
                         self.#cli.print_progress(progressMessage);
                     }
 
-                    self.#cli.print_progress('Loading ... OK');
+                    self.#cli.print_progress(text != null ? `${text} OK` : 'Loading ... OK');
                     return new Blob(chunks);
                 }
 
@@ -1219,7 +1220,7 @@ export class PlatformManager {
             if (isLocal) {
                 romBlob = romSource;
             } else {
-                romBlob = await downloadFile.call(this, romSource, "Loading ...", true);
+                romBlob = await downloadFile.call(this, romSource, "Loading program ...", true);
             }
             let launchRomInput = romBlob;
             const archiveProgram = await this.#prepareArchiveProgram(romBlob, romName, launchOptions?.archiveSelection);
@@ -1338,7 +1339,7 @@ export class PlatformManager {
             this.#prepareNostalgist(romName, caption);
             applyLaunchSettingsToCore(launchSettings);
 
-            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading ...", false);
+            const wasmBlob = await downloadFile.call(this, coreWasm, "Loading core ...", false);
             const wasmArrayBuffer = await wasmBlob.arrayBuffer();
 
             const recordLaunch = () => {
