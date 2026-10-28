@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.96] - 2026-10-28
+
+- touch: add D-Pad control scheme
+- touch: update QuickShot control scheme, fix touch control issues
+- Autoconfig: redesign launch dialog (START button, Enter/Esc keys)
+- CLI: show separate program/core download stages 
+- GB: fix picture disappearing after device rotation 
+- Amiga: show a notice for unsupported IPF disk images
+
 ## [0.95] - 2026-10-07
 
 - add Apple II emulation (uses AppleWin core) with Autoconfig options and multi-disk support - w.i.p.
