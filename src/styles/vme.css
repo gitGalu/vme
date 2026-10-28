@@ -2751,16 +2751,19 @@ body.selection-mode-active .menu-strip-spacer {
 }
 
 .launch-settings-dialog {
+  /* START is this tall; its lower half sits inside the panel, above the fields. */
+  --launch-start-height: 70px;
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
   gap: 16px;
-  padding-top: 24px;
+  padding-top: calc(var(--launch-start-height) / 2 + 20px);
   padding-bottom: calc(32px + env(safe-area-inset-bottom));
-  padding-left: max(2em, env(safe-area-inset-left));
-  padding-right: max(2em, env(safe-area-inset-right));
+  padding-left: max(2rem, env(safe-area-inset-left));
+  padding-right: max(2rem, env(safe-area-inset-right));
   border-radius: 0;
   border: 0;
   border-top: 1px solid rgba(0, 0, 0, 0.28);
@@ -2777,14 +2780,6 @@ body.selection-mode-active .menu-strip-spacer {
 
 .launch-settings-modal--closing .launch-settings-dialog {
   animation: launch-settings-sheet-out 160ms ease-in forwards;
-}
-
-.launch-settings-dialog__header {
-  width: 100%;
-  color: #444444;
-  font-size: 0.74rem;
-  font-weight: 500;
-  line-height: 1.35;
 }
 
 @keyframes launch-settings-sheet-in {
@@ -2844,6 +2839,102 @@ body.selection-mode-active .menu-strip-spacer {
 
 .launch-settings-dialog__dropdown {
   width: 100%;
+}
+
+/* Title in the top band reserved for START's lower half (left side, vertically centred). */
+.launch-settings-dialog__header {
+  position: absolute;
+  top: 0;
+  left: max(2rem, env(safe-area-inset-left));
+  height: calc(var(--launch-start-height) / 2 + 20px);
+  display: flex;
+  align-items: center;
+  color: #444444;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* START: anchored to the panel's top-right corner, half of it above the top edge. */
+.launch-settings-dialog__start {
+  position: absolute;
+  top: 0;
+  right: max(2rem, env(safe-area-inset-right));
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: var(--launch-start-height);
+  padding: 0 38px 0 30px;
+  border: 0;
+  border-radius: 10px;
+  background: #17803d;
+  color: #ffffff;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  appearance: none;
+  transition: background-color 0.2s ease, scale 0.08s ease-out;
+  /* Pops in once the sheet has slid up. `scale` (not transform) keeps the translateY above;
+     `backwards` so the :active/--pressed scale applies after the pop. */
+  animation: launch-start-pop 420ms 180ms backwards;
+}
+
+.launch-settings-dialog__start:hover {
+  background: #126b33;
+}
+
+/* Press feedback: mouse/touch (:active) and START via Enter (--pressed, set before closing). */
+.launch-settings-dialog__start:active,
+.launch-settings-dialog__start--pressed {
+  scale: 0.95;
+  background: #0f5c2b;
+}
+
+/* Easing per segment: one gentle overshoot, then settle (no second wobble). */
+@keyframes launch-start-pop {
+  from {
+    scale: 0.9;
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.25, 0.8, 0.4, 1);
+  }
+
+  55% {
+    scale: 1.03;
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+
+  to {
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-settings-dialog__start {
+    animation: none;
+    transition: background-color 0.2s ease;
+  }
+
+  .launch-settings-dialog__start:active,
+  .launch-settings-dialog__start--pressed {
+    scale: none;
+  }
+}
+
+.launch-settings-dialog__start:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -5px;
+}
+
+.launch-settings-dialog__play {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
 }
 
 .config-override-dropdown {
@@ -2985,8 +3076,12 @@ body.selection-mode-active .menu-strip-spacer {
     justify-content: stretch;
   }
 
-  .launch-settings-dialog__header {
-    font-size: 0.74rem;
+  .launch-settings-dialog {
+    --launch-start-height: 65px;
+  }
+
+  .launch-settings-dialog__start {
+    font-size: 20px;
   }
 
   .launch-settings-dialog__form {

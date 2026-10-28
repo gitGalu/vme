@@ -650,17 +650,28 @@ export class CLI {
     #dismissNotice() {
         const pending = this.#clearNotice();
         if (!pending) return false;
+        this.#restoreResults(pending.restore);
+        return true;
+    }
+
+    /** After a cancelled launch: put back the committed result list and its selection. */
+    restore_selection() {
+        const restore = this.#lastCommitted;
+        this.#lastCommitted = null;
+        this.#restoreResults(restore);
+    }
+
+    #restoreResults(restore) {
         this.clear();
-        const rows = pending.restore?.rows ?? [];
+        const rows = restore?.rows ?? [];
         if (rows.length > 0) {
             s('#cors_results').replaceChildren(...rows);
-            this.set_selection_index(Math.min(pending.restore.index, rows.length - 1));
+            this.set_selection_index(Math.min(restore.index, rows.length - 1));
             this.set_selection_mode(true);
             this.update();
         } else {
             this.parse_input(CLI.#corsQuery.textContent, false);
         }
-        return true;
     }
 
     message_clear(...messages) {

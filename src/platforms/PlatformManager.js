@@ -55,6 +55,10 @@ export const SelectedPlatforms = {
     NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2
 }
 
+
+// The user cancelled the launch in the launch-settings (Autoconfig) dialog.
+class LaunchCancelled extends Error {}
+
 export class PlatformManager {
     #selected_platform;
     #model;
@@ -77,6 +81,7 @@ export class PlatformManager {
     #pending_launch_bios;
     #pending_launch_core_config;
     #launch_settings_modal;
+    #hidden_launch_chrome = null;
     #skip_launch_settings_prompt_once;
     // Autoconfig overrides chosen in the gamepad shell (Model/RAM/… as a
     // {field.id: value} map) for the NEXT launch. When set, the resolver uses
@@ -520,7 +525,7 @@ export class PlatformManager {
             this.#launch_settings_modal = null;
         }
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const overlay = document.createElement('div');
             overlay.className = 'launch-settings-modal';
 
@@ -530,9 +535,6 @@ export class PlatformManager {
                 event.stopPropagation();
             });
 
-            const header = document.createElement('div');
-            header.className = 'launch-settings-dialog__header';
-            header.textContent = 'VM/E Autoconfig will use these settings';
 
             const form = document.createElement('div');
             form.className = 'launch-settings-dialog__form';
@@ -567,56 +569,71 @@ export class PlatformManager {
                 row.appendChild(dropdownContainer);
                 form.appendChild(row);
             }
+            // START is anchored to the panel's top-right corner, half of it above the top edge.
+            const startButton = document.createElement('button');
+            startButton.type = 'button';
+            startButton.className = 'launch-settings-dialog__start';
+            startButton.innerHTML = '<svg class="launch-settings-dialog__play" viewBox="0 0 16 16" aria-hidden="true">'
+                + '<path d="M4 2.5v11l9.5-5.5z"/></svg>Start';
+
+            const header = document.createElement('div');
+            header.className = 'launch-settings-dialog__header';
+            header.textContent = 'VM/E Autoconfig';
+
             dialog.appendChild(header);
             dialog.appendChild(form);
+            dialog.appendChild(startButton);
 
             let finished = false;
+            // START (button / Enter) launches, Escape cancels; other keys and clicks
+            // outside the panel do nothing. Enter launches even with focus on a closed
+            // dropdown (arrows/Space/click open it); an open dropdown keeps its own Enter/Escape.
+            // Capture phase: runs before the dropdown's own keydown handler.
             const handleLaunchKey = (event) => {
-                if (finished) {
+                if (finished || dialog.querySelector('.config-override-dropdown--open')) {
                     return;
                 }
-
-                if (event.key === 'Tab'
-                    || event.key === 'Shift'
-                    || event.key === 'Control'
-                    || event.key === 'Alt'
-                    || event.key === 'Meta') {
-                    return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    close(null);
+                } else if (event.key === 'Enter') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    // A held Enter (the one that picked the program) must not launch by repeat.
+                    if (!event.repeat) finish();
                 }
-
-                if (dialog.contains(event.target)) {
-                    return;
-                }
-
-                event.preventDefault();
-                finish();
             };
-            const finish = () => {
-                if (finished) {
-                    return;
-                }
+            const close = (overrides) => {
                 finished = true;
                 document.removeEventListener('keydown', handleLaunchKey, true);
-                const settingsElement = document.getElementById('settings');
-                settingsElement?.classList.add('launch-starting');
-                const overrides = {};
-                for (const [id, dropdown] of dropdowns.entries()) {
-                    overrides[id] = dropdown.getValue();
+                if (overrides) {
+                    document.getElementById('settings')?.classList.add('launch-starting');
                 }
                 overlay.classList.add('launch-settings-modal--closing');
                 window.setTimeout(() => {
                     this.#launch_settings_modal = null;
                     overlay.remove();
-                    resolve(overrides);
+                    if (overrides) {
+                        resolve(overrides);
+                    } else {
+                        reject(new LaunchCancelled());
+                    }
                 }, 160);
             };
-            overlay.addEventListener('click', finish);
-            overlay.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' || event.code === 'Escape') {
-                    event.preventDefault();
-                    finish();
+            const finish = () => {
+                if (finished) {
+                    return;
                 }
-            });
+                finished = true; // ignore further input while START shows its press
+                const overrides = {};
+                for (const [id, dropdown] of dropdowns.entries()) {
+                    overrides[id] = dropdown.getValue();
+                }
+                startButton.classList.add('launch-settings-dialog__start--pressed');
+                window.setTimeout(() => close(overrides), 120);
+            };
+            startButton.addEventListener('click', finish);
 
             overlay.appendChild(dialog);
             document.body.appendChild(overlay);
@@ -1147,6 +1164,37 @@ export class PlatformManager {
         this.#cli.notice(lines);
     }
 
+    static #LAUNCH_CHROME = ['#cors_interface', '#header', '#menu-wrap', '#menu-spacer', '#toggle-keyboard'];
+
+    // Hides the CLI chrome while a loaded program waits for its start; restored if it is cancelled.
+    #hideLaunchChrome() {
+        this.#hidden_launch_chrome = PlatformManager.#LAUNCH_CHROME
+            .map(selector => s(selector))
+            .filter(Boolean)
+            .map(element => [element, element.style.display]);
+        this.#hidden_launch_chrome.forEach(([element]) => { element.style.display = 'none'; });
+    }
+
+    #restoreLaunchChrome() {
+        this.#hidden_launch_chrome?.forEach(([element, display]) => { element.style.display = display; });
+        this.#hidden_launch_chrome = null;
+    }
+
+    // Launch cancelled in the launch-settings dialog: back to the CLI, with a LIST/FIND
+    // result list and its selection put back.
+    #cancelLaunchSettings() {
+        this.#restoreLaunchChrome();
+        ['browserLoadingOverlay', 'collectionBrowserLoadingOverlay'].forEach(id => {
+            const overlay = document.getElementById(id);
+            if (overlay) overlay.style.display = 'none';
+        });
+        ['flicking-background', 'collection-flicking-background'].forEach(id => {
+            document.getElementById(id)?.classList.remove('zoom-out');
+        });
+        this.#cancelArchiveLaunch();
+        this.#cli.restore_selection();
+    }
+
     #cancelArchiveLaunch() {
         this.#archive_selection = null;
         this.#pending_override_values = null;
@@ -1395,13 +1443,11 @@ export class PlatformManager {
                 loadedNames.forEach(printLoadedFile);
                 self.#cli.print("&nbsp;");
             }
-            self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
+            if (!shouldPromptLaunchSettings) {
+                self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
+            }
 
-            hide('#cors_interface');
-            hide('#header');
-            hide('#menu-wrap');
-            hide('#menu-spacer');
-            hide('#toggle-keyboard');
+            this.#hideLaunchChrome();
 
             // Close onscreen keyboard if visible - user must use physical keyboard or mouse
             self.#keyboard_manager.hideTouchKeyboard();
@@ -1454,6 +1500,7 @@ export class PlatformManager {
         } catch (error) {
             if (error instanceof ArchiveSelectionCancelled) { this.#cancelArchiveLaunch(); return; }
             if (error instanceof UnsupportedDiskFormatError) { this.#rejectUnsupportedDiskFormat(error); return; }
+            if (error instanceof LaunchCancelled) { this.#cancelLaunchSettings(); return; }
             console.log(error.stack);
             if (Debug.isEnabled()) {
                 Debug.setMessage(`Error encountered: ${error}`);
@@ -1510,6 +1557,11 @@ export class PlatformManager {
             if (error instanceof UnsupportedDiskFormatError) {
                 if (closeCallback) closeCallback();
                 this.#rejectUnsupportedDiskFormat(error);
+                return;
+            }
+            if (error instanceof LaunchCancelled) {
+                if (closeCallback) closeCallback();
+                this.#cancelLaunchSettings();
                 return;
             }
             throw error;
@@ -1632,7 +1684,9 @@ export class PlatformManager {
                         backgroundEl.classList.add('zoom-out');
                     }
 
-                    messageEl.innerHTML = 'Loading complete.<br><br><span class="blinking2">Press any key or click to start.</span>';
+                    messageEl.innerHTML = shouldPromptLaunchSettings
+                        ? 'Loading complete.'
+                        : 'Loading complete.<br><br><span class="blinking2">Press any key or click to start.</span>';
 
                     if (EnvironmentManager.isDesktop() && self.#selected_platform.keyboard_controller_info != undefined) {
                         let controlsMap = self.#selected_platform.keyboard_controller_info;
@@ -1716,13 +1770,11 @@ export class PlatformManager {
             self.#cli.clear();
             self.#cli.print("Loading complete.");
             self.#cli.print("&nbsp;");
-            self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
+            if (!shouldPromptLaunchSettings) {
+                self.#cli.print("<span class='blinking2'>Press any key or click to start.</span>");
+            }
 
-            hide('#cors_interface');
-            hide('#header');
-            hide('#menu-wrap');
-            hide('#menu-spacer');
-            hide('#toggle-keyboard');
+            this.#hideLaunchChrome();
 
             self.#keyboard_manager.hideTouchKeyboard();
 
