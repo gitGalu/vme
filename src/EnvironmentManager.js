@@ -104,6 +104,14 @@ export class EnvironmentManager {
         EnvironmentManager.updateDeviceType();
     }
 
+    // iOS (notably the PWA) can leave the document scrolled after a rotation despite overflow: hidden,
+    // after which fixed touch controls hit-test with an offset until reload. The app never scrolls the window.
+    static resetViewportScroll() {
+        if (window.scrollX !== 0 || window.scrollY !== 0) {
+            window.scrollTo(0, 0);
+        }
+    }
+
     static resizeCanvas = (nostalgist) => {
    }
 }

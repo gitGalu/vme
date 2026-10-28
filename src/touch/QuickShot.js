@@ -88,7 +88,7 @@ export class QuickShot {
         this.#joystickContainer = document.createElement('div');
         this.#joystickContainer.id = 'quickshot';
         this.#joystickContainer.style.overflow = 'hidden';
-        this.#joystickContainer.style.position = 'absolute';
+        this.#joystickContainer.style.position = 'fixed';
         this.#joystickContainer.style.right = '0';
         this.#joystickContainer.style.bottom = '0';
         this.#joystickContainer.style.width = '100%';
@@ -103,13 +103,24 @@ export class QuickShot {
             null,
             'quickshot-stick',
             this.#platform_manager,
-            { mode: 'nostalgist', showHint: false, target: s('canvas') }
+            {
+                mode: 'nostalgist',
+                showHint: false,
+                target: s('canvas'),
+                zone: QuickshotComponent.FULLSCREEN_ZONE,
+                alignTo: () => bottomContainer.firstElementChild
+            }
         );
+    }
+
+    setPlacement(placement) {
+        this.#joystickComponent?.setPlacement(placement);
     }
 
     show() {
         show("#quickshots", "grid");
         show("#quickshot", "block");
+        this.#joystickComponent?.refresh();
     }
 
     hide() {

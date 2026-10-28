@@ -296,7 +296,14 @@ body.gamepad-emulation #quickshot,
 body.gamepad-emulation #quickjoys,
 body.gamepad-emulation #quickjoy,
 body.gamepad-emulation #mousepads,
+body.gamepad-emulation #cursorkeys,
+body.gamepad-emulation #cursors,
 body.gamepad-emulation #toggle-keyboard {
+  display: none !important;
+}
+
+/* Auto Hide touch mode (touch/Hideaway.js): fast UI hidden until a tap "peeks" it. */
+body.fastui-autohide:not(.fastui-peek) #fastui {
   display: none !important;
 }
 

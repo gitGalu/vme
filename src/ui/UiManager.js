@@ -10,7 +10,8 @@ import { QuickShot } from '../touch/QuickShot.js';
 import { Mousepad } from '../touch/Mousepad.js';
 import { Hideaway } from '../touch/Hideaway.js';
 import { CursorKeys } from '../touch/CursorKeys.js';
-import { JOYSTICK_TOUCH_MODE, FAST_BTN_RADIUS } from '../Constants.js';
+import { JOYSTICK_TOUCH_MODE, FAST_BTN_RADIUS, isKeyboardOnlyTouchControllers } from '../Constants.js';
+import { QuickshotComponent } from '../touch/QuickshotComponent.js';
 import { CustomControllerManager } from '../touch/custom/CustomControllerManager.js';
 import { FileUtils } from '../utils/FileUtils.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
@@ -35,8 +36,12 @@ function getJoystickModeName(mode, platform = null) {
             return 'QuickJoy';
         case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
             return 'QuickShot';
+        case JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC:
+            return 'D-Pad';
         case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD:
             return 'Cursor Keys';
+        case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC:
+            return 'D-Pad';
         case JOYSTICK_TOUCH_MODE.HIDEAWAY:
             return 'Auto Hide';
         default:
@@ -297,8 +302,7 @@ export class UiManager {
 
         let options = [];
         const hasKeyboardSupport = UiManager.#platform_manager.getSelectedPlatform().keyboard != undefined;
-        const isCursorKeysOnly = UiManager.#platform_manager.getSelectedPlatform().touch_controllers.length &&
-                                 UiManager.#platform_manager.getSelectedPlatform().touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD;
+        const isCursorKeysOnly = isKeyboardOnlyTouchControllers(UiManager.#platform_manager.getSelectedPlatform().touch_controllers);
         const platform = UiManager.#platform_manager.getSelectedPlatform();
         const keyboardModeLabels = platform.keyboard_mode_labels || platform.keyboard?.mode_labels || {};
         const getKbModeLabel = (mode, fallback) => {
@@ -994,13 +998,13 @@ export class UiManager {
         if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
             this.#ha.hide();
         }
-        s('#quickshots').style.display = 'none';
+        UiManager.#qs?.hide();
         s('#quickjoys').style.display = 'none';
         UiManager.hideCustomControllers();
     }
 
     static hideCursors() {
-        s('#cursorkeys').style.display = 'none';
+        UiManager.#ck?.hide();
     }
 
     static showCursors() {
@@ -1010,13 +1014,18 @@ export class UiManager {
     static showJoystick() {
         if (EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) return;
 
-        if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC) {
-            s('#quickshots').style.display = 'grid';
-        } else if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY) {
-            s('#quickjoys').style.display = 'grid';
-        } else if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.HIDEAWAY) {
-        } else if (UiManager.#currentJoyTouchMode == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
-            s('#cursorkeys').style.display = 'grid';
+        switch (UiManager.#currentJoyTouchMode) {
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC:
+                UiManager.#qs?.show();
+                break;
+            case JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY:
+                s('#quickjoys').style.display = 'grid';
+                break;
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD:
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC:
+                UiManager.#ck?.show();
+                break;
         }
     }
 
@@ -1149,6 +1158,17 @@ export class UiManager {
                 return JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY;
             case 'quickshot':
                 return JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC;
+            case 'd-pad':
+            case 'dpad':
+            case 'quickshot-static':
+            case 'quickshot static':
+                return JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC;
+            case 'cursor-d-pad':
+            case 'cursor-dpad':
+            case 'quickshot-keyboard-static':
+            case 'cursor-keys-static':
+            case 'cursor keys static':
+                return JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC;
             case 'quickshot-keyboard':
             case 'quickshot_keyboard':
             case 'cursor-keys':
@@ -1411,10 +1431,22 @@ export class UiManager {
                 break;
             case JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC:
                 if (showSplash) UiManager.osdMessage('QuickShot', 1000);
+                UiManager.#qs.setPlacement(QuickshotComponent.Placement.FLOATING);
+                UiManager.showTouchOnly(UiManager.#qs);
+                break;
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC:
+                if (showSplash) UiManager.osdMessage('D-Pad', 1000);
+                UiManager.#qs.setPlacement(QuickshotComponent.Placement.STATIC);
                 UiManager.showTouchOnly(UiManager.#qs);
                 break;
             case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD:
                 if (showSplash) UiManager.osdMessage('QuickShot', 1000);
+                UiManager.#ck.setPlacement(QuickshotComponent.Placement.FLOATING);
+                UiManager.showTouchOnly(UiManager.#ck);
+                break;
+            case JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC:
+                if (showSplash) UiManager.osdMessage('D-Pad', 1000);
+                UiManager.#ck.setPlacement(QuickshotComponent.Placement.STATIC);
                 UiManager.showTouchOnly(UiManager.#ck);
                 break;
             case JOYSTICK_TOUCH_MODE.HIDEAWAY:
@@ -1431,6 +1463,7 @@ export class UiManager {
 
     static toggleCursors = (showSplash) => {
         if (showSplash) UiManager.osdMessage('Cursor keys', 1000);
+        UiManager.#ck.setPlacement(QuickshotComponent.Placement.FLOATING);
         UiManager.showTouchOnly(UiManager.#ck);
     }
 

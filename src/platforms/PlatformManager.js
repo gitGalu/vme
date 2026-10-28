@@ -47,7 +47,7 @@ import { resolveGameProfile } from '../utils/GameProfileMatcher.js';
 import { computeBlobSha256 } from '../utils/HashUtils.js';
 import { ToastManager } from '../ui/ToastManager.js';
 import GameFocusManager from '../keyboard/GameFocusManager.js';
-import { JOYSTICK_TOUCH_MODE } from '../Constants.js';
+import { isKeyboardOnlyTouchControllers } from '../Constants.js';
 import { ConfigOverrideDropdown } from '../components/ConfigOverrideDropdown.js';
 
 export const SelectedPlatforms = {
@@ -803,7 +803,7 @@ export class PlatformManager {
             this.#applyGamepadFilter(null);
         }
 
-        if (EnvironmentManager.isDesktop() && this.#selected_platform.touch_controllers.length == 1 && this.#selected_platform.touch_controllers[0] == JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD) {
+        if (EnvironmentManager.isDesktop() && isKeyboardOnlyTouchControllers(this.#selected_platform.touch_controllers)) {
             retroarchConfigOverrides = {
                 ...this.#selected_platform.touch_controller_mapping
             }

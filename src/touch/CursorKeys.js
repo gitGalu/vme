@@ -52,7 +52,7 @@ export class CursorKeys {
         this.#joystickContainer = document.createElement('div');
         this.#joystickContainer.id = 'cursors';
         this.#joystickContainer.style.overflow = 'hidden';
-        this.#joystickContainer.style.position = 'absolute';
+        this.#joystickContainer.style.position = 'fixed';
         this.#joystickContainer.style.right = '0';
         this.#joystickContainer.style.bottom = '0';
         this.#joystickContainer.style.width = '100%';
@@ -67,7 +67,13 @@ export class CursorKeys {
             null,
             'cursor-stick',
             this.#platform_manager,
-            { keys: this.#keyConfig, showHint: false, target: s('canvas') }
+            {
+                keys: this.#keyConfig,
+                showHint: false,
+                target: s('canvas'),
+                zone: CursorKeysComponent.FULLSCREEN_ZONE,
+                alignTo: () => this.#bottomContainer.firstElementChild
+            }
         );
 
         this.#joystickComponent.setKeys(this.#keyConfig);
@@ -132,9 +138,14 @@ export class CursorKeys {
         this.#joystickComponent?.setKeys(this.#keyConfig);
     }
 
+    setPlacement(placement) {
+        this.#joystickComponent?.setPlacement(placement);
+    }
+
     show() {
         show('#cursorkeys', 'grid');
         show('#cursors', 'block');
+        this.#joystickComponent?.refresh();
     }
 
     hide() {

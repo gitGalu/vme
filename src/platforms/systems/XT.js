@@ -33,7 +33,8 @@ const XT = {
     dependencies: [
     ],
     touch_controllers: [
-        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC
     ],
     touch_key_mapping: {
         keyMap: {

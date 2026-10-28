@@ -332,6 +332,7 @@ export class VME {
         wireEnter('desktopUiMr', () => reenterIngame('ar'));
 
         window.addEventListener('resize', () => {
+            EnvironmentManager.resetViewportScroll();
             EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
             EnvironmentManager.detectDevice();
         });
@@ -339,6 +340,7 @@ export class VME {
         window.addEventListener('orientationchange', () => {
             EnvironmentManager.detectDevice();
             setTimeout(() => {
+                EnvironmentManager.resetViewportScroll();
                 EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
             }, 100);
         });

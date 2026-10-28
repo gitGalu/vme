@@ -39,7 +39,8 @@ const Intv = {
         "1...0": "Keypad"
     },
     touch_controllers: [
-        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC
     ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     dependencies: [

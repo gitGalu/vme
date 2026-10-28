@@ -45,6 +45,7 @@ const Lynx = {
     },
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,

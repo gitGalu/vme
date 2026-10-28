@@ -1,4 +1,8 @@
-import { s, show, hide } from '../dom.js';
+// Auto Hide: no on-screen controls; a tap shows the fast UI for a moment.
+// Hiding is done with body classes rather than the inline display style, so other code
+// re-showing #fastui (e.g. EnvironmentManager.forceTouch on resize/rotation) cannot undo it.
+const AUTOHIDE_CLASS = 'fastui-autohide';
+const PEEK_CLASS = 'fastui-peek';
 
 export class Hideaway {
     static timeoutId;
@@ -9,24 +13,25 @@ export class Hideaway {
     #reappear(event) {
         event.preventDefault();
         clearTimeout(Hideaway.timeoutId);
-        show("#fastui", "grid");
+        document.body.classList.add(PEEK_CLASS);
 
         Hideaway.timeoutId = setTimeout(() => {
-            hide("#fastui");
+            document.body.classList.remove(PEEK_CLASS);
         }, 2000);
     }
 
     show() {
-        hide("#fastui");
+        clearTimeout(Hideaway.timeoutId);
+        document.body.classList.remove(PEEK_CLASS);
+        document.body.classList.add(AUTOHIDE_CLASS);
         document.addEventListener('click', this.#reappear);
         document.addEventListener('touchstart', this.#reappear);
-        clearTimeout(Hideaway.timeoutId);
     }
 
     hide() {
         clearTimeout(Hideaway.timeoutId);
         document.removeEventListener('click', this.#reappear);
         document.removeEventListener('touchstart', this.#reappear);
-        show("#fastui", "grid");
+        document.body.classList.remove(AUTOHIDE_CLASS, PEEK_CLASS);
     }
 }

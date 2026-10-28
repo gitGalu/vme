@@ -21,9 +21,19 @@ export const TOUCH_INPUT = {
 export const JOYSTICK_TOUCH_MODE = {
     QUICKJOY_PRIMARY: 100,
     QUICKSHOT_DYNAMIC: 200,
+    QUICKSHOT_STATIC: 210,
     QUICKSHOT_KEYBOARD: 300,
+    QUICKSHOT_KEYBOARD_STATIC: 310,
     HIDEAWAY: 1000,
 };
+
+// True when every touch joystick mode of a platform emits keyboard events (no retropad stick).
+export function isKeyboardOnlyTouchControllers(touchControllers) {
+    return Array.isArray(touchControllers) && touchControllers.length > 0 &&
+        touchControllers.every((mode) =>
+            mode === JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD ||
+            mode === JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC);
+}
 
 export const MOUSE_TOUCH_MODE = {
     TRACKPAD_BUTTONS: 100

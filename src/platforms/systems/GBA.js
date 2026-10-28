@@ -56,7 +56,8 @@ const GBA = {
         "Enter": "Start"
     },
     touch_controllers: [
-        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC
     ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 4,

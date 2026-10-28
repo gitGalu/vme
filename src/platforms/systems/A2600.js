@@ -29,6 +29,7 @@ const A2600 = {
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
     fire_buttons: 1,

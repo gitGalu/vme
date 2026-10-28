@@ -138,10 +138,12 @@ const Spectrum = {
     guessConfig: (fileName) => buildSpectrumLaunchSettings(fileName).coreConfig,
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
-        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC
     ],
     touch_controller_mode_labels: {
-        [JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD]: 'QuickShot'
+        [JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD]: 'QuickShot',
+        [JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC]: 'D-Pad'
     },
     touch_key_mapping: {
         keyMap: {

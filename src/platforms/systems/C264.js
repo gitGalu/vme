@@ -27,6 +27,7 @@ const C264 = {
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+        JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
     keyboard_controller_mapping: {
