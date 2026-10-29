@@ -41,3 +41,10 @@ launch packaging, IndexedDB storage and RetroArch disk-switch commands.
 
 Run the filename convention checks separately with:
 `node tests/atari800-disk-sets.mjs`.
+
+The Jaguar and ColecoVision touch keypad has a standalone browser test page at
+`tests/touch-keypad.html` (use the same `/@fs/<repository>/tests/` URL prefix).
+Run `await window.runTouchKeypadTests()` to check tap/drag selection, held keys,
+keyboard mappings, outside-touch dismissal, cancellation and release when controls are hidden. Use
+`window.previewTouchKeypad()` to inspect portrait and landscape layouts.
+Pass `'coleco'` to either function to check ColecoVision's keypad and placement.

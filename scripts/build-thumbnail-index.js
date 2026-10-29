@@ -23,6 +23,7 @@ const PLATFORMS = [
     { platform_id: 'atari5200', system: 'Atari - 5200' },
     { platform_id: 'a7800', system: 'Atari - 7800' },
     { platform_id: 'lynx', system: 'Atari - Lynx' },
+    { platform_id: 'jaguar', system: 'Atari - Jaguar' },
     { platform_id: 'st', system: 'Atari - ST' },
     { platform_id: 'c264', system: 'Commodore - Plus-4' },
     { platform_id: 'c64', system: 'Commodore - 64' },

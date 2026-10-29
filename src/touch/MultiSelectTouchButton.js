@@ -1,5 +1,3 @@
-import { QJ_LABEL_COLOR, QJ_IDLE_COLOR, QJ_ACTIVE_COLOR } from '../Constants.js';
-
 export class MultiSelectTouchButton {
     static #instances = [];
 
@@ -31,7 +29,7 @@ export class MultiSelectTouchButton {
         this.mainButton = this.#createButtonElement(initialLabel, radius);
         this.container.appendChild(this.mainButton);
 
-        this.optionsContainer = this.#createOptionsContainer(radius);
+        this.optionsContainer = this.#createOptionsContainer();
         this.container.appendChild(this.optionsContainer);
 
         this.optionElements = [];
@@ -41,12 +39,43 @@ export class MultiSelectTouchButton {
 
         this.#bindEvents();
 
+        this.#sizeObserver = new ResizeObserver(() => this.#syncMenuLayout());
+        this.#sizeObserver.observe(this.mainButton);
+
         MultiSelectTouchButton.#instances.push(this);
     }
 
     #handleOutsideTouch;
     #handleMainTouchStart;
     #handleMainTouchEnd;
+    #sizeObserver;
+
+    #syncMenuLayout() {
+        if (!this.mainButton || !this.optionsContainer) return;
+        const height = this.mainButton.getBoundingClientRect().height;
+        if (height <= 0) return;
+        this.optionsContainer.style.setProperty('--fast-menu-row-height', `${height}px`);
+
+        // Let the viewport limit determine wrapping, then fit the widest row.
+        this.optionsContainer.style.removeProperty('width');
+        const style = getComputedStyle(this.optionsContainer);
+        const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+        const gap = parseFloat(style.columnGap) || 0;
+        const available = this.optionsContainer.getBoundingClientRect().width - padding;
+        let rowWidth = 0;
+        let widestRow = 0;
+        for (const option of this.optionElements) {
+            const width = option.getBoundingClientRect().width;
+            if (rowWidth > 0 && rowWidth + gap + width > available + 0.1) {
+                widestRow = Math.max(widestRow, rowWidth);
+                rowWidth = width;
+            } else {
+                rowWidth += (rowWidth > 0 ? gap : 0) + width;
+            }
+        }
+        widestRow = Math.max(widestRow, rowWidth);
+        this.optionsContainer.style.width = `${Math.ceil((widestRow + padding) * 64) / 64}px`;
+    }
 
     #createOptionElements(radius) {
         this.optionsContainer.innerHTML = '';
@@ -59,8 +88,7 @@ export class MultiSelectTouchButton {
                 const isSelected = index === this.selectedIndex;
                 const shouldHighlight = isSelected && this.highlightSelectedInPopup;
                 const option = this.#createOptionElement(label, radius, shouldHighlight, this.showSelectedInPopup);
-                option.style.transform = 'translateY(-20px)';
-                option.style.transition = 'opacity 0.15s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+                option.style.setProperty('--fast-menu-option-delay', `${this.optionElements.length * 35}ms`);
 
                 const isClickable = this.showSelectedInPopup || !isSelected;
 
@@ -68,44 +96,41 @@ export class MultiSelectTouchButton {
                     option.addEventListener('touchstart', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        option.style.backgroundColor = '#1a1a1a';
-                        option.style.color = '#aaaaaa';
+                        option.classList.add('is-active');
                     });
 
                     option.addEventListener('touchend', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        option.style.backgroundColor = isSelected ? '#2a2a2a' : '#000000';
-                        option.style.color = '#cccccc';
+                        option.classList.remove('is-active');
                         this.#selectOption(index);
                     });
+                    option.addEventListener('touchcancel', () => option.classList.remove('is-active'));
                 }
 
                 this.optionsContainer.appendChild(option);
                 this.optionElements.push(option);
             }
         });
+        this.optionsContainer.style.setProperty('--fast-menu-frame-delay', `${150 + Math.max(0, this.optionElements.length - 1) * 35}ms`);
     }
     
     #createButtonContent(label, showArrow = true) {
         return `
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="font-size: 50%;">${label}</span>
-                ${showArrow ? '<span style="font-size: 35%;">►</span>' : ''}
+                <span>${label}</span>
+                ${showArrow ? '<span class="fast-control__arrow">►</span>' : ''}
             </div>
         `;
     }
     
     #createButtonElement(label, radius) {
         const button = document.createElement('div');
-        button.classList.add('fast-button');
+        button.classList.add('fast-button', 'fast-control', 'fast-control--trigger');
         button.innerHTML = label;
-        button.style.backgroundColor = QJ_IDLE_COLOR;
         button.style.borderRadius = radius;
         button.style.display = 'flex';
         button.style.alignItems = 'center';
-        button.style.color = QJ_LABEL_COLOR;
-        button.style.fontWeight = 'bold';
         button.style.justifyContent = 'center';
         button.style.pointerEvents = 'auto';
         button.style.width = '100%';
@@ -116,39 +141,25 @@ export class MultiSelectTouchButton {
     
     #createOptionElement(label, radius, isSelected = false, allowClickSelected = false) {
         const option = document.createElement('div');
-        option.classList.add('fast-button');
-        option.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
-        option.style.backgroundColor = isSelected ? '#2a2a2a' : '#000000';
+        option.classList.add('fast-button', 'fast-control', 'fast-control--option');
+        option.classList.toggle('is-selected', isSelected);
+        option.classList.toggle('is-disabled', isSelected && !allowClickSelected);
+        option.textContent = label;
         option.style.borderRadius = radius;
         option.style.display = 'flex';
         option.style.alignItems = 'center';
-        option.style.color = '#cccccc';
-        option.style.border = isSelected ? 'solid 2px #cccccc' : 'solid 1px #cccccc';
-        option.style.fontWeight = 'bold';
         option.style.justifyContent = 'center';
-        option.style.pointerEvents = (isSelected && !allowClickSelected) ? 'none' : 'auto';
-        option.style.padding = '12px 16px';
+        option.style.padding = '0 12px';
         option.style.whiteSpace = 'nowrap';
-        option.style.height = '100%';
         option.style.boxSizing = 'border-box';
         option.style.textTransform = 'uppercase';
-        option.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.4)';
 
         return option;
     }
     
-    #createOptionsContainer(radius) {
+    #createOptionsContainer() {
         const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.top = '0';
-        container.style.left = '100%';
-        container.style.display = 'flex';
-        container.style.flexDirection = 'row';
-        container.style.gap = '2px';
-        container.style.marginLeft = '2px';
-        container.style.visibility = 'hidden';
-        container.style.zIndex = '7778';
-        container.style.height = '100%';
+        container.classList.add('fast-menu');
         return container;
     }
 
@@ -219,41 +230,30 @@ export class MultiSelectTouchButton {
         });
 
         this.#createOptionElements(this.mainButton.style.borderRadius);
+        this.#syncMenuLayout();
+        // Commit each new option's initial position before starting its transition.
+        this.optionsContainer.getBoundingClientRect();
         this.isExpanded = true;
-        this.optionsContainer.style.visibility = 'visible';
-        this.mainButton.style.backgroundColor = QJ_ACTIVE_COLOR;
+        this.optionsContainer.classList.add('is-open');
+        this.mainButton.classList.add('is-open');
 
         const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
         this.mainButton.innerHTML = this.#createButtonContent(displayLabel, true).replace('►', '◄');
-
-        this.optionElements.forEach((option, index) => {
-            setTimeout(() => {
-                option.style.opacity = '1';
-                option.style.transform = 'translateY(0)';
-            }, index * 60);
-        });
     }
 
     #collapse() {
         if (!this.isExpanded) return;
 
         this.isExpanded = false;
-        this.mainButton.style.backgroundColor = QJ_IDLE_COLOR;
+        this.optionsContainer.classList.remove('is-open');
+        this.mainButton.classList.remove('is-open');
 
         const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
         this.mainButton.innerHTML = this.#createButtonContent(displayLabel, this.showArrow);
-
-        this.optionElements.forEach((option, index) => {
-            option.style.opacity = '0';
-            option.style.transform = 'translateY(-20px)';
-        });
-
-        setTimeout(() => {
-            this.optionsContainer.style.visibility = 'hidden';
-        }, 200);
     }
 
     destroy() {
+        this.#sizeObserver.disconnect();
         this.#collapse();
 
         if (this.mainButton && this.#handleMainTouchStart) {

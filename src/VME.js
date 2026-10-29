@@ -456,6 +456,7 @@ export class VME {
     }
 
     toggleScreen(mode) {
+        if (mode !== VME.CURRENT_SCREEN.EMULATION) UiManager.hideKeypad();
         this.#current_screen = mode;
         // Capture whether the gamepad skin was active BEFORE removing it, so EMULATION
         // knows the game was launched via pad (Collection/Save in pad mode).

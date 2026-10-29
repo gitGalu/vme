@@ -155,6 +155,13 @@
   font-display: block;
 }
 
+@font-face {
+  font-family: PixelOperatorMono8;
+  src: url('../assets/fonts/pixel-operator/PixelOperatorMono8-Bold.ttf') format("truetype");
+  font-weight: 700;
+  font-display: block;
+}
+
 
 #warningStandalone {
   display: none;
@@ -308,6 +315,13 @@ body.fastui-autohide:not(.fastui-peek) #fastui {
 }
 
 #fastui {
+  --fast-control-label: #cccccc;
+  --fast-control-background: #88888844;
+  --fast-control-active-background: #88888866;
+  --fast-control-border: #88888888;
+  --fast-control-active-border: #cccccc;
+  --fast-control-gap: 4px;
+  --fast-control-radius: 6px;
   position: fixed;
   right: 0;
   bottom: 0;
@@ -687,6 +701,14 @@ a {
     grid-area: 32 / -10 / span 2 / span 9;
   }
 
+  #fastkeypad {
+    grid-area: 32 / -10 / span 2 / span 9;
+  }
+
+  #fastui[data-platform-id="coleco"] #fastkeypad {
+    grid-area: 26 / -10 / span 2 / span 9;
+  }
+
   #fast4 {
     grid-area: 35 / -10 / span 2 / span 9;
   }
@@ -862,6 +884,14 @@ a {
 
   #fast3 {
     grid-area: 13 / -5 / span 4 / span 4;
+  }
+
+  #fastkeypad {
+    grid-area: 13 / -5 / span 4 / span 4;
+  }
+
+  #fastui[data-platform-id="coleco"] #fastkeypad {
+    grid-area: 3 / -5 / span 4 / span 4;
   }
 
   #fast4 {
@@ -3231,6 +3261,169 @@ body.selection-mode-active .menu-strip-spacer {
   text-align: center;
   transition: opacity 0.25s;
   font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+}
+
+.fast-control {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--fast-control-radius);
+  font: 500 11px Helvetica, Arial, sans-serif;
+  color: var(--fast-control-label);
+  background: var(--fast-control-background);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.fast-control--trigger {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.fast-control__arrow {
+  font-size: 9px;
+}
+
+.fast-control.is-active,
+.fast-control.is-open,
+.fast-control.is-selected,
+.fast-control[aria-expanded="true"] {
+  color: #eeeeee;
+  background: var(--fast-control-active-background);
+  border-color: var(--fast-control-active-border);
+}
+
+.fast-popup {
+  gap: var(--fast-control-gap);
+  padding: 6px;
+  border: 1px solid var(--fast-control-border);
+  border-radius: 8px;
+  background: #111111e8;
+  box-shadow: 0 3px 14px #00000088;
+  z-index: 7779;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.fast-menu {
+  --fast-menu-row-height: 32px;
+  --fast-menu-padding: 6px;
+  position: absolute;
+  top: calc(0px - var(--fast-menu-padding));
+  left: calc(100% + 10px);
+  display: flex;
+  column-gap: 2px;
+  row-gap: var(--fast-menu-padding);
+  padding: var(--fast-menu-padding);
+  width: max-content;
+  max-width: calc(100vw - 100% - 18px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 150ms;
+  z-index: 7778;
+}
+
+.fast-menu.is-open {
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.fast-menu::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid #666666;
+  border-radius: calc(var(--fast-control-radius) + var(--fast-menu-padding));
+  background: #000000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 90ms ease;
+}
+
+.fast-menu.is-open::before {
+  opacity: 1;
+  transition-delay: var(--fast-menu-frame-delay, 150ms);
+}
+
+.fast-menu .fast-control--option {
+  height: var(--fast-menu-row-height);
+  min-height: 0;
+  font-size: 11px;
+  color: #cccccc;
+  background: #000000;
+  border-color: #cccccc;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 90ms ease, transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fast-menu.is-open .fast-control--option {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: var(--fast-menu-option-delay, 0ms);
+}
+
+.fast-menu .fast-control--option.is-selected {
+  background: #2a2a2a;
+}
+
+.fast-menu .fast-control--option.is-active {
+  color: #eeeeee;
+  background: #1a1a1a;
+}
+
+.fast-menu:not(.is-open) .fast-control,
+.fast-menu .is-disabled {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fast-menu,
+  .fast-menu::before,
+  .fast-menu .fast-control--option,
+  .fast-control--trigger {
+    transition: none;
+  }
+
+  .fast-menu.is-open .fast-control--option,
+  .fast-menu.is-open::before {
+    transition-delay: 0s;
+  }
+}
+
+.fast-control--option {
+  min-height: 44px;
+  font-size: 14px;
+  border-color: var(--fast-control-border);
+}
+
+.touch-keypad__panel {
+  position: fixed;
+  display: grid;
+  grid-template-columns: repeat(3, clamp(44px, 7vmin, 56px));
+  grid-auto-rows: clamp(44px, 7vmin, 56px);
+}
+
+.touch-keypad__panel[hidden] {
+  display: none;
+}
+
+.touch-keypad__key {
+  padding: 0;
+  font-size: 20px;
 }
 
 .only-landscape {

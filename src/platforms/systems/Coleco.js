@@ -45,6 +45,31 @@ const Coleco = {
         JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC
     ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
+    // Gearcoleco reads its keypad through RetroPad buttons and left-stick axes.
+    // Keep the touch keypad's digit keys separate from fire and D-pad input.
+    touch_controller_mapping: {
+        input_player1_y: 'num1',
+        input_player1_x: 'num2',
+        input_player1_l: 'num3',
+        input_player1_r: 'num4',
+        input_player1_l2: 'num5',
+        input_player1_r2: 'num6',
+        input_player1_l3: 'num7',
+        input_player1_r3: 'num8',
+        input_player1_start: 'minus',
+        input_player1_select: 'equals',
+        input_player1_l_x_plus: 'num0',
+        input_player1_l_y_plus: 'num9',
+        input_player1_analog_dpad_mode: '0'
+    },
+    touch_keypad: {
+        replace_additional_buttons: true,
+        keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map(label => ({
+            label,
+            key: label === '*' ? '-' : label === '#' ? '=' : label,
+            code: label === '*' ? 'Minus' : label === '#' ? 'Equal' : `Digit${label}`
+        }))
+    },
     dependencies: [
         {
             key: "colecovision.rom",
@@ -54,18 +79,19 @@ const Coleco = {
         }
     ],
     fire_buttons: 2,
+    // Retain the desktop Special keys menu; touch uses the full keypad above.
     additional_buttons: {
         3: {
             "label": "1",
-            "keyCode": "x"
+            "keyCode": "y"
         },
         2: {
             "label": "2",
-            "keyCode": "y"
+            "keyCode": "x"
         },
         1: {
             "label": "#",
-            "keyCode": "select"   
+            "keyCode": "select"
         }
     }
 };

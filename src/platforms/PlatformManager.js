@@ -17,6 +17,7 @@ import Spectrum from './systems/Spectrum.js';
 import PCE from './systems/PCE.js';
 import MD from './systems/MD.js';
 import Lynx from './systems/Lynx.js';
+import Jaguar from './systems/Jaguar.js';
 import GBA from './systems/GBA.js';
 import SNK from './systems/SNK.js';
 import Amiga from './systems/Amiga.js';
@@ -52,7 +53,7 @@ import { isKeyboardOnlyTouchControllers } from '../Constants.js';
 import { ConfigOverrideDropdown } from '../components/ConfigOverrideDropdown.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Jaguar, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2
 }
 
 

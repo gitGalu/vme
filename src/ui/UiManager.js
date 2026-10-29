@@ -1,6 +1,7 @@
 import { s, addButtonEventListeners } from '../dom.js';
 import { SingleTouchButton } from '../touch/SingleTouchButton.js';
 import { MultiSelectTouchButton } from '../touch/MultiSelectTouchButton.js';
+import { KeypadTouchButton } from '../touch/KeypadTouchButton.js';
 import { TouchButtonListener } from '../touch/TouchButtonListener.js';
 import { SingleTouchButtonJoyListener } from '../touch/SingleTouchButtonJoyListener.js';
 import { SingleTouchButtonKbListener } from '../touch/SingleTouchButtonKbListener.js';
@@ -63,6 +64,7 @@ export class UiManager {
     static #joystickSelector;
     static #touchDiskSelector;
     static #specialButton;
+    static #keypad;
     static #diskSwitchInProgress = false;
 
     static #currentInputMethod;
@@ -88,6 +90,8 @@ export class UiManager {
     }
 
     initFastUI() {
+        UiManager.#keypad?.destroy();
+        UiManager.#keypad = null;
         var fastuiContainer = document.createElement('div');
         fastuiContainer.id = 'fastui';
         fastuiContainer.style.display = 'none';
@@ -124,7 +128,13 @@ export class UiManager {
             new SingleTouchButton(fastuiContainer, '<span style="font-size: 50%;">ARROWS</span>', undefined, 'fastcursors', new InputSwitchListener(TOUCH_INPUT.CURSORS), FAST_BTN_RADIUS);
         }
 
-        this.#placeItems(fastuiContainer);
+        if (!selectedPlatform.touch_keypad?.replace_additional_buttons) {
+            this.#placeItems(fastuiContainer);
+        }
+
+        if (selectedPlatform.touch_keypad) {
+            UiManager.#keypad = new KeypadTouchButton(fastuiContainer, selectedPlatform.touch_keypad);
+        }
 
         var fastuiMsg = document.createElement('div');
         fastuiMsg.id = 'fastui-msg';
@@ -926,7 +936,7 @@ export class UiManager {
             const label = specialButtonConfig.label ?? 'CUSTOM';
 
             if (UiManager.#specialButton) {
-                UiManager.#specialButton.el.innerHTML = `<span style="font-size: 50%;">${label}</span>`;
+                UiManager.#specialButton.setLabel(label);
                 UiManager.#specialButton.el.style.display = 'flex';
             }
         } else if (UiManager.#specialButton) {
@@ -977,6 +987,10 @@ export class UiManager {
             }
             button.style.display = shouldHide ? 'none' : 'flex';
         }
+    }
+
+    static hideKeypad() {
+        UiManager.#keypad?.close();
     }
 
     static positionDropdownUnderLabel(button, menu) {

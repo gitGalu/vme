@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touch keypad tests</title>
+<body class="fade-in-visible" style="background:#161616;color:#eee">
+<pre id="result">Run window.runTouchKeypadTests(). Use window.previewTouchKeypad() for a visual check.</pre>
+<script type="module">
+import '../src/styles/vme.css';
+import { runTouchKeypadTests, previewTouchKeypad } from './touch-keypad.browser.js';
+window.runTouchKeypadTests = async (platformId) => {
+  try {
+    const result = await runTouchKeypadTests(platformId);
+    document.getElementById('result').textContent = result;
+    return result;
+  } catch (error) {
+    document.getElementById('result').textContent = error.stack;
+    throw error;
+  }
+};
+window.previewTouchKeypad = previewTouchKeypad;
+</script>
+</body>
+</html>

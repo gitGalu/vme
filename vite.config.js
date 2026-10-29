@@ -71,6 +71,8 @@ export default defineConfig(({ command }) => {
           { src: 'libretro/*', dest: 'libretro' },
           { src: 'assets/shaders/*', dest: 'assets/shaders' },
           { src: 'assets/boot/*', dest: 'assets/boot' },
+          // Include the font package's license alongside the bundled font.
+          { src: 'assets/fonts/pixel-operator', dest: 'assets/fonts' },
           { src: 'assets/images/vme-512.png', dest: '.' },
           { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
           ...(includePrivateAssets ? [{ src: '../private-assets/*.zip', dest: 'assets' }] : []),

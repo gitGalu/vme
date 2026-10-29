@@ -68,6 +68,8 @@ export class QuickShot {
                 new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'b', 'a', 'y'));
             } else if (platform_id == "intv") {
                 new TripleTouchButton(bottomContainer, true, 'T', 'L', 'R', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'y', 'a', 'b'));
+            } else if (platform_id == "jaguar") {
+                new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'a', 'b', 'y'));
             } else {
                 new TripleTouchButton(bottomContainer, true, 'A', 'B', 'C', undefined, 'qsabc3', new TripleTouchButtonJoyListener(this.#nostalgist, 'y', 'b', 'a'));
             }
