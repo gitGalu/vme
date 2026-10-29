@@ -10,6 +10,7 @@ import { t } from './i18n/shellStrings.js';
 import { CollectionGrid } from './CollectionGrid.js';
 import { ToastManager } from './ui/ToastManager.js';
 import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
+import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
 
 export class CollectionBrowser {
     #vme;
@@ -35,6 +36,7 @@ export class CollectionBrowser {
     #wheelScrollMultiplier = 0.45;
     #wheelSnapDelay = 160;
     #zoomOutTimer = null;
+    #keyRepeat;
     #buttonElements = new Set();
     #backButton;
     #backHandler;
@@ -57,6 +59,10 @@ export class CollectionBrowser {
         this.#isDragging = false;
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
+        this.#keyRepeat = new CarouselKeyRepeat((direction, duration) => {
+            if (!this.#flicking) return Promise.reject();
+            return direction > 0 ? this.#flicking.next(duration) : this.#flicking.prev(duration);
+        });
         this.#wheel_event_bound = this.#handleWheel.bind(this);
 
         this.#backButton = s('#collectionBrowserUiBack');
@@ -848,6 +854,7 @@ export class CollectionBrowser {
     }
 
     #destroy() {
+        this.#keyRepeat.stop();
         this.#urlsToRevoke.forEach(url => {
             try {
                 if (url && url.startsWith('blob:')) {
@@ -944,10 +951,8 @@ export class CollectionBrowser {
             return;
         }
 
-        if (event.key === "ArrowRight") {
-            this.#flicking.next().catch(() => { });
-        } else if (event.key === "ArrowLeft") {
-            this.#flicking.prev().catch(() => { });
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+            this.#keyRepeat.press(event, event.key === "ArrowRight" ? 1 : -1);
         } else if (event.key === "Enter") {
             // Gamepad skin mode: A -> choice overlay (if a save exists) or start fresh.
             if (document.body.classList.contains('gamepad-browser-skin')) {

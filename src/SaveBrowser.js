@@ -9,6 +9,7 @@ import { FileUtils } from './utils/FileUtils.js';
 import { t } from './i18n/shellStrings.js';
 import { ToastManager } from './ui/ToastManager.js';
 import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
+import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
 
 export class SaveBrowser {
     #vme;
@@ -43,6 +44,7 @@ export class SaveBrowser {
     #urlsToRevoke = new Set();
     #isDestroying = false;
     #deleting = false;
+    #keyRepeat;
     #lastBackgroundUpdate = 0;
     #lastParallaxUpdate = 0;
 
@@ -53,6 +55,15 @@ export class SaveBrowser {
         this.#cli = cli;
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
+        this.#keyRepeat = new CarouselKeyRepeat((direction, duration) => {
+            if (!this.#flicking) return Promise.reject();
+            this.#setUIReady(false);
+            const move = direction > 0 ? this.#flicking.next(duration) : this.#flicking.prev(duration);
+            return move.catch((err) => {
+                this.#setUIReady(true);
+                throw err;
+            });
+        });
         this.#wheel_event_bound = this.#handleWheel.bind(this);
 
         this.#filter_change_handler_bound = this.#filterChangeHandler.bind(this);
@@ -682,6 +693,7 @@ export class SaveBrowser {
 
     #destroy() {
         this.#isDestroying = true;
+        this.#keyRepeat.stop();
 
         this.#buttonElements.forEach(button => {
             if (button) {
@@ -741,18 +753,8 @@ export class SaveBrowser {
             return;
         }
     
-        if (event.key === "ArrowRight") {
-            this.#setUIReady(false);
-            this.#flicking.next().then(() => {
-            }).catch(() => { 
-                this.#setUIReady(true);
-            });
-        } else if (event.key === "ArrowLeft") {
-            this.#setUIReady(false);
-            this.#flicking.prev().then(() => {
-            }).catch(() => { 
-                this.#setUIReady(true);
-            });
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+            this.#keyRepeat.press(event, event.key === "ArrowRight" ? 1 : -1);
         } else if (event.key === "Enter") {
             const activePanel = this.#flicking.currentPanel;
             if (activePanel && this.#selected && this.#uiReady) {
