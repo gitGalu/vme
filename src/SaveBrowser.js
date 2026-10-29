@@ -1123,11 +1123,13 @@ function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
 
-/** Stable pseudo-random tilt in [-10, 10) deg for a key, so cards keep their angle across rebuilds. */
+const MAX_TILT_DEG = 6;
+
+/** Stable pseudo-random tilt in [-MAX_TILT_DEG, MAX_TILT_DEG) for a key, so cards keep their angle across rebuilds. */
 function tiltDegrees(key) {
     let h = 2166136261;
     for (const ch of String(key)) {
         h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
     }
-    return ((h >>> 0) % 2000) / 100 - 10;
+    return ((h >>> 0) % 10000) / 10000 * 2 * MAX_TILT_DEG - MAX_TILT_DEG;
 }
