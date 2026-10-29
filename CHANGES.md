@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.97] - 2026-10-29
+
+- add Atari Jaguar emulation (uses Virtual Jaguar core) 
+- Collection Browser: add coverflow/grid view toggle
+- Save Browser/Collection Browser: fix mobile swiping and improve keyboard navigation
+- touch: add popup keypads for Jaguar and ColecoVision
+- touch: refine fastbutton UI
+- iOS: reduce browser memory usage
+
 ## [0.96] - 2026-10-28
 
 - touch: add D-Pad control scheme
