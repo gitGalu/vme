@@ -2209,6 +2209,7 @@ body.selection-mode-active .menu-strip-spacer {
   animation: flashingEffect 1s steps(1, end) infinite;
 }
 
+
 .black {
   background-color: 'green';
 }
@@ -3310,9 +3311,9 @@ body.selection-mode-active .menu-strip-spacer {
   border: 1px solid #444444;
   border-radius: 8px;
   box-shadow: 0px 8px 100px 0px rgba(255, 255, 255, 0.1);
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  /* No translate3d / backface-visibility here: in WebKit they made every card image its own GPU
+     layer (all cards are in the DOM - memory on iOS), and the inline rotate() replaced the
+     translate3d anyway. The cards are painted into the Flicking camera layer instead. */
 }
 
 /* Crisp pixels only on HiDPI: there the shot is practically always upscaled in device pixels
@@ -3387,8 +3388,7 @@ body.selection-mode-active .menu-strip-spacer {
   height: 100%;
   background-size: cover;
   filter: brightness(20%);
-  /* No scale here: the 12x zoom is baked into the layer size (.browser-backdrop-layer).
-     Transform is only the parallax shift (JS) and the launch zoom-out. */
+  /* No scale here: the 12x zoom is the layers' background-size (.browser-backdrop-layer). */
   transform: translate3d(0, 0, 0);
   z-index: -1;
   image-rendering: pixelated;
@@ -3403,14 +3403,12 @@ body.selection-mode-active .menu-strip-spacer {
   animation: backgroundZoomOut 3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
 }
 
-/* Layers are 12x the screen, so 1 -> 1/12 is the old 12x -> 1x zoom. */
+/* The zoom itself (12x -> 1x) runs on the layers' background-size, see backdropLayerZoomOut. */
 @keyframes backgroundZoomOut {
   from {
-    transform: translate3d(0, 0, 0) scale(1);
     filter: brightness(20%);
   }
   to {
-    transform: translate3d(0, 0, 0) scale(0.083333);
     filter: brightness(5%);
   }
 }
@@ -3423,27 +3421,84 @@ body.selection-mode-active .menu-strip-spacer {
   opacity: 1;
 }
 
+/* Same fade-in as SaveBrowser's backdrop (open() toggles .show). Without it the backdrop - the
+   animated color first - was visible at once, and that's what iOS picked up for the status bar
+   around the Dynamic Island in a portrait PWA (a random shade, kept into the launched game).
+   SaveBrowser's is still transparent at that moment, so the area stays black. */
+#collection-flicking-background {
+  opacity: 0;
+}
+
+#collection-flicking-background.show {
+  opacity: 1;
+}
+
 /* Crossfade layers inside the backdrop (BrowserBackdrop.js). The incoming layer fades in on top;
    the outgoing one stays opaque underneath until that finishes, so there's no dark dip between.
-   Each layer is 12x the screen and centered (= cover + scale(12) on the parent, as before). Zooming
-   by size instead of transform makes the pixels at paint time: WebKit rasterized the scaled-up
-   layer at low resolution and the GPU upscale smoothed it, ignoring image-rendering. */
+   The 12x zoom is background-size on screen-sized layers, so the pixels are made at paint time:
+   with transform: scale(12) browsers rasterized the layer at low resolution and the GPU upscale
+   smoothed it, ignoring image-rendering. (Layers 12x the screen fixed that but were too big for
+   iOS memory.) 1200% of the width in landscape, of the height in narrow screens (~ cover x 12).
+   Parallax: --backdrop-shift (JS) offsets background-position. */
 .browser-backdrop-layer {
   position: absolute;
-  top: -550%;
-  left: -550%;
-  width: 1200%;
-  height: 1200%;
-  background-size: cover;
+  inset: 0;
+  background-size: 1200% auto;
+  background-position: calc(50% + var(--backdrop-shift, 0px)) 50%;
   opacity: 0;
   z-index: 0;
-  transition: opacity 0.35s ease 0.35s;
+  transition: opacity 0.35s ease 0.35s, background-size 0.8s ease;
 }
 
 .browser-backdrop-layer.visible {
   opacity: 1;
   z-index: 1;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.35s ease, background-size 0.8s ease;
+}
+
+/* SaveBrowser parallax has always been smoothed (it was transition: transform 0.8s). */
+#flicking-background > .browser-backdrop-layer {
+  transition: opacity 0.35s ease 0.35s, background-size 0.8s ease, background-position 0.8s ease;
+}
+
+#flicking-background > .browser-backdrop-layer.visible {
+  transition: opacity 0.35s ease, background-size 0.8s ease, background-position 0.8s ease;
+}
+
+/* Entry "camera" zoom starts at 1x (JS removes the class once the first screenshot is shown). */
+.backdrop-zoom-start > .browser-backdrop-layer {
+  background-size: 100% auto;
+}
+
+/* Launch zoom-out (PlatformManager adds .zoom-out to the backdrop). */
+.zoom-out > .browser-backdrop-layer {
+  animation: backdropLayerZoomOut 3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+@keyframes backdropLayerZoomOut {
+  to {
+    background-size: 100% auto;
+  }
+}
+
+@media (max-aspect-ratio: 4/3) {
+  .browser-backdrop-layer {
+    background-size: auto 1200%;
+  }
+
+  .backdrop-zoom-start > .browser-backdrop-layer {
+    background-size: auto 100%;
+  }
+
+  .zoom-out > .browser-backdrop-layer {
+    animation-name: backdropLayerZoomOutNarrow;
+  }
+}
+
+@keyframes backdropLayerZoomOutNarrow {
+  to {
+    background-size: auto 100%;
+  }
 }
 
 .panel-buttons button {
@@ -3767,7 +3822,6 @@ body.selection-mode-active .menu-strip-spacer {
 }
 
 #collectionBrowserUiBack {
-  width: 25%;
   float: left;
   justify-content: left;
   align-items: center;
@@ -3780,6 +3834,26 @@ body.selection-mode-active .menu-strip-spacer {
   width: auto;
   transition: filter 0.5s ease;
   filter: brightness(0) invert(0.8);
+}
+
+/* View toggle (coverflow <-> grid) right after Back; auto margin pushes Continue/Load right.
+   The icon shows the view you switch TO. */
+#collectionBrowserUiView {
+  margin-right: auto;
+  color: #cccccc;
+}
+
+#collectionBrowserUiView svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+#collection-browser[data-view="coverflow"] #collectionBrowserUiView .view-icon-coverflow,
+#collection-browser[data-view="grid"] #collectionBrowserUiView .view-icon-grid {
+  display: none;
 }
 
 .collectionBrowserUiBack img::after {
@@ -3807,6 +3881,12 @@ body.selection-mode-active .menu-strip-spacer {
   width: 100%;
   height: 100vh;
   animation: changeColor 30s infinite;
+}
+
+/* The color cycle repaints the full-screen backdrop every frame; once a screenshot covers it,
+   there's nothing to see - pause it. */
+#collection-flicking-background:has(> .browser-backdrop-layer.visible) {
+  animation-play-state: paused;
 }
 
 @keyframes changeColor {
@@ -5232,6 +5312,7 @@ body.gamepad-browser-skin .gm-browser-crumb > #saveBrowserCrumbFilter {
    - przyciski Show i Delete. */
 body.gamepad-browser-skin #saveBrowserUiBack,
 body.gamepad-browser-skin #collectionBrowserUiBack,
+body.gamepad-browser-skin #collectionBrowserUiView,
 body.gamepad-browser-skin #platformFilterContainer,
 body.gamepad-browser-skin #saveBrowserUiOpen,
 body.gamepad-browser-skin #saveBrowserUiDelete,
@@ -5277,6 +5358,10 @@ body.gamepad-browser-skin #collection-browser .flicking-panel img {
   font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
   z-index: 1500;   /* nad tlem/karuzela, pod breadcrumb (2001) i overlayem (2100) */
   scrollbar-width: thin;
+  /* Wirtualizacja podmienia kafle i wysokosc spacera przy kazdym renderze - scroll anchoring
+     (Chrome) "przytrzymywal" wtedy tresc i przestawial scrollTop pod centrowanie fokusu: po
+     przewinieciu myszka i kliknieciu daleko od fokusu widok konczyl obok kliknietej karty. */
+  overflow-anchor: none;
 }
 
 /* Cienie krawedziowe (scroll-fade): sygnalizuja, ze nad/pod widokiem jest wiecej tresci.
@@ -5296,8 +5381,17 @@ body.gamepad-browser-skin #collection-browser .flicking-panel img {
   z-index: 1600;   /* nad kaflami (siatka 1500), pod breadcrumb (2001) */
 }
 
-body.gamepad-browser-skin .collection-grid-fade {
+body.gamepad-browser-skin .collection-grid-fade,
+#collection-browser[data-view="grid"] .collection-grid-fade {
   display: block;
+}
+
+/* Desktop/touch grid (view toggle): without a focus-only D-pad, show the label on hover too. */
+@media (hover: hover) {
+  .collection-grid-cell:hover .collection-grid-label {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .collection-grid-fade-top {
@@ -5358,6 +5452,9 @@ body.gamepad-browser-skin .collection-grid-fade {
   outline: 2px solid transparent;
   outline-offset: -2px;  /* do wewnatrz - inaczej ramka skrajnych kafli wychodzi za krawedz */
   transition: outline-color 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  /* Podpis skaluje sie z szerokoscia kafla (cqi), nie ekranu - w portrecie telefonu kafel ma
+     ~120px i rozmiar z vh miescil 5 liter. min() z dawna wartoscia - duze kafle (TV) bez zmian. */
+  container-type: inline-size;
 }
 
 .collection-grid-img {
@@ -5389,6 +5486,7 @@ body.gamepad-browser-skin .collection-grid-fade {
   display: flex;
   flex-direction: column;
   padding: 36px 12px 11px;
+  padding: clamp(14px, 12cqi, 36px) clamp(6px, 4cqi, 12px) clamp(5px, 3.5cqi, 11px);
   background: linear-gradient(180deg,
       rgba(0, 0, 0, 0) 0%,
       rgba(0, 0, 0, 0.55) 38%,
@@ -5408,6 +5506,7 @@ body.gamepad-browser-skin .collection-grid-fade {
 .collection-grid-title {
   color: #ffffff;
   font-size: clamp(18px, 2.8vh, 26px);
+  font-size: min(clamp(18px, 2.8vh, 26px), clamp(11px, 8cqi, 26px));
   font-weight: 600;
   line-height: 1.2;
   overflow: hidden;
@@ -5419,6 +5518,7 @@ body.gamepad-browser-skin .collection-grid-fade {
 .collection-grid-platform {
   color: rgba(210, 222, 245, 0.9);
   font-size: clamp(13px, 2vh, 18px);
+  font-size: min(clamp(13px, 2vh, 18px), clamp(9px, 5.5cqi, 18px));
   margin-top: 3px;
   overflow: hidden;
   text-overflow: ellipsis;

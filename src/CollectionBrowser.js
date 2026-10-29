@@ -5,7 +5,7 @@ import { Arrow } from "@egjs/flicking-plugins";
 import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { StorageManager } from "./storage/StorageManager.js";
-import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
+import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX, COLLECTION_BROWSER_VIEW } from './Constants.js';
 import { t, browserT } from './i18n/shellStrings.js';
 import { CollectionGrid } from './CollectionGrid.js';
 import { ToastManager } from './ui/ToastManager.js';
@@ -42,6 +42,7 @@ export class CollectionBrowser {
     #buttonElements = new Set();
     #backButton;
     #backHandler;
+    #viewButton;
 
     #choiceItems = [];
     #choiceActions = [];
@@ -68,6 +69,7 @@ export class CollectionBrowser {
         this.#wheel_event_bound = this.#handleWheel.bind(this);
 
         this.#backButton = s('#collectionBrowserUiBack');
+        this.#viewButton = s('#collectionBrowserUiView');
         this.#backButton.classList.remove('disabled');
         this.#backHandler = (pressed) => {
             if (pressed) {
@@ -227,7 +229,7 @@ export class CollectionBrowser {
         }
         this.#lastBackgroundUpdate = now;
 
-        const currentPanel = this.#flicking?.currentPanel;
+        const currentPanel = this.#activePanel();
         const el = document.getElementById('collection-flicking-background');
 
         if (!el || !currentPanel) {
@@ -235,19 +237,34 @@ export class CollectionBrowser {
             return;
         }
 
-        const img = currentPanel.element.querySelector('img');
+        // Grid: the focused cell may not be rendered yet (facade then returns the cells container).
+        const img = currentPanel.element.matches('[data-id]') ? currentPanel.element.querySelector('img') : null;
         if (!img?.src) return;
 
         // Crossfade; transform (scale + parallax) is left to #updateParallax so the outgoing
         // image doesn't jump while fading.
         setBackdropImage(el, img.src);
-        if (this.#backdropZoomInPending) {
-            this.#backdropZoomInPending = false;
-            // Transition only for the zoom; parallax here stays immediate.
-            el.style.transition = 'transform 0.8s ease, opacity 1s ease';
-            el.style.transform = '';
-            setTimeout(() => { el.style.transition = ''; }, 800);
+        this.#settleBackdropZoom();
+    }
+
+    /**
+     * Entry "camera" zoom, as in SaveBrowser: start at 1x and zoom in to the full 12x
+     * (background-size transition, see vme.css) once the first screenshot is on the backdrop.
+     */
+    #startBackdropZoom() {
+        const backdrop = document.getElementById('collection-flicking-background');
+        if (backdrop) {
+            backdrop.classList.add('backdrop-zoom-start');
+            this.#backdropZoomInPending = true;
         }
+    }
+
+    /** Finish the entry zoom (first image shown, or nothing to show). */
+    #settleBackdropZoom() {
+        const el = document.getElementById('collection-flicking-background');
+        if (!this.#backdropZoomInPending || !el) return;
+        this.#backdropZoomInPending = false;
+        el.classList.remove('backdrop-zoom-start');
     }
     
     #updateParallax() {
@@ -264,7 +281,7 @@ export class CollectionBrowser {
         const scrollRatio = this.#flicking.camera.position / flickingWidth;
 
         requestAnimationFrame(() => {
-            background.style.transform = `translate3d(${scrollRatio * 50}px,0,0)`;
+            background.style.setProperty('--backdrop-shift', `${scrollRatio * 50}px`);
         });
     }
 
@@ -291,13 +308,22 @@ export class CollectionBrowser {
             addButtonEventListeners(this.#backButton, this.#backHandler);
             this.#buttonElements.add(this.#backButton);
         }
+        if (this.#viewButton) {
+            addButtonEventListeners(this.#viewButton, (pressed) => {
+                if (pressed) this.#toggleView();
+            });
+            this.#buttonElements.add(this.#viewButton);
+        }
 
         // Gamepad shell opens a grid instead of the coverflow. The shell sets the skin class
         // before open() (#openBrowserFromShell); the autostart (BOOT_TO) path has no skin yet and
         // keeps coverflow until first pad use — a deliberate choice (no mid-view re-render).
-        this.#useGrid = document.body.classList.contains('gamepad-browser-skin');
+        // Desktop/touch: coverflow or grid, as picked with the view toggle next to Back.
+        const skin = document.body.classList.contains('gamepad-browser-skin');
+        this.#useGrid = skin || StorageManager.getValue(COLLECTION_BROWSER_VIEW, 'coverflow') === 'grid';
+        div.dataset.view = this.#useGrid ? 'grid' : 'coverflow';
         if (this.#useGrid) {
-            await this.#openGrid(collectionItemIndex);
+            await this.#openGrid(collectionItemIndex, skin);
             return;
         }
 
@@ -318,13 +344,7 @@ export class CollectionBrowser {
             flickingElement.addEventListener('wheel', this.#wheel_event_bound, { passive: false });
         }
 
-        // Entry "camera" zoom, as in SaveBrowser: start at 1x (layers are 12x, see vme.css) and
-        // zoom in once the first screenshot is on the backdrop (#updateBackground).
-        const backdrop = document.getElementById('collection-flicking-background');
-        if (backdrop) {
-            backdrop.style.transform = 'translate3d(0,0,0) scale(0.083333)';
-            this.#backdropZoomInPending = true;
-        }
+        this.#startBackdropZoom();
 
         const self = this;
         this.#setUIReady(false);
@@ -379,12 +399,13 @@ export class CollectionBrowser {
         // close() or a reopen (e.g. switch to grid on first pad use) may replace this Flicking
         // while data is still loading - don't touch the old/destroyed instance then.
         const flicking = this.#flicking;
-        const saveMeta = await this.#db.getAllSaveMeta();
+        const saveMeta = await this.#db.getAllSaveMeta({ screenshots: false });   // only matched by id/hash
         this.#db.getCollectionItems()
             .then(items => {
                 if (this.#flicking !== flicking) return;
                 if (items.length == 0) {
                     self.#updateActivePanel();
+                    this.#settleBackdropZoom();
                 } else {
                     const container = document.querySelector('#collection-browser');
                     container.classList.add('transitioning');
@@ -487,23 +508,7 @@ export class CollectionBrowser {
 
         document.addEventListener("keydown", this.#kb_event_bound);
 
-        const loadButton = s('#collectionBrowserUiLoad');
-        addButtonEventListeners(loadButton,
-            (pressed) => {
-                if (pressed && this.#selected && this.#uiReady) {
-                    this.#loadSelected();
-                }
-            });
-        this.#buttonElements.add(loadButton);
-
-        const restoreButton = s('#collectionBrowserUiRestore');
-        addButtonEventListeners(restoreButton,
-            (pressed) => {
-                if (pressed && this.#selected && this.#uiReady) {
-                    this.#restoreSelected();
-                }
-            });
-        this.#buttonElements.add(restoreButton);
+        this.#bindLaunchButtons();
 
         StorageManager.storeValue(BOOT_TO, BOOT_TO_COLLECTION_BROWSER);
 
@@ -552,11 +557,16 @@ export class CollectionBrowser {
      * wire gamepad navigation via the grid's flicking-like facade. Launch + choice-overlay logic
      * is shared with the coverflow path (activateCurrentGame / showLaunchChoiceOverlay).
      */
-    async #openGrid(collectionItemIndex) {
-        // Skin is already on (we branched on it), but ensure legend/return-to-shell are armed.
-        this.#enableGamepadSkin();
+    async #openGrid(collectionItemIndex, skin) {
+        // Gamepad shell: skin is already on (we branched on it), but ensure legend/return-to-shell
+        // are armed. Desktop/touch grid (view toggle) keeps the regular top bar instead.
+        if (skin) {
+            this.#enableGamepadSkin();
+        } else {
+            this.#startBackdropZoom();
+        }
 
-        const saveMeta = await this.#db.getAllSaveMeta();
+        const saveMeta = await this.#db.getAllSaveMeta({ screenshots: false });   // only matched by id/hash
         const items = await this.#db.getCollectionItems();
 
         items.forEach(item => {
@@ -579,6 +589,7 @@ export class CollectionBrowser {
 
         if (items.length === 0) {
             this.#showEmpty();
+            this.#settleBackdropZoom();
         } else {
             document.getElementById('collectionBrowserEmpty').style.display = 'none';
         }
@@ -588,11 +599,19 @@ export class CollectionBrowser {
         this.#grid = new CollectionGrid({
             items,
             onActivate: () => {
-                // Mirror coverflow behavior: A on a game -> choice overlay (if a save exists) or
-                // start fresh. The grid keeps #selected/#uiReady implicitly true.
+                // Mirror coverflow behavior. Gamepad skin: A on a game -> choice overlay (if a
+                // save exists) or start fresh. Desktop/touch: click on the focused card ->
+                // continue the save if there is one, else start fresh.
+                // The grid keeps #selected/#uiReady implicitly true.
                 this.#selected = true;
                 this.#uiReady = true;
-                this.activateCurrentGame();
+                if (document.body.classList.contains('gamepad-browser-skin')) {
+                    this.activateCurrentGame();
+                } else if (this.#activePanel()?.element.dataset.save !== "undefined") {
+                    this.#restoreSelected();
+                } else {
+                    this.#loadSelected();
+                }
             }
         });
         this.#grid.open(initialIndex);
@@ -601,6 +620,13 @@ export class CollectionBrowser {
         // be "ready" so the shared launch methods run.
         this.#selected = true;
         this.#uiReady = true;
+
+        if (!skin && items.length > 0) {
+            // Top bar Continue/Load + backdrop follow the focused card.
+            this.#bindLaunchButtons();
+            this.#grid.on('changed', () => this.#onGridFocusChanged());
+            this.#onGridFocusChanged();
+        }
 
         StorageManager.storeValue(BOOT_TO, BOOT_TO_COLLECTION_BROWSER);
 
@@ -625,6 +651,49 @@ export class CollectionBrowser {
         this.#vme.toggleScreen(VME.CURRENT_SCREEN.COLLECTION_BROWSER);
     }
 
+    /** Desktop/touch grid: Continue/Load state and backdrop for the focused card. */
+    #onGridFocusChanged() {
+        const hasSave = this.#grid?.getFocusedItem()?.save_data_id !== undefined;
+        document.getElementById('collectionBrowserUiLoad').classList.remove('disabled');
+        document.getElementById('collectionBrowserUiRestore').classList.toggle('disabled', !hasSave);
+        this.#updateBackground();
+    }
+
+    #bindLaunchButtons() {
+        const loadButton = s('#collectionBrowserUiLoad');
+        addButtonEventListeners(loadButton,
+            (pressed) => {
+                if (pressed && this.#selected && this.#uiReady) {
+                    this.#loadSelected();
+                }
+            });
+        this.#buttonElements.add(loadButton);
+
+        const restoreButton = s('#collectionBrowserUiRestore');
+        addButtonEventListeners(restoreButton,
+            (pressed) => {
+                if (pressed && this.#selected && this.#uiReady) {
+                    this.#restoreSelected();
+                }
+            });
+        this.#buttonElements.add(restoreButton);
+    }
+
+    /**
+     * View toggle (desktop/touch, next to Back): coverflow <-> grid. Remembered; reopens the
+     * browser on the same game. Deferred like #switchCoverflowToGrid - we're inside a button
+     * handler that open() -> #destroy() is about to unbind.
+     */
+    #toggleView() {
+        const id = this.#useGrid
+            ? this.#grid?.getFocusedItem()?.id
+            : this.#flicking?.currentPanel?.element?.getAttribute('data-id');
+        StorageManager.storeValue(COLLECTION_BROWSER_VIEW, this.#useGrid ? 'coverflow' : 'grid');
+        Promise.resolve().then(() => {
+            this.open(1, id != null ? parseInt(id, 10) : 1);
+        });
+    }
+
     close(skipPlatformUpdate = false) {
         const gamepadManager = this.#vme.getGamepadManager();
         if (gamepadManager) {
@@ -634,6 +703,12 @@ export class CollectionBrowser {
         document.removeEventListener("keydown", this.#kb_event_bound);
         this.#destroy();
         this.#cli.reset();
+
+        // Back to the menu (not a launch): restore the CLI theme background - the autostart
+        // (BOOT_TO) path keeps the page black while the browser is up. As in SaveBrowser.
+        if (!skipPlatformUpdate) {
+            this.#platform_manager.updatePlatform({ printStatus: false });
+        }
 
         if (gamepadManager) {
             gamepadManager.restoreFocusToButton('menu-item-compilations');
@@ -943,9 +1018,8 @@ export class CollectionBrowser {
         const background = document.getElementById('collection-flicking-background');
         if (background) {
             clearBackdrop(background);
-            // Back to the stylesheet's transform.
-            background.style.transform = '';
-            background.style.transition = '';
+            background.style.removeProperty('--backdrop-shift');
+            background.classList.remove('backdrop-zoom-start');
         }
     }
 
@@ -966,11 +1040,18 @@ export class CollectionBrowser {
         // driven by the gamepad poll, so don't double-handle Enter here while it's visible.
         if (this.#useGrid) {
             if (!this.#grid) return;
+            // After a mouse click the grid's scroller takes keyboard scrolling, so the arrows
+            // would also scroll it natively, fighting the focus centering (card out of view).
+            if (event.key.startsWith('Arrow')) event.preventDefault();
             if (event.key === "ArrowRight") this.#grid.focusNext();
             else if (event.key === "ArrowLeft") this.#grid.focusPrev();
             else if (event.key === "ArrowDown") this.#grid.focusRow(1);
             else if (event.key === "ArrowUp") this.#grid.focusRow(-1);
-            else if (event.key === "Enter" && !this.isLaunchChoiceOpen()) this.activateCurrentGame();
+            else if (event.key === "Enter" && !this.isLaunchChoiceOpen()) {
+                // As in coverflow: gamepad skin -> choice overlay / start, desktop -> start fresh.
+                if (document.body.classList.contains('gamepad-browser-skin')) this.activateCurrentGame();
+                else this.#loadSelected();
+            }
             return;
         }
 

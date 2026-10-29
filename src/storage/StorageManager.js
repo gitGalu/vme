@@ -531,10 +531,13 @@ export class StorageManager {
         return new Blob([ab], { type: mimeString });
     }
 
-    async getAllSaveMeta() {
+    /** @param {{screenshots?: boolean}} [opts] screenshots: false -> skip decoding them (callers that only match saves). */
+    async getAllSaveMeta({ screenshots = true } = {}) {
         const saveMetaArray = await this.#db.saveMeta.orderBy('timestamp').reverse().toArray();
         return saveMetaArray.map(item => {
-            if (typeof item.screenshot === 'string') {
+            if (!screenshots) {
+                item.screenshot = null;
+            } else if (typeof item.screenshot === 'string') {
                 item.screenshot = this.base64ToBlob(item.screenshot);
             } else if (!this.#isBlobLike(item.screenshot)) {
                 item.screenshot = null;

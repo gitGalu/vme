@@ -299,7 +299,7 @@ export class SaveBrowser {
         setBackdropImage(el, img.src);
         if (this.#backdropZoomInPending) {
             this.#backdropZoomInPending = false;
-            el.style.transform = '';
+            el.classList.remove('backdrop-zoom-start');
         }
     }
 
@@ -316,7 +316,7 @@ export class SaveBrowser {
         const flickingWidth = this.#flicking.element.clientWidth;
         const scrollRatio = this.#flicking.camera.position / flickingWidth;
     
-        background.style.transform = `translate3d(${scrollRatio * 50}px,0,0)`;
+        background.style.setProperty('--backdrop-shift', `${scrollRatio * 50}px`);
     }
 
     #updateActivePanel() {
@@ -392,9 +392,9 @@ export class SaveBrowser {
     
         const fb = document.getElementById('flicking-background');
         fb.classList.remove('show');
-        // Entry "camera" zoom: start at 1x (layers are 12x, see vme.css) and zoom in to the
-        // full 12x (transition: transform 0.8s) once the first screenshot is on the backdrop.
-        fb.style.transform = 'translate3d(0,0,0) scale(0.083333)';
+        // Entry "camera" zoom: start at 1x and zoom in to the full 12x (background-size
+        // transition, see vme.css) once the first screenshot is on the backdrop.
+        fb.classList.add('backdrop-zoom-start');
         this.#backdropZoomInPending = true;
         setTimeout(() => {
             fb.classList.add('show');
@@ -756,8 +756,8 @@ export class SaveBrowser {
         const background = document.getElementById('flicking-background');
         if (background) {
             clearBackdrop(background);
-            // Back to the stylesheet's transform.
-            background.style.transform = '';
+            background.style.removeProperty('--backdrop-shift');
+            background.classList.remove('backdrop-zoom-start');
         }
 
         this.#isDestroying = false;

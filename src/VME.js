@@ -257,6 +257,11 @@ export class VME {
         s('#versionLabel').innerHTML = `v${__APP_VERSION__}`;
         this.toggleScreen(VME.CURRENT_SCREEN.MENU);
         if (StorageManager.getValue(BOOT_TO) == BOOT_TO_COLLECTION_BROWSER) {
+            // Straight into the browser: keep the page black instead of the CLI color the theme
+            // just set - iOS takes the PWA status-bar color (around the Dynamic Island) from the
+            // page at launch. The browser restores the theme when it returns to the menu.
+            s('html').style.background = '#000000';
+            s('body').style.background = '#000000';
             let bootToCollectionIndex = StorageManager.getValue(COLLECTION_BROWSER_COLLECTION_INDEX);
             let bootToCollectionItemIndex = StorageManager.getValue(COLLECTION_BROWSER_ITEM_INDEX);
 

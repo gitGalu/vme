@@ -1,6 +1,7 @@
 // Blurred backdrop behind the Save/Collection coverflow. background-image can't be transitioned,
 // so the backdrop element holds two stacked layers and a new image fades in on the hidden one.
-// The element itself keeps its transform (scale/parallax), filter and zoom-out animation.
+// Zoom (background-size) and parallax (--backdrop-shift) are styled in vme.css; the element
+// itself keeps its filter and the launch zoom-out class.
 
 const LAYER_CLASS = 'browser-backdrop-layer';
 

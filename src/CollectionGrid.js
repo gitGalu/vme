@@ -38,6 +38,7 @@ export class CollectionGrid {
     #resizeObserver = null;
     #changeListeners = new Set();
     #renderedRange = { start: -1, end: -1 };
+    #cellEls = new Map(); // index -> rendered cell element (reused while it stays in range)
     #stepLock = false;     // one nav step per animation frame (see #stepLocked)
 
     /** flicking-like facade flag (read by GamepadManager). */
@@ -98,6 +99,7 @@ export class CollectionGrid {
             this.#resizeObserver = null;
         }
         this.#cellsEl.innerHTML = '';
+        this.#cellEls.clear();
         this.#spacerTop.style.height = '0px';
         this.#spacerBottom.style.height = '0px';
         this.#root.style.display = 'none';
@@ -221,24 +223,43 @@ export class CollectionGrid {
         this.#spacerTop.style.height = `${firstRow * rowH}px`;
         this.#spacerBottom.style.height = `${Math.max(0, (totalRows - lastRow) * rowH)}px`;
 
-        let html = '';
-        for (let i = start; i < end; i++) {
-            html += this.#cellHTML(this.#items[i], i);
+        // Keep the cells that stay in range and only add/remove rows at the edges. Re-creating
+        // every cell (innerHTML) on each row step made Safari re-decode all visible thumbnails -
+        // the grid blinked for a frame while scrolling.
+        for (const [i, el] of this.#cellEls) {
+            if (i < start || i >= end) {
+                el.remove();
+                this.#cellEls.delete(i);
+            }
         }
-        this.#cellsEl.innerHTML = html;
-
-        this.#cellsEl.querySelectorAll('.collection-grid-cell').forEach(cell => {
-            cell.addEventListener('click', () => {
-                const idx = parseInt(cell.dataset.index, 10);
-                if (idx === this.#focusedIndex) {
-                    this.activate();
-                } else {
-                    this.#setFocus(idx);
-                }
-            });
-        });
+        const firstKept = this.#cellsEl.firstElementChild;
+        const keptStart = firstKept ? parseInt(firstKept.dataset.index, 10) : end;
+        const before = document.createDocumentFragment();
+        const after = document.createDocumentFragment();
+        for (let i = start; i < end; i++) {
+            if (this.#cellEls.has(i)) continue;
+            const el = this.#createCell(i);
+            this.#cellEls.set(i, el);
+            (i < keptStart ? before : after).appendChild(el);
+        }
+        this.#cellsEl.insertBefore(before, firstKept);
+        this.#cellsEl.appendChild(after);
 
         this.#updateFocusClass();
+    }
+
+    #createCell(index) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = this.#cellHTML(this.#items[index], index).trim();
+        const cell = tpl.content.firstElementChild;
+        cell.addEventListener('click', () => {
+            if (index === this.#focusedIndex) {
+                this.activate();
+            } else {
+                this.#setFocus(index);
+            }
+        });
+        return cell;
     }
 
     #updateFocusClass() {
@@ -260,7 +281,7 @@ export class CollectionGrid {
         // only when the cell is focused (CSS) — so unfocused covers stay clean and large.
         return `
         <div class="collection-grid-cell" data-index="${index}" data-id="${item.id}" data-save="${hasSave ? item.save_data_id : 'undefined'}">
-            <img class="collection-grid-img" src="${img}" alt="${item.title}" loading="lazy">
+            <img class="collection-grid-img" src="${img}" alt="${item.title}">
             ${hasSave ? '<span class="collection-grid-save-badge"></span>' : ''}
             <div class="collection-grid-label">
                 <span class="collection-grid-title">${item.title}</span>
