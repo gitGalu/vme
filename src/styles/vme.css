@@ -4093,7 +4093,8 @@ canvas {
 .view-exit {
   opacity: 0;
   transform: scale(0.95);
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  /* VIEW_EXIT_MS in SaveBrowser.js */
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
 }
 
 .view-enter {

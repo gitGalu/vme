@@ -12,6 +12,11 @@ import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
 import { showBrowserEmpty } from './ui/BrowserEmptyState.js';
 
+// Game list <-> game saves switch: the .view-exit fade (CSS, 0.15s) and the .view-enter
+// animation (CSS, 0.3s) - keep in sync with vme.css.
+const VIEW_EXIT_MS = 150;
+const VIEW_ENTER_MS = 300;
+
 export class SaveBrowser {
     #vme;
     #platform_manager;
@@ -942,11 +947,13 @@ export class SaveBrowser {
     
         const loadData = async () => {
             try {
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // Read the saves while the old view fades out, not after.
+                const itemsPromise = this.#db.getAllSaveMeta();
+                await new Promise(resolve => setTimeout(resolve, VIEW_EXIT_MS));
     
                 this.#clearPanels();
     
-                const items = await this.#db.getAllSaveMeta();
+                const items = await itemsPromise;
                 const gameMap = this.#groupSavesByGame(items);
                 let latestSaves = Array.from(gameMap.values())
                     .map(game => game.latestSave);
@@ -975,6 +982,10 @@ export class SaveBrowser {
                         const safePosition = Math.min(Math.max(0, targetPosition), maxIndex);
                         await this.#flicking.moveTo(safePosition, 0);
                     }
+
+                    // Show the cards together with the view-enter animation (the .transitioning
+                    // rule hides them; dropping it only at the end delayed them by another fade).
+                    container.classList.remove('transitioning');
 
                     // New carousel ready -> signal to drop the curtain/overlay.
                     onReady?.();
@@ -1006,7 +1017,7 @@ export class SaveBrowser {
                         
                         this.#setUIReady(true);
                     }
-                }, 300);
+                }, VIEW_ENTER_MS);
     
             } catch (error) {
                 showBrowserEmpty(emptyElement, browserT('browser.saves.loadError'));
@@ -1045,11 +1056,14 @@ export class SaveBrowser {
         container.classList.add('transitioning');
         const flickingElement = document.querySelector('#flicking');
         flickingElement.classList.add('view-exit');
+
+        // Read the saves while the old view fades out, not after.
+        const itemsPromise = this.#db.getAllSaveMeta();
     
         setTimeout(() => {
             this.#clearPanels();
     
-            this.#db.getAllSaveMeta()
+            itemsPromise
                 .then(items => {
                     const gameSaves = items
                         .filter(item =>
@@ -1061,6 +1075,7 @@ export class SaveBrowser {
                         flickingElement.classList.remove('view-exit');
                         flickingElement.classList.add('view-enter');
                         this.#appendPanels(gameSaves);
+                        container.classList.remove('transitioning');
                     }
     
                     setTimeout(() => {
@@ -1075,9 +1090,9 @@ export class SaveBrowser {
                         }
                         
                         this.#setUIReady(true);
-                    }, 300);
+                    }, VIEW_ENTER_MS);
                 });
-        }, 300);
+        }, VIEW_EXIT_MS);
     }
 
     #throttle(func, limit) {
