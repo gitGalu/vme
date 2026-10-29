@@ -6,11 +6,12 @@ import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { StorageManager } from "./storage/StorageManager.js";
 import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
-import { t } from './i18n/shellStrings.js';
+import { t, browserT } from './i18n/shellStrings.js';
 import { CollectionGrid } from './CollectionGrid.js';
 import { ToastManager } from './ui/ToastManager.js';
 import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
+import { showBrowserEmpty } from './ui/BrowserEmptyState.js';
 
 export class CollectionBrowser {
     #vme;
@@ -157,7 +158,7 @@ export class CollectionBrowser {
             flickingElement.style.opacity = "";
         }
         this.#launched = false;
-        ToastManager.enqueueToast('Cannot load selected program.', false, null, null, 2000);
+        ToastManager.enqueueToast(browserT('browser.collection.launchFailed'), false, null, null, 2000);
     }
 
     #createPanelHTML(item) {
@@ -203,14 +204,21 @@ export class CollectionBrowser {
             this.#selected = true;
             this.#updateBackground();
         } else {
-            document.getElementById('collectionBrowserEmpty').style.display = "block";
-            document.getElementById('collectionBrowserEmpty').innerHTML = "No collection found.";
+            this.#showEmpty();
             document.getElementById('collectionBrowserUiRestore').classList.add('disabled');
             document.getElementById('collectionBrowserUiLoad').classList.add('disabled');
             this.#selected = false;
         }
     }
     
+    /** Gamepad skin calls this screen "Collections", the desktop/touch UI "Compilations". */
+    #showEmpty() {
+        const prefix = document.body.classList.contains('gamepad-browser-skin')
+            ? 'browser.collection' : 'browser.compilation';
+        showBrowserEmpty(document.getElementById('collectionBrowserEmpty'),
+            browserT(`${prefix}.empty`), browserT(`${prefix}.emptyHint`));
+    }
+
     #updateBackground() {
         const now = performance.now();
         if (now - this.#lastBackgroundUpdate < 16) { // ~60fps
@@ -553,9 +561,10 @@ export class CollectionBrowser {
 
         this.#items = items;
 
-        document.getElementById('collectionBrowserEmpty').style.display = items.length === 0 ? 'block' : 'none';
         if (items.length === 0) {
-            document.getElementById('collectionBrowserEmpty').innerHTML = 'No collection found.';
+            this.#showEmpty();
+        } else {
+            document.getElementById('collectionBrowserEmpty').style.display = 'none';
         }
 
         const initialIndex = Math.max(0, items.findIndex(it => String(it.id) === String(collectionItemIndex)));

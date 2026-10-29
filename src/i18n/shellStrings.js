@@ -46,6 +46,18 @@ const STRINGS = {
         'recent.platformTitle': 'Recent · Platform',
         'recent.allPlatforms': 'All platforms',
         'recent.empty': 'No recent games yet.',
+
+        // Save / Collection browsers (translated only in the gamepad skin, see browserT)
+        'browser.saves.empty': 'No save states yet',
+        'browser.saves.emptyHint': 'Save during a game and your save states will appear here.',
+        'browser.saves.loadError': 'Could not load save states. Please try again.',
+        'browser.saves.loadFailed': 'Failed to load savestate.',
+        'browser.collection.empty': 'No collections yet',
+        'browser.collection.emptyHint': 'Import a VM/E collection file and its games will appear here.',
+        'browser.collection.launchFailed': 'Cannot load selected program.',
+        // Same screen outside the gamepad skin, where the UI calls it "Compilations" (EN only).
+        'browser.compilation.empty': 'No compilations yet',
+        'browser.compilation.emptyHint': 'Import a VM/E compilation file and its games will appear here.',
         // Relative time (Recent). {n} = count. PL uses plural forms in formatRelative.
         'time.justNow': 'just now',
         'time.minAgo': '{n} min ago',
@@ -165,6 +177,14 @@ const STRINGS = {
         'recent.platformTitle': 'Ostatnio uruchamiane · Platforma',
         'recent.allPlatforms': 'Wszystkie platformy',
         'recent.empty': 'Brak ostatnio uruchamianych gier.',
+
+        'browser.saves.empty': 'Brak stanów gry',
+        'browser.saves.emptyHint': 'Zapisz stan podczas gry, a pojawi się tutaj.',
+        'browser.saves.loadError': 'Nie udało się wczytać stanów gry. Spróbuj ponownie.',
+        'browser.saves.loadFailed': 'Nie udało się wczytać stanu gry.',
+        'browser.collection.empty': 'Brak kolekcji',
+        'browser.collection.emptyHint': 'Zaimportuj plik kolekcji VM/E, a jej gry pojawią się tutaj.',
+        'browser.collection.launchFailed': 'Nie można uruchomić wybranego programu.',
         // PL: plural variants '1|2-4|5+' (selected by plRel in formatRelative). {n} = count.
         'time.justNow': 'przed chwilą',
         'time.minAgo': '{n} min temu',
@@ -261,9 +281,13 @@ export function setShellLang(lang) {
 }
 
 /** Translate a key into the current shell language. Missing -> returns the key. */
-export function t(key) {
-    const lang = getShellLang();
+export function t(key, lang = getShellLang()) {
     return (STRINGS[lang] && STRINGS[lang][key]) || (STRINGS.en && STRINGS.en[key]) || key;
+}
+
+/** Save/Collection browsers: shell language in the gamepad skin, English otherwise (like the CLI). */
+export function browserT(key) {
+    return t(key, document.body.classList.contains('gamepad-browser-skin') ? getShellLang() : 'en');
 }
 
 /** PL: pick the plural form (1 / 2-4 / 5+) from 'a|b|c'; n=count. */

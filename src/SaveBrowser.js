@@ -6,10 +6,11 @@ import "@egjs/flicking/dist/flicking.css";
 import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { CustomDropdown } from './components/CustomDropdown.js';
 import { FileUtils } from './utils/FileUtils.js';
-import { t } from './i18n/shellStrings.js';
+import { t, browserT } from './i18n/shellStrings.js';
 import { ToastManager } from './ui/ToastManager.js';
 import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
+import { showBrowserEmpty } from './ui/BrowserEmptyState.js';
 
 export class SaveBrowser {
     #vme;
@@ -332,8 +333,8 @@ export class SaveBrowser {
             activePanel.element.classList.add("active");
             this.#selected = true;
         } else {
-            document.getElementById('saveBrowserEmpty').style.display = "block";
-            document.getElementById('saveBrowserEmpty').innerHTML = "No save states found.";
+            showBrowserEmpty(document.getElementById('saveBrowserEmpty'),
+                browserT('browser.saves.empty'), browserT('browser.saves.emptyHint'));
             document.getElementById('saveBrowserUiLoad').classList.add('disabled');
             document.getElementById('saveBrowserUiDelete').classList.add('disabled');
             document.getElementById('saveBrowserUiOpen').classList.add('disabled');
@@ -683,7 +684,7 @@ export class SaveBrowser {
                             flickingElement.style.opacity = "";
                         }
                         this.#launched = false;
-                        ToastManager.enqueueToast('Failed to load savestate.', false, null, null, 2000);
+                        ToastManager.enqueueToast(browserT('browser.saves.loadFailed'), false, null, null, 2000);
                     });
             } else {
                 this.#launched = false;
@@ -984,8 +985,8 @@ export class SaveBrowser {
                         }
                     }, 50);
                 } else if (emptyElement) {
-                    emptyElement.innerHTML = "No save states found.";
-                    emptyElement.style.display = "block";
+                    showBrowserEmpty(emptyElement,
+                        browserT('browser.saves.empty'), browserT('browser.saves.emptyHint'));
                     onReady?.();
                 }
     
@@ -1008,10 +1009,7 @@ export class SaveBrowser {
                 }, 300);
     
             } catch (error) {
-                if (emptyElement) {
-                    emptyElement.innerHTML = "Error loading saves. Please try again.";
-                    emptyElement.style.display = "block";
-                }
+                showBrowserEmpty(emptyElement, browserT('browser.saves.loadError'));
                 this.#setUIReady(true);
                 onReady?.();
             }

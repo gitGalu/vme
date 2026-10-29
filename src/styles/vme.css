@@ -3523,6 +3523,36 @@ body.selection-mode-active .menu-strip-spacer {
   font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
 }
 
+/* Empty / error state (BrowserEmptyState.js), shared by Save and Collection browsers. */
+#saveBrowserEmpty,
+#collectionBrowserEmpty {
+  max-width: min(420px, calc(100vw - 48px));
+  text-align: center;
+}
+
+.browser-empty-icon {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.35;
+}
+
+.browser-empty-title {
+  font-size: 1.15em;
+  color: #e0e0e0;
+}
+
+.browser-empty-hint {
+  margin-top: 8px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  color: #8a8a8a;
+}
+
 #saveBrowserUiBack img:hover {
   filter: brightness(0) invert(1);
 }
