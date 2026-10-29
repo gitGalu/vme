@@ -3983,8 +3983,20 @@ canvas {
   transform: scale(0.95);
 }
 
-.flicking-panel:not(.active):hover {
-  transform: scale(1.02);
+/* Only with a real pointer - on touch :hover sticks to the last tapped card. */
+@media (hover: hover) {
+  .flicking-panel:not(.active):hover {
+    transform: scale(1.02);
+  }
+
+  /* Active card launches on click - brighten instead of zoom to tell it apart from "scroll here". */
+  .flicking-panel img {
+    transition: filter 0.3s ease;
+  }
+
+  .flicking-panel.active:hover img {
+    filter: brightness(1.15);
+  }
 }
 
 .flicking-title-time {
