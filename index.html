@@ -10,8 +10,8 @@
     <link rel="icon" href="/vme/assets/favicon-CcvJXZ4M.ico" type="image/x-icon">
     <link rel="icon" href="/vme/assets/favicon-32x32-DDiKfeWr.png" type="image/png" sizes="32x32">
     <link rel="icon" href="/vme/assets/favicon-16x16-q6ilooy1.png" type="image/png" sizes="16x16">
-  <script type="module" crossorigin src="/vme/assets/index-w-OigXdG.js"></script>
-  <link rel="stylesheet" crossorigin href="/vme/assets/index-BsReCZzf.css">
+  <script type="module" crossorigin src="/vme/assets/index-TiLWnnjf.js"></script>
+  <link rel="stylesheet" crossorigin href="/vme/assets/index-BIytfgmc.css">
 <link rel="manifest" href="/vme/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/vme/registerSW.js"></script></head>
 <style>
     html {
@@ -124,6 +124,10 @@
         <div id="collectionBrowserUi">
             <div id="collectionBrowserUiBack" class="clickable-area disabled"><img
                     src="/vme/assets/arrow-BwrEbH68.png"></img></div>
+            <div id="collectionBrowserUiView" class="clickable-area" title="Switch view">
+                <svg class="view-icon-grid" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+                <svg class="view-icon-coverflow" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="1.5"/><path d="M2 5v10M18 5v10"/></svg>
+            </div>
             <div class="right-area">
                 <div id="collectionBrowserUiRestore" class="clickable-area disabled">Continue</div>
                 <div id="collectionBrowserUiLoad" class="clickable-area disabled">Load</div>
@@ -143,7 +147,7 @@
                 <div id="kbModeContainer">
                     <select id="kbMode" class="minimal-combobox">
                         <option value="retropad">Keyboard as joystick</option>
-                        <option value="focusmode">Full keyboard passthrough</option>
+                        <option value="focusmode">Full keyboard (Esc to exit)</option>
                     </select>
                 </div>
                 <div id="desktopDiskDropdownWrap" style="display:none;">
