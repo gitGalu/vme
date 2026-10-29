@@ -146,7 +146,7 @@ export class CollectionBrowser {
         
         return `
         <div class="flicking-panel" data-id="${item.id}" data-save="${item.save_data_id}">
-            <img src="${item.image}" alt="${item.title}" loading="lazy" style="transform: rotate(${randomDegree}deg)">
+            <img src="${item.image}" alt="${item.title}" style="transform: rotate(${randomDegree}deg)">
             <div class="flicking-title flicking-title-name">
             <span class="flicking-primary-label">${item.title}</span>
             <br/>
@@ -266,6 +266,10 @@ export class CollectionBrowser {
             moveType: "snap",
             preventClickOnDrag: true,
             autoResize: true,
+            // Panel width = screenshot width, so re-measure panels once their images load.
+            // Without it a panel growing to the LEFT of the current one shifts the whole
+            // camera row (visible jumps when swiping left on mobile).
+            resizeOnContentsReady: true,
             align: "center"
         });
 
@@ -284,16 +288,6 @@ export class CollectionBrowser {
             debouncedBackground();
             
             self.#updateActivePanel();
-            
-            this.#flicking.resize();
-            if (this.#flicking.currentPanel) {
-                setTimeout(() => {
-                    if (this.#flicking && this.#flicking.currentPanel) {
-                        this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
-                    }
-                }, 10);
-            }
-            
             this.#setUIReady(true);
         });
 
@@ -304,10 +298,6 @@ export class CollectionBrowser {
 
         this.#flicking.on("moveEnd", e => { 
             self.#updateActivePanel();
-            this.#flicking.resize();
-            if (this.#flicking.currentPanel) {
-                this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
-            }
             this.#setUIReady(true);
             this.#isDragging = false;
         });

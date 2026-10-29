@@ -115,14 +115,6 @@ export class SaveBrowser {
         this.#flicking.on("changed", e => {
             debouncedBackground();
             this.#updateActivePanel();
-            this.#flicking.resize();
-            if (this.#flicking.currentPanel) {
-                requestAnimationFrame(() => {
-                    if (this.#flicking && this.#flicking.currentPanel) {
-                        this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
-                    }
-                });
-            }
             this.#setUIReady(true);
         });
     
@@ -133,14 +125,6 @@ export class SaveBrowser {
     
         this.#flicking.on("moveEnd", e => {
             this.#updateActivePanel();
-            this.#flicking.resize();
-            if (this.#flicking.currentPanel) {
-                requestAnimationFrame(() => {
-                    if (this.#flicking && this.#flicking.currentPanel) {
-                        this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
-                    }
-                });
-            }
             this.#setUIReady(true);
         });
     
@@ -214,7 +198,7 @@ export class SaveBrowser {
 
         return `
             <div class="flicking-panel" data-id="${item.id}" data-game-key="${encodeURIComponent(saveGameKey(item))}" data-program-name="${escapeHTML(item.program_name)}" data-platform-id="${platform.platform_id}">
-                <img src="${url}" alt="${escapeHTML(item.program_name)}" loading="lazy" style="transform: rotate(${randomDegree}deg)">
+                <img src="${url}" alt="${escapeHTML(item.program_name)}" style="transform: rotate(${randomDegree}deg)">
                 ${quicksaveLabel}
                 <div class="flicking-title flicking-title-name">${escapeHTML(item.caption)} (${platform.short_name})</div>
                 ${timeDisplay}
@@ -368,6 +352,10 @@ export class SaveBrowser {
             moveType: "snap",
             preventClickOnDrag: true,
             autoResize: true,
+            // Panel width = screenshot width, so re-measure panels once their images load.
+            // Without it a panel growing to the LEFT of the current one shifts the whole
+            // camera row (visible jumps when swiping left on mobile).
+            resizeOnContentsReady: true,
             align: "center",
             duration: 350
         });
