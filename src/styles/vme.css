@@ -3287,9 +3287,25 @@ body.selection-mode-active .menu-strip-spacer {
   transition: transform 0.5s;
 }
 
+/* Uniform card height: every screenshot is scaled to the same height (pixel art stays crisp),
+   width follows its aspect ratio. The width cap keeps wide shots (DOS 720x400) inside narrow
+   screens - object-fit letterboxes them instead of distorting. Portrait height is derived from
+   the width so typical aspects (up to 16:10) fit without letterboxing. */
+.flicking-panel {
+  --vme-card-h: min(52vh, 420px);
+}
+
+@media (orientation: portrait) {
+  .flicking-panel {
+    --vme-card-h: min(42vh, calc((100vw - 48px) / 1.6));
+  }
+}
+
 .flicking-panel img {
-  max-width: 100%;
-  max-height: 100%;
+  height: var(--vme-card-h);
+  width: auto;
+  max-width: calc(100vw - 48px);
+  object-fit: contain;
   margin: 8px;
   border: 1px solid #444444;
   border-radius: 8px;
@@ -3299,21 +3315,12 @@ body.selection-mode-active .menu-strip-spacer {
   -webkit-backface-visibility: hidden;
 }
 
-#save-browser .flicking-panel[data-platform-id="apple2"] img {
-  max-width: min(384px, 90vw);
-}
-
-.flicking-panel[data-platform-id="dos"] img,
-.flicking-panel[data-platform-id="st"] img {
-  max-height: min(56vh, 520px);
-  object-fit: contain;
-}
-
-@media (orientation: portrait) {
-  .flicking-panel[data-platform-id="dos"] img,
-  .flicking-panel[data-platform-id="st"] img {
-    max-height: min(42vh, 360px);
-    max-width: min(92vw, 520px);
+/* Crisp pixels only on HiDPI: there the shot is practically always upscaled in device pixels
+   and uneven non-integer pixel widths are invisible. On 1x screens large shots (Amiga, DOS) get
+   downscaled and nearest-neighbor would drop lines, so keep the default smoothing. */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+  .flicking-panel img {
+    image-rendering: pixelated;
   }
 }
 
