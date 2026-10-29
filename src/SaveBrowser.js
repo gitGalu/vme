@@ -7,6 +7,7 @@ import { SelectedPlatforms } from './platforms/PlatformManager.js';
 import { CustomDropdown } from './components/CustomDropdown.js';
 import { FileUtils } from './utils/FileUtils.js';
 import { t } from './i18n/shellStrings.js';
+import { ToastManager } from './ui/ToastManager.js';
 
 export class SaveBrowser {
     #vme;
@@ -40,6 +41,7 @@ export class SaveBrowser {
 
     #urlsToRevoke = new Set();
     #isDestroying = false;
+    #deleting = false;
     #lastBackgroundUpdate = 0;
     #lastParallaxUpdate = 0;
 
@@ -583,8 +585,13 @@ export class SaveBrowser {
     }
 
     #deleteSelectedPanel() {
-        const activePanel = this.#flicking.currentPanel;
+        // deleteSave is async: a second quick tap would otherwise remove another panel
+        // (the one now at the same index) from the carousel without deleting its save.
+        if (this.#deleting) return;
+        const flicking = this.#flicking;
+        const activePanel = flicking.currentPanel;
         if (activePanel != null) {
+            this.#deleting = true;
             const id = activePanel.element.getAttribute('data-id');
             const gameKey = decodeURIComponent(activePanel.element.getAttribute('data-game-key'));
             const intId = parseInt(id, 10);
@@ -592,6 +599,8 @@ export class SaveBrowser {
             const currentIndex = activePanel.index;
 
             this.#db.deleteSave(intId).then(() => {
+                // Browser closed/reopened while deleting.
+                if (this.#flicking !== flicking) return;
                 this.#flicking.remove(activePanel.index);
 
                 if (this.#flicking.panelCount > 0) {
@@ -612,6 +621,8 @@ export class SaveBrowser {
                         }
                     });
                 }
+            }).finally(() => {
+                this.#deleting = false;
             });
         }
     }
@@ -652,7 +663,19 @@ export class SaveBrowser {
                             data.launch_bios,
                             data.launch_core_config
                         );
+                    })
+                    .catch((error) => {
+                        // Bring the browser back instead of leaving a blank screen.
+                        console.error('Failed to load save state:', error);
+                        document.getElementById('saveBrowserUi').style.display = "";
+                        if (flickingElement) {
+                            flickingElement.style.opacity = "";
+                        }
+                        this.#launched = false;
+                        ToastManager.enqueueToast('Failed to load savestate.', false, null, null, 2000);
                     });
+            } else {
+                this.#launched = false;
             }
         }
     }
@@ -695,6 +718,7 @@ export class SaveBrowser {
 
         this.#selected = false;
         this.#launched = false;
+        this.#deleting = false;
         this.#uiReady = false;
         this.#lastGamePosition = null;
         if (this.#wheelReleaseTimer) {

@@ -8,6 +8,7 @@ import { StorageManager } from "./storage/StorageManager.js";
 import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX } from './Constants.js';
 import { t } from './i18n/shellStrings.js';
 import { CollectionGrid } from './CollectionGrid.js';
+import { ToastManager } from './ui/ToastManager.js';
 
 export class CollectionBrowser {
     #vme;
@@ -32,6 +33,7 @@ export class CollectionBrowser {
     #wheelLineThreshold = 1;
     #wheelScrollMultiplier = 0.45;
     #wheelSnapDelay = 160;
+    #zoomOutTimer = null;
     #buttonElements = new Set();
     #backButton;
     #backHandler;
@@ -124,20 +126,37 @@ export class CollectionBrowser {
     #addLaunchVisualFeedback(element) {
         element.classList.add('launch-feedback');
         
-        setTimeout(() => {
-            setTimeout(() => {
-                element.classList.add('zoom-out');
-            }, 100);
-        }, 100);
+        this.#zoomOutTimer = setTimeout(() => {
+            this.#zoomOutTimer = null;
+            element.classList.add('zoom-out');
+        }, 200);
         
         setTimeout(() => {
             element.classList.remove('launch-feedback');
         }, 500);
     }
 
+    /** Launch failed: undo the launch animation/hidden UI instead of leaving a blank screen. */
+    #abortLaunch(element, error) {
+        console.error('Failed to launch collection item:', error);
+        if (this.#zoomOutTimer) {
+            clearTimeout(this.#zoomOutTimer);
+            this.#zoomOutTimer = null;
+        }
+        element?.classList.remove('launch-feedback', 'zoom-out');
+        document.getElementById('collectionBrowserUi').style.display = "";
+        const flickingElement = document.querySelector('#collection-flicking');
+        if (flickingElement) {
+            flickingElement.style.opacity = "";
+        }
+        this.#launched = false;
+        ToastManager.enqueueToast('Cannot load selected program.', false, null, null, 2000);
+    }
+
     #createPanelHTML(item) {
         if (item.platform_id == "md") item.platform_id = "smd"; //temp fix
         const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
+        const platformName = platform?.platform_name || String(item.platform_id || 'Unknown').toUpperCase();
         const randomDegree = Math.random() * 20 - 10;
         
         if (item.image && item.image.startsWith('blob:')) {
@@ -146,13 +165,13 @@ export class CollectionBrowser {
         
         return `
         <div class="flicking-panel" data-id="${item.id}" data-save="${item.save_data_id}">
-            <img src="${item.image}" alt="${item.title}" style="transform: rotate(${randomDegree}deg)">
+            <img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}" style="transform: rotate(${randomDegree}deg)">
             <div class="flicking-title flicking-title-name">
-            <span class="flicking-primary-label">${item.title}</span>
+            <span class="flicking-primary-label">${escapeHTML(item.title)}</span>
             <br/>
-            <span class="flicking-secondary-label">(${item.credits})</span>
+            <span class="flicking-secondary-label">(${escapeHTML(item.credits)})</span>
             <br/>
-            <span class="flicking-secondary-label">${platform.platform_name}</span>
+            <span class="flicking-secondary-label">${escapeHTML(platformName)}</span>
             </div>
         </div>
         `;
@@ -328,9 +347,13 @@ export class CollectionBrowser {
 
         this.#items = [];
 
+        // close() or a reopen (e.g. switch to grid on first pad use) may replace this Flicking
+        // while data is still loading - don't touch the old/destroyed instance then.
+        const flicking = this.#flicking;
         const saveMeta = await this.#db.getAllSaveMeta();
         this.#db.getCollectionItems()
             .then(items => {
+                if (this.#flicking !== flicking) return;
                 if (items.length == 0) {
                     self.#updateActivePanel();
                 } else {
@@ -342,6 +365,11 @@ export class CollectionBrowser {
                     }
                     
                     setTimeout(() => {
+                        if (this.#flicking !== flicking) {
+                            container.classList.remove('transitioning');
+                            flickingElement?.classList.remove('view-exit');
+                            return;
+                        }
                         if (flickingElement) {
                             flickingElement.classList.remove('view-exit');
                             flickingElement.classList.add('view-enter');
@@ -367,22 +395,10 @@ export class CollectionBrowser {
                         });
 
                         const panels = document.querySelectorAll(".flicking-panel");
+                        // click only (as in SaveBrowser): a tap already produces a click and
+                        // preventClickOnDrag suppresses it after a swipe.
                         panels.forEach((panel, index) => {
                             panel.addEventListener("click", () => handlePanelClick(index, panel));
-                            panel.addEventListener("touchstart", () => {
-                                this.#isDragging = false;
-                            });
-                            panel.addEventListener("touchmove", () => {
-                                this.#isDragging = true;
-                            });
-                            panel.addEventListener("touchend", () => {
-                                if (!this.#isDragging) {
-                                    handlePanelClick(index, panel);
-                                }
-                                setTimeout(() => {
-                                    this.#isDragging = false;
-                                }, 50);
-                            });
                         });
 
                         this.#flicking.on("moveStart", e => {
@@ -745,46 +761,50 @@ export class CollectionBrowser {
 
                 this.#addLaunchVisualFeedback(activePanel.element);
 
-                const id = activePanel.element.getAttribute('data-id');
-                const intId = parseInt(id, 10);
+                try {
+                    const id = activePanel.element.getAttribute('data-id');
+                    const intId = parseInt(id, 10);
 
-                StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
-                StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
+                    StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
+                    StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
 
-                const filteredItems = this.#items.filter(item => item.id == intId);
+                    const filteredItems = this.#items.filter(item => item.id == intId);
 
-                if (filteredItems.length > 0) {
-                    const saveId = activePanel.element.dataset.save;
-                    const saveIntId = parseInt(saveId, 10);
-                    const state = await this.#db.getSaveData(saveIntId);
-                    const item = filteredItems[0];
+                    if (filteredItems.length > 0) {
+                        const saveId = activePanel.element.dataset.save;
+                        const saveIntId = parseInt(saveId, 10);
+                        const state = await this.#db.getSaveData(saveIntId);
+                        const item = filteredItems[0];
 
-                    document.getElementById('collectionBrowserUi').style.display = "none";
-                    const flickingElement = document.querySelector('#collection-flicking');
-                    if (flickingElement) {
-                        flickingElement.style.opacity = "0";
+                        document.getElementById('collectionBrowserUi').style.display = "none";
+                        const flickingElement = document.querySelector('#collection-flicking');
+                        if (flickingElement) {
+                            flickingElement.style.opacity = "0";
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        this.#platform_manager.loadState(
+                            state.platform_id,
+                            state.save_data,
+                            state.rom_data,
+                            state.program_name,
+                            state.caption || item.title,
+                            () => this.close(true),
+                            state.m3u_disks,
+                            state.m3u_disk_index,
+                            state.m3u_disk_rom_ids,
+                            state.m3u_disk_launch_names,
+                            state.dos_sram,
+                            state.dos_exec_hint,
+                            state.st_state_path,
+                            state.launch_bios,
+                            state.launch_core_config
+                        );
+                    } else {
+                        throw new Error("Cannot load selected program.");
                     }
-
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    this.#platform_manager.loadState(
-                        state.platform_id,
-                        state.save_data,
-                        state.rom_data,
-                        state.program_name,
-                        state.caption || item.title,
-                        () => this.close(true),
-                        state.m3u_disks,
-                        state.m3u_disk_index,
-                        state.m3u_disk_rom_ids,
-                        state.m3u_disk_launch_names,
-                        state.dos_sram,
-                        state.dos_exec_hint,
-                        state.st_state_path,
-                        state.launch_bios,
-                        state.launch_core_config
-                    );
-                } else {
-                    throw new Error("Cannot load selected program.");
+                } catch (error) {
+                    this.#abortLaunch(activePanel.element, error);
                 }
             }
         }
@@ -792,33 +812,37 @@ export class CollectionBrowser {
 
     async #loadSelected() {
         if (this.#selected && !this.#launched && this.#uiReady) {
-            this.#launched = true;
             const activePanel = this.#activePanel();
             if (activePanel != null) {
+                this.#launched = true;
                 this.#addLaunchVisualFeedback(activePanel.element);
 
-                const id = activePanel.element.getAttribute('data-id');
-                const intId = parseInt(id, 10);
+                try {
+                    const id = activePanel.element.getAttribute('data-id');
+                    const intId = parseInt(id, 10);
 
-                StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
-                StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
+                    StorageManager.storeValue(COLLECTION_BROWSER_COLLECTION_INDEX, 1);
+                    StorageManager.storeValue(COLLECTION_BROWSER_ITEM_INDEX, intId);
 
-                const filteredItems = this.#items.filter(item => item.id == intId);
+                    const filteredItems = this.#items.filter(item => item.id == intId);
 
-                if (filteredItems.length > 0) {
-                    const item = filteredItems[0];
-                    const rom = await this.#db.getRomData(item.rom_data_id);
+                    if (filteredItems.length > 0) {
+                        const item = filteredItems[0];
+                        const rom = await this.#db.getRomData(item.rom_data_id);
 
-                    document.getElementById('collectionBrowserUi').style.display = "none";
-                    const flickingElement = document.querySelector('#collection-flicking');
-                    if (flickingElement) {
-                        flickingElement.style.opacity = "0";
+                        document.getElementById('collectionBrowserUi').style.display = "none";
+                        const flickingElement = document.querySelector('#collection-flicking');
+                        if (flickingElement) {
+                            flickingElement.style.opacity = "0";
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, null, () => this.close(true));
+                    } else {
+                        throw new Error("Cannot load selected program.");
                     }
-
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, null, () => this.close(true));
-                } else {
-                    throw new Error("Cannot load selected program.");
+                } catch (error) {
+                    this.#abortLaunch(activePanel.element, error);
                 }
             }
         }
@@ -893,8 +917,13 @@ export class CollectionBrowser {
 
     async #handleKeyboard(event) {
         if (event.key === "Escape" || event.key === "Backspace") {
-            this.close();
-            this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
+            if (this.isLaunchChoiceOpen()) {
+                this.#hideLaunchChoiceOverlay();
+            } else {
+                // Same as the Back button: also clear BOOT_TO, or the next reload
+                // autostarts the collection again.
+                this.#backToShell();
+            }
             return;
         }
 
@@ -1059,4 +1088,8 @@ export class CollectionBrowser {
             timeout = setTimeout(later, wait);
         };
     }
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
