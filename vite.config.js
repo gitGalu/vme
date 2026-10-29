@@ -105,7 +105,8 @@ export default defineConfig(({ command }) => {
         },
       }),
       obfuscator({
-        exclude: ['node_modules/**'],
+        // Vite must see literal lazy-import paths before bundling these loaders.
+        exclude: ['node_modules/**', '**/cli/SplashCommand.js', '**/startup/SplashScreen.js'],
       }),
     ],
 

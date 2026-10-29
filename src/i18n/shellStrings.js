@@ -1,5 +1,5 @@
 /**
- * Internationalization ONLY for the gamepad shell (menu, subscreens, legend, messages).
+ * Internationalization for the gamepad shell and the update splash.
  * The classic CLI and browsers stay in English. Language is in StorageManager (key SHELL_LANG).
  *
  * Usage: import { t, getShellLang, setShellLang } from './i18n/shellStrings.js';
@@ -15,6 +15,7 @@ const STRINGS = {
     en: {
         // App / root
         'app.title': 'VME',
+        'splash.updated': 'Updated to version',
 
         // Main menu
         'menu.platform': 'Platform',
@@ -150,6 +151,7 @@ const STRINGS = {
     },
     pl: {
         'app.title': 'VME',
+        'splash.updated': 'Zaktualizowano do wersji',
 
         'menu.platform': 'Platforma',
         'menu.recent': 'Ostatnio uruchamiane',

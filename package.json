@@ -10,7 +10,8 @@
     "build:gh": "VITE_BASE=/vme/ VITE_PWA_START_URL=/vme/?source=pwa vite build --emptyOutDir",
     "preview": "vite preview --port 8080 --host",
     "deploy": "npm run build:gh && gh-pages -d dist",
-    "build-thumbnails": "node scripts/build-thumbnail-index.js"
+    "build-thumbnails": "node scripts/build-thumbnail-index.js",
+    "test:app-version": "node --test tests/app-version.mjs"
   },
   "keywords": [],
   "author": "gitGalu",
@@ -33,6 +34,7 @@
     "jszip": "^3.10.1",
     "nostalgist": "^v0.20.0",
     "npm": "^10.8.1",
-    "react-device-detect": "^2.2.3"
+    "react-device-detect": "^2.2.3",
+    "three": "0.170.0"
   }
 }

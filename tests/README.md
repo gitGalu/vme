@@ -48,3 +48,43 @@ Run `await window.runTouchKeypadTests()` to check tap/drag selection, held keys,
 keyboard mappings, outside-touch dismissal, cancellation and release when controls are hidden. Use
 `window.previewTouchKeypad()` to inspect portrait and landscape layouts.
 Pass `'coleco'` to either function to check ColecoVision's keypad and placement.
+
+Application version detection: run `npm run test:app-version`.
+VM/E records `package.json`'s version after successful startup in
+`VME_INTERNAL.LAST_APP_VERSION`. First launch establishes a baseline; only a higher
+numeric version reports an update. Automatic splash playback remains disabled.
+`vme:version-checked` on `document` carries `{ currentVersion, previousVersion,
+isFirstRun, isUpdate }` in `detail`, for the future splash to consume.
+
+To test in an isolated dev browser, set
+`localStorage.setItem('VME_INTERNAL.LAST_APP_VERSION', '0.96')` and reload.
+Inspect the startup snapshot using the already loaded VME module (including any
+Vite timestamp in its URL):
+
+```js
+const moduleUrl = performance.getEntriesByType('resource')
+    .find(r => /\/VME\.js(?:\?|$)/.test(r.name)).name;
+(await import(moduleUrl)).VME.getVersionInfo();
+```
+
+`isUpdate` is true on that launch, then false after another reload. Remove only
+that key to test first launch. Use a saved version higher than the current one to
+check that a downgrade does not report an update.
+
+The `SPLASH` command is manual and CLI-only: type `SPLASH` and press Enter.
+It can be replayed regardless of update state; Escape dismisses it. The renderer
+is loaded on demand, honors reduced motion and releases its WebGL resources on close.
+Automatic splash playback after an update remains disabled.
+The manual caption is `Virtual Machine / Emulator` plus the current version.
+Update playback uses `Updated to version` (or its configured-language translation).
+
+To run the browser regression, open the normal VM/E app in a fresh isolated
+context, import `tests/splash.browser.js` through the same `/@fs/<repository>/`
+prefix as above, and run `await runSplashTests()`. The suite plays the animation,
+checks the return to the CLI and repeats it, then intentionally disables WebGL to
+check recovery (a WebGL error in the console during that case is expected).
+
+Also run `await runSplashRenderingTests()` with reduced motion disabled. This
+checks actual colored pixels in the final WebGL framebuffer while modeling a GPU
+that returns NaN for signed `pow` arguments. It catches a black logo even when
+the HTML caption, animation timing and close/replay behavior all work.

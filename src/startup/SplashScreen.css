@@ -1,0 +1,51 @@
+:host {
+    all: initial !important;
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    background: #000 !important;
+    opacity: var(--splash-opacity, 1) !important;
+    outline: none !important;
+    overflow: hidden !important;
+    isolation: isolate;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.stage {
+    position: absolute;
+    inset: 0;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.caption {
+    position: absolute;
+    bottom: max(44px, calc(env(safe-area-inset-bottom) + 24px));
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 24px;
+    text-align: center;
+    font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: clamp(14px, 1.1vw, 16px);
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: .035em;
+    color: #79a6ad;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.caption span {
+    font-weight: 600;
+    color: #86b6c2;
+    font-variant-numeric: tabular-nums;
+}
