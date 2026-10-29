@@ -71,41 +71,36 @@ Dexie.js https://github.com/dexie/Dexie.js
 
 ### Libretro cores used
 
-vice-libretro https://github.com/libretro/vice-libretro
-
-libretro-atari800 https://github.com/libretro/libretro-atari800
-
-a5200 https://github.com/libretro/a5200
-
-fuse-libretro https://github.com/libretro/fuse-libretro
-
-81-libretro https://github.com/libretro/81-libretro
-
-libretro-crocods https://github.com/libretro/libretro-crocods
-
-libretro-fceumm https://github.com/libretro/libretro-fceumm
-
-gambatte-libretro https://github.com/libretro/gambatte-libretro
-
-stella2014-libretro https://github.com/libretro/stella2014-libretro
-
-pce-fast https://github.com/libretro/beetle-pce-fast-libretro
-
-genesis-plus-gx https://github.com/libretro/Genesis-Plus-GX
-
-mgba https://github.com/FunKey-Project/mgba-libretro
-
-fbalpha2012_neogeo https://github.com/libretro/fbalpha2012_neogeo
-
-puae https://github.com/libretro/libretro-uae
-
-virtualxt https://github.com/virtualxt/virtualxt/
-
-retro8 https://github.com/libretro/retro8
-
-dosbox_pure https://github.com/schellingb/dosbox-pure
-
-hatariB https://github.com/bbbradsmith/hatariB
+| Platform | Libretro core / source |
+| --- | --- |
+| Commodore 64, 128, Plus/4 and VIC-20 | [VICE](https://github.com/libretro/vice-libretro) (`vice_x64`, `vice_x128`, `vice_xplus4`, `vice_xvic`) |
+| Atari 8-bit | [atari800](https://github.com/libretro/libretro-atari800) |
+| Atari 2600 | [stella2014](https://github.com/libretro/stella2014-libretro) |
+| Atari 5200 | [a5200](https://github.com/libretro/a5200) |
+| Atari 7800 | [prosystem](https://github.com/libretro/prosystem-libretro) |
+| Atari Lynx | [handy](https://github.com/libretro/libretro-handy) |
+| Atari Jaguar | [virtualjaguar](https://github.com/libretro/virtualjaguar-libretro) |
+| Atari ST | [hatarib](https://github.com/bbbradsmith/hatariB) |
+| ZX Spectrum | [fuse](https://github.com/libretro/fuse-libretro) |
+| ZX80 / ZX81 | [81](https://github.com/libretro/81-libretro) |
+| Amstrad CPC | [cap32](https://github.com/libretro/libretro-cap32) |
+| NES | [fceumm](https://github.com/libretro/libretro-fceumm) |
+| SNES | [snes9x](https://github.com/snes9xgit/snes9x) |
+| Game Boy / Game Boy Color | [gambatte](https://github.com/libretro/gambatte-libretro) |
+| Game Boy Advance | [mgba](https://github.com/FunKey-Project/mgba-libretro) |
+| Sega Master System | [gearsystem](https://github.com/drhelius/Gearsystem) |
+| Sega Mega Drive / Genesis | [genesis_plus_gx](https://github.com/libretro/Genesis-Plus-GX) |
+| PC Engine | [mednafen_pce_fast](https://github.com/libretro/beetle-pce-fast-libretro) |
+| Neo Geo | [fbalpha2012_neogeo](https://github.com/libretro/fbalpha2012_neogeo) |
+| ColecoVision | [gearcoleco](https://github.com/drhelius/Gearcoleco) |
+| Intellivision | [freeintv](https://github.com/libretro/FreeIntv) |
+| Arcade / MAME | [mame2003_plus](https://github.com/libretro/mame2003-plus-libretro) |
+| Amiga | [puae](https://github.com/libretro/libretro-uae) |
+| PC / XT | [virtualxt](https://github.com/virtualxt/virtualxt) |
+| DOS | [dosbox_pure](https://github.com/schellingb/dosbox-pure) |
+| Apple II | [applewin](https://github.com/audetto/AppleWin) |
+| PICO-8 | [fake08](https://github.com/jtothebell/fake-08) |
+| TIC-80 | [tic80](https://github.com/nesbox/TIC-80) |
 
 ### Assets used
 
@@ -118,6 +113,9 @@ https://github.com/rewtnull/amigafonts/
 https://fontstruct.com/fontstructions/show/1592365/pc-engine-super-cd-rom2-system-unused
 
 https://fontstruct.com/fontstructions/show/2066750
+
+https://www.dafont.com/pixel-operator.font (HarvettFox96), licensed under [CC0 1.0](src/assets/fonts/pixel-operator/LICENSE.txt).
+
 
 ## License
 
