@@ -8,6 +8,7 @@ import { CustomDropdown } from './components/CustomDropdown.js';
 import { FileUtils } from './utils/FileUtils.js';
 import { t } from './i18n/shellStrings.js';
 import { ToastManager } from './ui/ToastManager.js';
+import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 
 export class SaveBrowser {
     #vme;
@@ -189,7 +190,8 @@ export class SaveBrowser {
             this.#urlsToRevoke.add(url);
         }
 
-        const randomDegree = Math.random() * 20 - 10;
+        // Game list: one card per game (its latest save changes), saves view: one per save.
+        const randomDegree = tiltDegrees(this.#isGameView ? item.id : saveGameKey(item));
         if (item.caption == undefined) {
             item.caption = FileUtils.cleanRomName(item.program_name);
         }
@@ -267,18 +269,16 @@ export class SaveBrowser {
         const el = document.getElementById('flicking-background');
 
         if (!el || !currentPanel) {
-            if (el) el.style.backgroundImage = 'none';
+            if (el) clearBackdrop(el);
             return;
         }
 
         const img = currentPanel.element.querySelector('img');
         if (!img?.src) return;
 
-        const newBackground = `url(${img.src})`;
-        if (el.style.backgroundImage !== newBackground) {
-            el.style.backgroundImage = newBackground;
-            el.style.transform = 'translate3d(0,0,0) scale(12)';
-        }
+        // Crossfade; transform (scale + parallax) is left to #updateParallax so the outgoing
+        // image doesn't jump while fading.
+        setBackdropImage(el, img.src);
     }
 
     #updateParallax() {
@@ -728,8 +728,9 @@ export class SaveBrowser {
 
         const background = document.getElementById('flicking-background');
         if (background) {
-            background.style.backgroundImage = 'none';
-            background.style.transform = 'none';
+            clearBackdrop(background);
+            // Back to the stylesheet's scale(12) (an inline 'none' would show it unscaled).
+            background.style.transform = '';
         }
 
         this.#isDestroying = false;
@@ -1105,4 +1106,13 @@ export class SaveBrowser {
 
 function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+
+/** Stable pseudo-random tilt in [-10, 10) deg for a key, so cards keep their angle across rebuilds. */
+function tiltDegrees(key) {
+    let h = 2166136261;
+    for (const ch of String(key)) {
+        h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    }
+    return ((h >>> 0) % 2000) / 100 - 10;
 }

@@ -9,6 +9,7 @@ import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDE
 import { t } from './i18n/shellStrings.js';
 import { CollectionGrid } from './CollectionGrid.js';
 import { ToastManager } from './ui/ToastManager.js';
+import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 
 export class CollectionBrowser {
     #vme;
@@ -157,7 +158,7 @@ export class CollectionBrowser {
         if (item.platform_id == "md") item.platform_id = "smd"; //temp fix
         const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
         const platformName = platform?.platform_name || String(item.platform_id || 'Unknown').toUpperCase();
-        const randomDegree = Math.random() * 20 - 10;
+        const randomDegree = tiltDegrees(item.id);
         
         if (item.image && item.image.startsWith('blob:')) {
             this.#urlsToRevoke.add(item.image);
@@ -215,18 +216,16 @@ export class CollectionBrowser {
         const el = document.getElementById('collection-flicking-background');
 
         if (!el || !currentPanel) {
-            if (el) el.style.backgroundImage = 'none';
+            if (el) clearBackdrop(el);
             return;
         }
 
         const img = currentPanel.element.querySelector('img');
         if (!img?.src) return;
 
-        const newBackground = `url(${img.src})`;
-        if (el.style.backgroundImage !== newBackground) {
-            el.style.backgroundImage = newBackground;
-            el.style.transform = 'translate3d(0,0,0) scale(12)';
-        }
+        // Crossfade; transform (scale + parallax) is left to #updateParallax so the outgoing
+        // image doesn't jump while fading.
+        setBackdropImage(el, img.src);
     }
     
     #updateParallax() {
@@ -910,8 +909,9 @@ export class CollectionBrowser {
 
         const background = document.getElementById('collection-flicking-background');
         if (background) {
-            background.style.backgroundImage = 'none';
-            background.style.transform = 'none';
+            clearBackdrop(background);
+            // Back to the stylesheet's scale(12) (an inline 'none' would show it unscaled).
+            background.style.transform = '';
         }
     }
 
@@ -1092,4 +1092,13 @@ export class CollectionBrowser {
 
 function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+
+/** Stable pseudo-random tilt in [-10, 10) deg for a key, so cards keep their angle across rebuilds. */
+function tiltDegrees(key) {
+    let h = 2166136261;
+    for (const ch of String(key)) {
+        h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    }
+    return ((h >>> 0) % 2000) / 100 - 10;
 }

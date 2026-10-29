@@ -3420,6 +3420,23 @@ body.selection-mode-active .menu-strip-spacer {
   opacity: 1;
 }
 
+/* Crossfade layers inside the backdrop (BrowserBackdrop.js). The incoming layer fades in on top;
+   the outgoing one stays opaque underneath until that finishes, so there's no dark dip between. */
+.browser-backdrop-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.35s ease 0.35s;
+}
+
+.browser-backdrop-layer.visible {
+  opacity: 1;
+  z-index: 1;
+  transition: opacity 0.35s ease;
+}
+
 .panel-buttons button {
   padding: 16px;
   margin: 32px;
