@@ -53,6 +53,7 @@ export class SaveBrowser {
     #keyRepeat;
     #lastBackgroundUpdate = 0;
     #lastParallaxUpdate = 0;
+    #backdropZoomInPending = false;
 
     constructor(vme, platform_manager, storage_manager, cli) {
         this.#vme = vme;
@@ -296,6 +297,10 @@ export class SaveBrowser {
         // Crossfade; transform (scale + parallax) is left to #updateParallax so the outgoing
         // image doesn't jump while fading.
         setBackdropImage(el, img.src);
+        if (this.#backdropZoomInPending) {
+            this.#backdropZoomInPending = false;
+            el.style.transform = '';
+        }
     }
 
     #updateParallax() {
@@ -311,7 +316,7 @@ export class SaveBrowser {
         const flickingWidth = this.#flicking.element.clientWidth;
         const scrollRatio = this.#flicking.camera.position / flickingWidth;
     
-        background.style.transform = `translate3d(${scrollRatio * 50}px,0,0) scale(12)`;
+        background.style.transform = `translate3d(${scrollRatio * 50}px,0,0)`;
     }
 
     #updateActivePanel() {
@@ -387,6 +392,10 @@ export class SaveBrowser {
     
         const fb = document.getElementById('flicking-background');
         fb.classList.remove('show');
+        // Entry "camera" zoom: start at 1x (layers are 12x, see vme.css) and zoom in to the
+        // full 12x (transition: transform 0.8s) once the first screenshot is on the backdrop.
+        fb.style.transform = 'translate3d(0,0,0) scale(0.083333)';
+        this.#backdropZoomInPending = true;
         setTimeout(() => {
             fb.classList.add('show');
         }, 10);
@@ -747,7 +756,7 @@ export class SaveBrowser {
         const background = document.getElementById('flicking-background');
         if (background) {
             clearBackdrop(background);
-            // Back to the stylesheet's scale(12) (an inline 'none' would show it unscaled).
+            // Back to the stylesheet's transform.
             background.style.transform = '';
         }
 

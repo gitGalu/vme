@@ -3387,7 +3387,9 @@ body.selection-mode-active .menu-strip-spacer {
   height: 100%;
   background-size: cover;
   filter: brightness(20%);
-  transform: translate3d(0, 0, 0) scale(12);
+  /* No scale here: the 12x zoom is baked into the layer size (.browser-backdrop-layer).
+     Transform is only the parallax shift (JS) and the launch zoom-out. */
+  transform: translate3d(0, 0, 0);
   z-index: -1;
   image-rendering: pixelated;
   will-change: transform;
@@ -3401,13 +3403,14 @@ body.selection-mode-active .menu-strip-spacer {
   animation: backgroundZoomOut 3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
 }
 
+/* Layers are 12x the screen, so 1 -> 1/12 is the old 12x -> 1x zoom. */
 @keyframes backgroundZoomOut {
   from {
-    transform: translate3d(0, 0, 0) scale(12);
+    transform: translate3d(0, 0, 0) scale(1);
     filter: brightness(20%);
   }
   to {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(0.083333);
     filter: brightness(5%);
   }
 }
@@ -3421,10 +3424,16 @@ body.selection-mode-active .menu-strip-spacer {
 }
 
 /* Crossfade layers inside the backdrop (BrowserBackdrop.js). The incoming layer fades in on top;
-   the outgoing one stays opaque underneath until that finishes, so there's no dark dip between. */
+   the outgoing one stays opaque underneath until that finishes, so there's no dark dip between.
+   Each layer is 12x the screen and centered (= cover + scale(12) on the parent, as before). Zooming
+   by size instead of transform makes the pixels at paint time: WebKit rasterized the scaled-up
+   layer at low resolution and the GPU upscale smoothed it, ignoring image-rendering. */
 .browser-backdrop-layer {
   position: absolute;
-  inset: 0;
+  top: -550%;
+  left: -550%;
+  width: 1200%;
+  height: 1200%;
   background-size: cover;
   opacity: 0;
   z-index: 0;
