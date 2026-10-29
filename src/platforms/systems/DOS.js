@@ -1981,9 +1981,10 @@ const DOS = {
     keyboard: {
         shiftKey: 2,
         touch_caps_toggle: true,
+        // Keys are not mapped to a joystick here (keyboard_controller_mapping is all 'nul'),
+        // only the keys RetroArch keeps as hotkeys do not reach the core.
         mode_labels: {
-            retropad: 'Focus mode disabled',
-            focusmode: 'Focus mode enabled'
+            retropad: 'Basic keyboard'
         },
         overrides: {
         }

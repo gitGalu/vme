@@ -305,25 +305,29 @@ export class UiManager {
         const isCursorKeysOnly = isKeyboardOnlyTouchControllers(UiManager.#platform_manager.getSelectedPlatform().touch_controllers);
         const platform = UiManager.#platform_manager.getSelectedPlatform();
         const keyboardModeLabels = platform.keyboard_mode_labels || platform.keyboard?.mode_labels || {};
-        const getKbModeLabel = (mode, fallback) => {
-            return keyboardModeLabels[mode] || fallback;
+        // Computers map the keyboard to their joystick, consoles to a joystick or a pad.
+        // Focus mode passes every key to the core, captures the mouse on platforms that
+        // emulate one, and is left with Esc (GameFocusManager).
+        const kbModeLabels = {
+            retropad: keyboardModeLabels.retropad || (hasKeyboardSupport ? 'Keyboard as joystick' : 'Keyboard as controller'),
+            focusmode: keyboardModeLabels.focusmode || (platform.mouse_controllers ? 'Full keyboard & mouse (Esc to exit)' : 'Full keyboard (Esc to exit)')
         };
 
         const focusManager = GameFocusManager.getInstance();
         const shouldManageKbModeFromDesktop = EnvironmentManager.isDesktop() || EnvironmentManager.isQuest();
 
         if (isCursorKeysOnly) {
-            options = [{ value: 'focusmode', text: getKbModeLabel('focusmode', 'Full keyboard passthrough') }];
+            options = [{ value: 'focusmode', text: kbModeLabels.focusmode }];
             if (shouldManageKbModeFromDesktop) {
                 focusManager.enable();
             }
         } else if (hasKeyboardSupport) {
             options = [
-                { value: 'retropad', text: getKbModeLabel('retropad', 'Keyboard as joystick') },
-                { value: 'focusmode', text: getKbModeLabel('focusmode', 'Full keyboard passthrough') }
+                { value: 'retropad', text: kbModeLabels.retropad },
+                { value: 'focusmode', text: kbModeLabels.focusmode }
             ];
         } else {
-            options = [{ value: 'retropad', text: getKbModeLabel('retropad', 'Keyboard as joystick') }];
+            options = [{ value: 'retropad', text: kbModeLabels.retropad }];
         }
 
         const desiredValue = focusManager.isEnabled() ? 'focusmode' : 'retropad';
