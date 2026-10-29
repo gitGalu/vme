@@ -112,7 +112,6 @@ export class MultiSelectTouchButton {
                 this.optionElements.push(option);
             }
         });
-        this.optionsContainer.style.setProperty('--fast-menu-frame-delay', `${150 + Math.max(0, this.optionElements.length - 1) * 35}ms`);
     }
     
     #createButtonContent(label, showArrow = true) {

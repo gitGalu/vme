@@ -3359,23 +3359,23 @@ body.selection-mode-active .menu-strip-spacer {
   background: #000000;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 90ms ease;
+  transition: opacity 150ms ease;
 }
 
 .fast-menu.is-open::before {
   opacity: 1;
-  transition-delay: var(--fast-menu-frame-delay, 150ms);
 }
 
 .fast-menu .fast-control--option {
+  --fast-control-label: #88888888;
   height: var(--fast-menu-row-height);
   min-height: 0;
   font-size: 11px;
-  color: #cccccc;
-  background: #000000;
-  border-color: #cccccc;
+  color: var(--fast-control-label);
+  background: var(--fast-control-background);
+  border-color: transparent;
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-6px);
   transition: opacity 90ms ease, transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -3386,12 +3386,15 @@ body.selection-mode-active .menu-strip-spacer {
 }
 
 .fast-menu .fast-control--option.is-selected {
-  background: #2a2a2a;
+  color: #eeeeee;
+  background: var(--fast-control-active-background);
+  border-color: var(--fast-control-active-border);
 }
 
 .fast-menu .fast-control--option.is-active {
   color: #eeeeee;
-  background: #1a1a1a;
+  background: var(--fast-control-active-background);
+  border-color: var(--fast-control-active-border);
 }
 
 .fast-menu:not(.is-open) .fast-control,
@@ -3407,8 +3410,7 @@ body.selection-mode-active .menu-strip-spacer {
     transition: none;
   }
 
-  .fast-menu.is-open .fast-control--option,
-  .fast-menu.is-open::before {
+  .fast-menu.is-open .fast-control--option {
     transition-delay: 0s;
   }
 }
