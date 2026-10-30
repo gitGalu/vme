@@ -2252,6 +2252,10 @@ export class VME {
         return false;
     }
 
+    getKeyboardManager() {
+        return this.#kb;
+    }
+
     getGamepadManager() {
         return this.#gamepad;
     }

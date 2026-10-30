@@ -1470,13 +1470,15 @@ export class GamepadManager {
             this.showLegendActions([
                 { glyph: 'A', label: t('legend.select') },
                 { glyph: 'B', label: t('legend.back') },
-                { glyph: 'X', label: t('legend.covers') }
+                { glyph: 'X', label: t('legend.covers') },
+                ...(this.browserOverlay?.search && this.browserOverlay.search.isAvailable?.() !== false ? [{ glyph: 'Y', label: t('browser.search.label') }] : [])
             ]);
         } else {
             this.showLegendActions([
                 { glyph: 'A', label: panelLabel },
                 { glyph: 'B', label: t('legend.back') },
-                { glyph: 'X', label: skin ? t('menu.platform') : t('legend.menu') }
+                { glyph: 'X', label: skin ? t('menu.platform') : t('legend.menu') },
+                ...(this.browserOverlay?.search && this.browserOverlay.search.isAvailable?.() !== false ? [{ glyph: 'Y', label: t('browser.search.label') }] : [])
             ]);
         }
     }
@@ -1554,6 +1556,26 @@ export class GamepadManager {
             }
         }
 
+        // Browser search owns pad input while its keyboard is open (Y opens it).
+        if (this.browserOverlay?.search?.handleInput(gamepad)) {
+            this.stopAutoRepeat();
+            // Finishing text entry returns A to the cards, even if Y was pressed on the toolbar.
+            if (this.browserTopBarFocus) {
+                this.browserButtons.forEach(button => button.classList.remove('browser-button-focused'));
+                this.browserTopBarFocus = false;
+                this.lastBrowserTopBarFocus = false;
+            }
+            this.lastAButtonState = !!gamepad.buttons[0]?.pressed;
+            this.lastBButtonState = !!gamepad.buttons[1]?.pressed;
+            this.lastXButtonState = !!gamepad.buttons[2]?.pressed;
+            this.lastYButtonState = !!gamepad.buttons[3]?.pressed;
+            this.lastDpadState = { up: !!gamepad.buttons[12]?.pressed, down: !!gamepad.buttons[13]?.pressed,
+                left: !!gamepad.buttons[14]?.pressed, right: !!gamepad.buttons[15]?.pressed };
+            this.lastAxisValue = gamepad.axes[0] || 0;
+            this.lastAxisYValue = gamepad.axes[1] || 0;
+            return;
+        }
+
         // Platform-selection overlay (skin mode) - when open, it takes over all control.
         if (this.browserOverlay && this.browserOverlay.isOpen()) {
             this.#pollBrowserOverlay(gamepad);
@@ -1572,7 +1594,7 @@ export class GamepadManager {
             // platform filter). Collection Browser: A opens the overlay (xOpens=false).
             if (this.browserOverlay && this.browserOverlay.xOpens) {
                 this.browserOverlay.show();
-            } else if (!this.browserOverlay) {
+            } else if (!this.browserOverlay || this.browserOverlay.topBar) {
                 // Classic behavior: toggle focus carousel <-> topbar.
                 this.browserTopBarFocus = !this.browserTopBarFocus;
                 if (this.browserTopBarFocus) {

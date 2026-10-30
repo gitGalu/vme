@@ -11,11 +11,16 @@ import { ToastManager } from './ui/ToastManager.js';
 import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
 import { showBrowserEmpty } from './ui/BrowserEmptyState.js';
+import { BrowserSearch } from './ui/BrowserSearch.js';
+import { CollectionGrid } from './CollectionGrid.js';
+import { StorageManager } from './storage/StorageManager.js';
 
 // Game list <-> game saves switch: the .view-exit fade (CSS, 0.15s) and the .view-enter
 // animation (CSS, 0.3s) - keep in sync with vme.css.
+const SAVE_BROWSER_VIEW = 'SAVE_BROWSER_VIEW';
 const VIEW_EXIT_MS = 150;
 const VIEW_ENTER_MS = 300;
+const TOOLBAR_ENTER_MS = 300;
 
 export class SaveBrowser {
     #vme;
@@ -23,6 +28,9 @@ export class SaveBrowser {
     #db;
     #cli;
     #flicking;
+    #grid = null;
+    #useGrid = false;
+    #viewItems = [];
     #selected;
     #launched;
     #kb_event_bound;
@@ -40,8 +48,20 @@ export class SaveBrowser {
     #currentPlatformFilter = "all";
     #isGameView = false;
     #uiReady = false;
+    #viewReady = false;
+    #filterEditing = false;
     #lastGamePosition = null;
     #platformDropdown = null;
+    #search;
+    #gameListItems = [];
+    #gameListReady = false;
+    #searchSelectionKey = null;
+    #lastSearchQuery = '';
+    #lastGameKey = null;
+    #viewGeneration = 0;
+    #toolbarEntryPending = false;
+    #toolbarEntryTimer = null;
+    #screenshotUrls = new Map();
 
     #overlayItems = [];
     #overlayOptions = [];
@@ -60,6 +80,21 @@ export class SaveBrowser {
         this.#platform_manager = platform_manager;
         this.#db = storage_manager;
         this.#cli = cli;
+        this.#search = new BrowserSearch(items => this.#applySearch(items), () => {
+            if (!this.#search.isOpen) this.#grid?.scrollFocusedIntoView(true);
+            const gm = this.#vme.getGamepadManager();
+            if (!gm?.hasGamepad?.()) return;
+            if (this.#search.padActive) {
+                gm.showLegendActions?.([
+                    { glyph: 'A', label: t('legend.type') },
+                    { glyph: 'B', label: t('legend.back') },
+                    { glyph: 'Y', label: t('legend.delete') },
+                    { glyph: 'X', label: t('legend.list') },
+                ]);
+            } else gm.updateBrowserLegend?.();
+        }, () => this.#activateSelection(), () => this.#vme.getKeyboardManager?.(), {
+            rootId: 'save-browser', prefix: 'saveBrowser', getTitle: item => this.#displayCaption(item),
+        });
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
         this.#keyRepeat = new CarouselKeyRepeat((direction, duration) => {
@@ -103,8 +138,17 @@ export class SaveBrowser {
 
         this.#platformDropdown = new CustomDropdown('platformDropdownContainer', [
             { value: 'all', text: 'All platforms' }
-        ], 'all');
+        ], 'all', { searchable: true, pinnedValue: 'all' });
 
+        this.#platformDropdown.onOpenChange(open => {
+            this.#filterEditing = open;
+            document.getElementById('save-browser').classList.toggle('filter-editing', open);
+            if (open) {
+                this.#keyRepeat.stop();
+                this.#search.flush();
+                this.#search.finish();
+            }
+        });
         this.#platformDropdown.onChange((e) => {
             this.#filterChangeHandler(e);
         });
@@ -125,6 +169,11 @@ export class SaveBrowser {
                 }
             }
         });
+    }
+
+    #setViewReady(ready) {
+        this.#viewReady = ready;
+        document.getElementById('saveBrowserUiView')?.classList.toggle('disabled', !ready);
     }
 
     #bindPanelEvents(panels) {
@@ -186,11 +235,11 @@ export class SaveBrowser {
         this.#flicking.off("move");
         this.#flicking.off("moveEnd");
 
-        this.#eventListeners.forEach(({ element, handler }) => {
-            element.removeEventListener("click", handler);
+        this.#eventListeners = this.#eventListeners.filter(({ element, handler, type }) => {
+            if (type !== 'click') return true; // retain the viewport's wheel listener
+            element.removeEventListener('click', handler);
+            return false;
         });
-
-        this.#eventListeners = [];
     }
 
     #displayCaption(item) {
@@ -219,8 +268,12 @@ export class SaveBrowser {
         );
         let url = fallbackImage;
         if (item.screenshot instanceof Blob) {
-            url = URL.createObjectURL(item.screenshot);
-            this.#urlsToRevoke.add(url);
+            url = this.#screenshotUrls.get(item.id);
+            if (!url) {
+                url = URL.createObjectURL(item.screenshot);
+                this.#screenshotUrls.set(item.id, url);
+                this.#urlsToRevoke.add(url);
+            }
         }
 
         const caption = this.#displayCaption(item);
@@ -255,33 +308,56 @@ export class SaveBrowser {
     }
 
     #clearPanels() {
+        this.#viewItems = [];
+        if (this.#grid) { this.#grid.setItems([]); return; }
         if (!this.#flicking) return;
-        const totalPanels = this.#flicking.panelCount;
-        for (let i = totalPanels - 1; i >= 0; i--) {
-            this.#flicking.remove(i);
-        }
+        this.#unbindPanelEvents();
+        const count = this.#flicking.panelCount;
+        if (count) this.#flicking.remove(0, count);
     }
 
-    #appendPanels(items) {
-        items.forEach(item => {
-            const newPanel = this.#createPanelHTML(item);
-            this.#flicking.append(newPanel);
-        });
-
-        const panels = document.querySelectorAll(".flicking-panel");
-        this.#unbindPanelEvents();
-        this.#bindPanelEvents(panels);
-
-        this.#flicking.resize();
-        if (this.#flicking.currentPanel) {
-            this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
-        } else {
-            if (this.#flicking.panelCount > 0) {
-                this.#flicking.moveTo(0, 0);
-            }
+    #appendPanels(items, initialIndex = 0) {
+        this.#viewItems = items;
+        if (this.#grid) {
+            this.#grid.setItems(items, initialIndex);
+            this.#updateUI();
+            return;
         }
-
+        if (items.length) this.#flicking.append(items.map(item => this.#createPanelHTML(item)));
+        this.#unbindPanelEvents();
+        this.#bindPanelEvents(this.#flicking.panels.map(panel => panel.element));
+        this.#flicking.resize();
+        if (this.#flicking.currentPanel) this.#flicking.moveTo(this.#flicking.currentPanel.index, 0).catch(() => {});
         this.#updateUI();
+    }
+
+    #renderGameList(items, preferredKey, preferredPosition = 0) {
+        if (this.#flicking?.animating) this.#flicking.control.stopAnimation();
+        this.#keyRepeat.stop();
+        clearTimeout(this.#wheelReleaseTimer);
+        this.#wheelReleaseTimer = null;
+        const match = items.findIndex(item => encodeURIComponent(saveGameKey(item)) === preferredKey);
+        const index = match >= 0 ? match : Math.min(Math.max(0, preferredPosition), Math.max(0, items.length - 1));
+        if (!this.#grid) this.#clearPanels();
+        this.#appendPanels(items, index);
+        if (!this.#grid && items.length) this.#flicking.moveTo(index, 0).catch(() => {});
+        this.#updateUI();
+    }
+
+    #applySearch(items) {
+        if (this.#isGameView || !this.#gameListReady || !this.#activeView || this.#isDestroying) return;
+        let key = this.#activeView?.currentPanel?.element.dataset.gameKey;
+        if (!this.#lastSearchQuery && this.#search.query) this.#searchSelectionKey = key;
+        if (!this.#search.query) key = this.#searchSelectionKey ?? key;
+        this.#lastSearchQuery = this.#search.query;
+        this.#renderGameList(items, key);
+        this.#setUIReady(true);
+    }
+
+    #showEmpty() {
+        const title = this.#search.query && !this.#isGameView ? 'browser.search.empty' : 'browser.saves.empty';
+        const hint = this.#search.query && !this.#isGameView ? 'browser.search.emptyHint' : 'browser.saves.emptyHint';
+        showBrowserEmpty(document.getElementById('saveBrowserEmpty'), browserT(title), browserT(hint));
     }
 
     #updateUI() {
@@ -296,7 +372,7 @@ export class SaveBrowser {
         }
         this.#lastBackgroundUpdate = now;
 
-        const currentPanel = this.#flicking?.currentPanel;
+        const currentPanel = this.#activeView?.currentPanel;
         const el = document.getElementById('flicking-background');
 
         if (!el || !currentPanel) {
@@ -333,7 +409,7 @@ export class SaveBrowser {
     }
 
     #updateActivePanel() {
-        const activePanel = this.#flicking.currentPanel;
+        const activePanel = this.#activeView?.currentPanel;
         if (activePanel != null) {
             document.getElementById('saveBrowserEmpty').style.display = "none";
 
@@ -342,22 +418,21 @@ export class SaveBrowser {
             const openButton = document.getElementById('saveBrowserUiOpen');
 
             if (this.#isGameView) {
-                loadButton.classList.remove('disabled');
-                deleteButton.classList.remove('disabled');
+                loadButton.classList.toggle('disabled', !this.#uiReady);
+                deleteButton.classList.toggle('disabled', !this.#uiReady);
                 openButton.classList.add('disabled');
             } else {
                 loadButton.classList.add('disabled');
                 deleteButton.classList.add('disabled');
-                openButton.classList.remove('disabled');
+                openButton.classList.toggle('disabled', !this.#uiReady);
             }
 
-            const panels = document.querySelectorAll(".flicking-panel");
+            const panels = document.querySelectorAll("#save-browser .flicking-panel, #save-grid .collection-grid-cell");
             panels.forEach(panel => panel.classList.remove("active"));
             activePanel.element.classList.add("active");
             this.#selected = true;
         } else {
-            showBrowserEmpty(document.getElementById('saveBrowserEmpty'),
-                browserT('browser.saves.empty'), browserT('browser.saves.emptyHint'));
+            this.#showEmpty();
             document.getElementById('saveBrowserUiLoad').classList.add('disabled');
             document.getElementById('saveBrowserUiDelete').classList.add('disabled');
             document.getElementById('saveBrowserUiOpen').classList.add('disabled');
@@ -378,31 +453,40 @@ export class SaveBrowser {
         let div = document.querySelector('#save-browser');
         div.classList.add('show');
         this.#destroy();
+        document.getElementById('saveBrowserUi').style.removeProperty('display');
+        this.#toolbarEntryPending = true;
+        div.classList.add('toolbar-enter-pending');
+        this.#search.bind();
+        const platformContainer = document.getElementById('platformFilterContainer');
+        const finishSearch = () => this.#search.finish();
+        platformContainer.addEventListener('pointerdown', finishSearch);
+        this.#eventListeners.push({ element: platformContainer, handler: finishSearch, type: 'pointerdown' });
+        const filterKeys = event => this.#handleFilterKeyboard(event);
+        const filterFocus = event => {
+            // Pointer clicks toggle the dropdown themselves; Tab focus opens it immediately.
+            if (event.target.matches?.('.custom-dropdown:focus-visible')) this.#openKeyboardFilter();
+        };
+        const filterBlur = event => {
+            if (!platformContainer.contains(event.relatedTarget)) this.#platformDropdown.close();
+        };
+        for (const [type, handler] of [['keydown', filterKeys], ['focusin', filterFocus], ['focusout', filterBlur]]) {
+            platformContainer.addEventListener(type, handler, type === 'keydown');
+            this.#eventListeners.push({ element: platformContainer, handler, type, capture: type === 'keydown' });
+        }
+
 
         if (this.#backButton && this.#backHandler) {
             addButtonEventListeners(this.#backButton, this.#backHandler);
             this.#buttonElements.add(this.#backButton);
         }
 
-        this.#flicking = new Flicking("#flicking", {
-            circular: true,
-            moveType: "snap",
-            preventClickOnDrag: true,
-            autoResize: true,
-            // Panel width = screenshot width, so re-measure panels once their images load.
-            // Without it a panel growing to the LEFT of the current one shifts the whole
-            // camera row (visible jumps when swiping left on mobile).
-            resizeOnContentsReady: true,
-            align: "center",
-            duration: 350
-        });
+        this.#useGrid = StorageManager.getValue(SAVE_BROWSER_VIEW, 'coverflow') === 'grid';
+        this.#createView();
+        const viewButton = document.getElementById('saveBrowserUiView');
+        const toggleView = pressed => { if (pressed) this.#toggleView(); };
+        addButtonEventListeners(viewButton, toggleView);
+        this.#buttonElements.add(viewButton);
 
-        const flickingElement = this.#flicking?.element;
-        if (flickingElement) {
-            flickingElement.addEventListener('wheel', this.#wheel_event_bound, { passive: false });
-            this.#eventListeners.push({ element: flickingElement, handler: this.#wheel_event_bound, type: 'wheel' });
-        }
-    
         const fb = document.getElementById('flicking-background');
         fb.classList.remove('show');
         // Entry "camera" zoom: start at 1x and zoom in to the full 12x (background-size
@@ -438,7 +522,7 @@ export class SaveBrowser {
         const openButton = s('#saveBrowserUiOpen');
         const openHandler = (pressed) => {
             if (pressed && this.#selected && this.#uiReady) {
-                const activePanel = this.#flicking.currentPanel;
+                const activePanel = this.#activeView?.currentPanel;
                 if (activePanel) {
                     const programName = activePanel.element.getAttribute('data-program-name');
                     const platformId = activePanel.element.getAttribute('data-platform-id');
@@ -449,20 +533,140 @@ export class SaveBrowser {
         addButtonEventListeners(openButton, openHandler);
         this.#buttonElements.add(openButton);
 
+        this.#initGamepadNavigation();
+
+        this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
+    }
+
+    #revealToolbar() {
+        if (!this.#toolbarEntryPending) return;
+        this.#toolbarEntryPending = false;
+        const root = document.getElementById('save-browser');
+        root.classList.remove('toolbar-enter-pending');
+        root.classList.add('toolbar-enter');
+        this.#toolbarEntryTimer = setTimeout(() => {
+            root.classList.remove('toolbar-enter');
+            this.#toolbarEntryTimer = null;
+        }, TOOLBAR_ENTER_MS);
+    }
+
+    get #activeView() { return this.#grid ?? this.#flicking; }
+
+    #createGridCell(item, index) {
+        const template = document.createElement('template');
+        template.innerHTML = this.#createPanelHTML(item).trim();
+        const cell = template.content.firstElementChild;
+        cell.className = 'collection-grid-cell';
+        cell.dataset.index = index;
+        cell.querySelector('img').className = 'collection-grid-img';
+        cell.querySelector('.save-card-caption').className = 'collection-grid-label';
+        cell.querySelectorAll('.flicking-title').forEach(line => line.classList.remove('flicking-title'));
+        const title = cell.querySelector('.flicking-title-name');
+        title.classList.add('collection-grid-title');
+        title.textContent = this.#displayCaption(item);
+        const platform = Object.values(SelectedPlatforms).find(value => value.platform_id === item.platform_id);
+        const platformLabel = document.createElement('span');
+        platformLabel.className = 'collection-grid-platform';
+        platformLabel.textContent = platform?.short_name || String(item.platform_id || '').toUpperCase();
+        title.after(platformLabel);
+        return cell;
+    }
+
+    #createView() {
+        const root = document.getElementById('save-browser');
+        root.dataset.layout = this.#useGrid ? 'grid' : 'coverflow';
+        const button = document.getElementById('saveBrowserUiView');
+        const label = this.#useGrid ? 'Switch to list view' : 'Switch to grid view';
+        button.title = label;
+        button.setAttribute('aria-label', label);
+        const viewport = document.getElementById('flicking');
+        viewport.style.display = this.#useGrid ? 'none' : '';
+        if (this.#useGrid) {
+            this.#grid = new CollectionGrid({
+                rootId: 'save-grid', items: [],
+                renderCell: (item, index) => this.#createGridCell(item, index),
+                onActivate: () => this.#activateSelection(),
+            });
+            this.#grid.open();
+            this.#grid.on('changed', () => this.#updateUI());
+        } else {
+            this.#flicking = new Flicking("#flicking", {
+                circular: true,
+                moveType: "snap",
+                preventClickOnDrag: true,
+                autoResize: true,
+                // Panel width = screenshot width, so re-measure panels once their images load.
+                // Without it a panel growing to the LEFT of the current one shifts the whole
+                // camera row (visible jumps when swiping left on mobile).
+                resizeOnContentsReady: true,
+                align: "center",
+                duration: 350
+            });
+
+            const flickingElement = this.#flicking?.element;
+            if (flickingElement) {
+                flickingElement.addEventListener('wheel', this.#wheel_event_bound, { passive: false });
+                this.#eventListeners.push({ element: flickingElement, handler: this.#wheel_event_bound, type: 'wheel' });
+            }
+        }
+    }
+
+    #toggleView() {
+        if (!this.#viewReady || this.#isDestroying || this.#deleting) return;
+        this.#platformDropdown.close();
+        this.#search.flush();
+        if (this.#flicking?.animating) this.#flicking.control.stopAnimation();
+        const index = this.#activeView?.currentPanel?.index ?? 0;
+        const items = this.#viewItems;
+        this.#keyRepeat.stop();
+        clearTimeout(this.#wheelReleaseTimer);
+        this.#wheelReleaseTimer = null;
+        this.#vme.getGamepadManager()?.clearBrowserNavigation();
+        this.#grid?.destroy();
+        this.#grid = null;
+        if (this.#flicking) {
+            this.#clearPanels();
+            this.#flicking.destroy();
+            this.#flicking = null;
+        }
+        // Wheel listeners belong to the old viewport; card clicks are removed by #clearPanels.
+        this.#eventListeners = this.#eventListeners.filter(entry => {
+            if (entry.type !== 'wheel') return true;
+            entry.element.removeEventListener(entry.type, entry.handler);
+            return false;
+        });
+        for (const id of ['flicking', 'save-grid']) document.getElementById(id).classList.remove('view-enter', 'view-exit');
+        this.#useGrid = !this.#useGrid;
+        StorageManager.storeValue(SAVE_BROWSER_VIEW, this.#useGrid ? 'grid' : 'coverflow');
+        this.#createView();
+        this.#appendPanels(items, index);
+        if (!this.#grid && items.length) this.#flicking.moveTo(index, 0).catch(() => {});
+        this.#updateUI();
+        this.#setUIReady(true);
+        this.#revealToolbar();
+        this.#initGamepadNavigation();
+    }
+
+    #initGamepadNavigation() {
         const gamepadManager = this.#vme.getGamepadManager();
         if (gamepadManager) {
-            const buttonIds = ['saveBrowserUiBack', 'platformDropdownContainer', 'saveBrowserUiDelete', 'saveBrowserUiLoad', 'saveBrowserUiOpen'];
+            const buttonIds = ['saveBrowserUiBack', 'saveBrowserUiView', 'platformDropdownContainer', 'saveBrowserUiDelete', 'saveBrowserUiLoad', 'saveBrowserUiOpen'];
             // Platform-filter overlay (shell style) - only in gamepad skin mode.
-            const overlay = document.body.classList.contains('gamepad-browser-skin') ? {
-                xOpens: true,   // X opens this overlay (platform filter)
+            const skin = document.body.classList.contains('gamepad-browser-skin');
+            const overlay = {
+                xOpens: skin, topBar: !skin,
                 show: () => this.showPlatformOverlay(),
                 isOpen: () => this.isPlatformOverlayOpen(),
                 navigate: (d) => this.navigatePlatformOverlay(d),
                 select: () => this.selectPlatformOverlay(),
-                hide: () => this.#hidePlatformOverlay()
-            } : null;
+                hide: () => this.#hidePlatformOverlay(),
+                search: {
+                    isAvailable: () => !this.#isGameView,
+                    handleInput: gamepad => !this.#isGameView && !this.isPlatformOverlayOpen() && this.#search.handleGamepad(gamepad),
+                },
+            };
 
-            gamepadManager.initBrowserNavigation(this.#flicking, buttonIds, () => {
+            gamepadManager.initBrowserNavigation(this.#activeView, buttonIds, () => {
                 if (this.#isGameView) {
                     this.#showGameList(this.#lastGamePosition);
                 } else {
@@ -470,11 +674,9 @@ export class SaveBrowser {
                     this.#vme.toggleScreen(VME.CURRENT_SCREEN.MENU);
                 }
             }, this.#platformDropdown, overlay);
-            // Start view = game list -> A = Select (init defaults to 'Load').
-            gamepadManager.setBrowserPanelAction('Select');
+            // Match the current level after changing the layout.
+            gamepadManager.setBrowserPanelAction(this.#isGameView ? 'Load' : 'Select');
         }
-
-        this.#vme.toggleScreen(VME.CURRENT_SCREEN.SAVE_BROWSER);
     }
 
     close(skipPlatformUpdate = false) {
@@ -505,6 +707,7 @@ export class SaveBrowser {
      */
     showPlatformOverlay() {
         if (!this.#platformDropdown) return;
+        this.#search.finish();
         const options = this.#platformDropdown.options || [];
         if (options.length === 0) return;
 
@@ -516,6 +719,7 @@ export class SaveBrowser {
             document.getElementById('save-browser').appendChild(overlay);
         }
         overlay.innerHTML = '';
+        this.#platformDropdown.setSearchQuery('');
 
         // Overlay breadcrumb - identical to the static one (with active filter),
         // so opening it causes no jump or text change.
@@ -532,8 +736,28 @@ export class SaveBrowser {
             + `<span class="gm-crumb gm-crumb-section">${currentText}</span>`;
         overlay.appendChild(crumb);
 
+        const query = document.createElement('div');
+        query.className = 'custom-dropdown-query platform-overlay-query';
+        query.setAttribute('aria-live', 'polite');
+        overlay.appendChild(query);
         const list = document.createElement('div');
         list.className = 'gm-list gm-browser-overlay-list';
+        overlay.appendChild(list);
+        this.#renderPlatformOverlayOptions();
+
+        this.#updateOverlayFocus();
+        overlay.classList.add('visible');
+    }
+
+    #renderPlatformOverlayOptions() {
+        const overlay = document.getElementById('savePlatformOverlay');
+        const query = overlay.querySelector('.platform-overlay-query');
+        query.textContent = this.#platformDropdown.searchQuery;
+        query.hidden = !query.textContent;
+        const list = overlay.querySelector('.gm-browser-overlay-list');
+        list.replaceChildren();
+        const options = this.#platformDropdown.getVisibleOptions();
+        const current = this.#currentPlatformFilter;
         this.#overlayItems = [];
         options.forEach((opt, i) => {
             const row = document.createElement('div');
@@ -552,12 +776,10 @@ export class SaveBrowser {
             list.appendChild(row);
             this.#overlayItems.push(row);
         });
-        overlay.appendChild(list);
-
-        this.#overlayFocus = Math.max(0, options.findIndex(o => o.value === current));
         this.#overlayOptions = options;
+        const focused = this.#platformDropdown.options[this.#platformDropdown.focusedIndex]?.value;
+        this.#overlayFocus = Math.max(0, options.findIndex(option => option.value === focused));
         this.#updateOverlayFocus();
-        overlay.classList.add('visible');
     }
 
     #updateOverlayFocus() {
@@ -597,6 +819,7 @@ export class SaveBrowser {
     #hidePlatformOverlay() {
         const o = document.getElementById('savePlatformOverlay');
         if (o) o.classList.remove('visible');
+        this.#platformDropdown?.setSearchQuery('');
     }
 
     /** Updates the 3rd breadcrumb segment from the active filter (e.g. 'A800' / 'All platforms'). */
@@ -626,20 +849,26 @@ export class SaveBrowser {
     #deleteSelectedPanel() {
         // deleteSave is async: a second quick tap would otherwise remove another panel
         // (the one now at the same index) from the carousel without deleting its save.
-        if (this.#deleting) return;
-        const flicking = this.#flicking;
-        const activePanel = flicking.currentPanel;
+        if (this.#deleting || this.#filterEditing) return;
+        const flicking = this.#activeView;
+        const activePanel = flicking?.currentPanel;
         if (activePanel != null) {
             this.#deleting = true;
             const id = activePanel.element.getAttribute('data-id');
             const gameKey = decodeURIComponent(activePanel.element.getAttribute('data-game-key'));
             const intId = parseInt(id, 10);
-            const max = this.#flicking.panelCount - 1;
+            const max = this.#viewItems.length - 1;
             const currentIndex = activePanel.index;
 
             this.#db.deleteSave(intId).then(() => {
                 // Browser closed/reopened while deleting.
-                if (this.#flicking !== flicking) return;
+                if (this.#activeView !== flicking) return;
+                this.#viewItems = this.#viewItems.filter(item => item.id !== intId);
+                if (this.#grid) {
+                    if (!this.#viewItems.length) this.#showGameList(this.#lastGamePosition);
+                    else { this.#grid.setItems(this.#viewItems, Math.min(currentIndex, this.#viewItems.length - 1)); this.#updateUI(); }
+                    return;
+                }
                 this.#flicking.remove(activePanel.index);
 
                 if (this.#flicking.panelCount > 0) {
@@ -667,14 +896,15 @@ export class SaveBrowser {
     }
 
     #loadSelected() {
+        if (this.#filterEditing) return;
         if (this.#selected && !this.#launched) {
             this.#launched = true;
-            const activePanel = this.#flicking.currentPanel;
+            const activePanel = this.#activeView?.currentPanel;
             if (activePanel != null) {
                 const id = activePanel.element.getAttribute('data-id');
 
                 document.getElementById('saveBrowserUi').style.display = "none";
-                const flickingElement = document.querySelector('#flicking');
+                const flickingElement = document.getElementById(this.#useGrid ? 'save-grid' : 'flicking');
                 if (flickingElement) {
                     flickingElement.style.opacity = "0";
                 }
@@ -721,6 +951,19 @@ export class SaveBrowser {
 
     #destroy() {
         this.#isDestroying = true;
+        this.#setViewReady(false);
+        this.#platformDropdown?.close();
+        clearTimeout(this.#toolbarEntryTimer);
+        this.#toolbarEntryTimer = null;
+        this.#toolbarEntryPending = false;
+        document.getElementById('save-browser').classList.remove('toolbar-enter-pending', 'toolbar-enter');
+        this.#viewGeneration++;
+        this.#gameListReady = false;
+        this.#gameListItems = [];
+        this.#search.reset();
+        this.#searchSelectionKey = null;
+        this.#lastSearchQuery = '';
+        this.#lastGameKey = null;
         this.#keyRepeat.stop();
 
         this.#buttonElements.forEach(button => {
@@ -730,9 +973,9 @@ export class SaveBrowser {
         });
         this.#buttonElements.clear();
 
-        this.#eventListeners.forEach(({ element, handler, type = 'change' }) => {
+        this.#eventListeners.forEach(({ element, handler, type = 'change', capture = false }) => {
             if (element && handler) {
-                element.removeEventListener(type, handler);
+                element.removeEventListener(type, handler, capture);
             }
         });
         this.#eventListeners = [];
@@ -742,6 +985,13 @@ export class SaveBrowser {
             this.#platformDropdown.setValue('all');
         }
 
+        this.#grid?.destroy();
+        this.#grid = null;
+        this.#viewItems = [];
+        document.getElementById('save-grid').classList.remove('view-exit', 'view-enter');
+        document.getElementById('save-grid').style.removeProperty('opacity');
+        document.getElementById('flicking').classList.remove('view-exit', 'view-enter');
+        document.getElementById('flicking').style.removeProperty('opacity');
         if (this.#flicking) {
             this.#flicking.off("changed");
             this.#flicking.off("move");
@@ -755,6 +1005,7 @@ export class SaveBrowser {
             URL.revokeObjectURL(url);
         });
         this.#urlsToRevoke.clear();
+        this.#screenshotUrls.clear();
 
         this.#selected = false;
         this.#launched = false;
@@ -776,24 +1027,93 @@ export class SaveBrowser {
         this.#isDestroying = false;
     }
 
-    #handleKeyboard(event) {
-        if (!this.#flicking || this.#flicking.animating) {
+    #activateSelection() {
+        const panel = this.#activeView?.currentPanel;
+        if (this.#filterEditing || !panel || !this.#selected || !this.#uiReady || this.#activeView.animating || this.#isDestroying) return;
+        if (this.#isGameView) this.#loadSelected();
+        else this.#showGameSaves(panel.element.dataset.programName, panel.element.dataset.platformId, panel.element.dataset.gameKey);
+    }
+
+    #openKeyboardFilter() {
+        if (this.#isGameView || !this.#gameListReady || !this.#viewReady || this.isPlatformOverlayOpen()) return false;
+        if (document.body.classList.contains('gamepad-browser-skin')) {
+            this.#focusCards();
+            this.showPlatformOverlay();
+            return true;
+        }
+        document.getElementById('platformFilterContainer').classList.remove('hidden');
+        this.#revealToolbar();
+        this.#search.flush();
+        this.#search.finish();
+        this.#keyRepeat.stop();
+        clearTimeout(this.#wheelReleaseTimer);
+        this.#wheelReleaseTimer = null;
+        if (this.#flicking?.animating) {
+            this.#flicking.control.stopAnimation();
+            this.#setUIReady(true);
+        }
+        const dropdown = this.#platformDropdown.getElement();
+        this.#platformDropdown.open();
+        if (document.activeElement !== dropdown) dropdown.focus({ preventScroll: true });
+        return true;
+    }
+
+    #focusCards() {
+        document.getElementById('save-browser').focus({ preventScroll: true });
+    }
+
+    #handleFilterKeyboard(event) {
+        event.stopPropagation();
+        if (!this.#gameListReady || this.#isGameView) { event.preventDefault(); return; }
+        if (event.key === 'Tab') {
+            event.preventDefault();
+            this.#platformDropdown.close();
+            this.#focusCards();
             return;
         }
-    
+        this.#platformDropdown.handleKeyDown(event);
+        if (['Enter', ' ', 'Escape'].includes(event.key) && !this.#platformDropdown.isDropdownOpen()) this.#focusCards();
+    }
+
+    #handleKeyboard(event) {
+        if (event.repeat && ['Enter', 'Escape', 'Tab'].includes(event.key)) { event.preventDefault(); return; }
+        if (this.isPlatformOverlayOpen()) {
+            if (this.#platformDropdown.handleSearchKey(event)) { this.#renderPlatformOverlayOptions(); return; }
+            event.preventDefault();
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') this.navigatePlatformOverlay(event.key === 'ArrowDown' ? 1 : -1);
+            else if (event.key === 'Enter') { this.selectPlatformOverlay(); this.#focusCards(); }
+            else if (event.key === 'Escape' || event.key === 'Tab') { this.#hidePlatformOverlay(); this.#focusCards(); }
+            return;
+        }
+        if (this.#filterEditing) {
+            this.#handleFilterKeyboard(event);
+            return;
+        }
+        const interactive = event.target.closest?.('button, input, textarea, [contenteditable="true"], .custom-dropdown');
+        if (event.key === 'Tab' && !event.shiftKey && !interactive && this.#openKeyboardFilter()) {
+            event.preventDefault();
+            return;
+        }
+
+        if (event.target === document.getElementById('saveBrowserUiView') && ['Enter', ' '].includes(event.key)) {
+            event.preventDefault();
+            if (!event.repeat) this.#toggleView();
+            return;
+        }
+        if (!this.#isGameView && !this.isPlatformOverlayOpen() && this.#search.handleKeyboard(event)) return;
+        if (!this.#activeView || this.#activeView.animating) return;
+        if (this.#grid && ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+            event.preventDefault();
+            if (event.key === 'ArrowRight') this.#grid.focusNext();
+            else if (event.key === 'ArrowLeft') this.#grid.focusPrev();
+            else this.#grid.focusRow(event.key === 'ArrowDown' ? 1 : -1);
+            return;
+        }
+
         if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
             this.#keyRepeat.press(event, event.key === "ArrowRight" ? 1 : -1);
         } else if (event.key === "Enter") {
-            const activePanel = this.#flicking.currentPanel;
-            if (activePanel && this.#selected && this.#uiReady) {
-                if (!this.#isGameView) {
-                    const programName = activePanel.element.getAttribute('data-program-name');
-                    const platformId = activePanel.element.getAttribute('data-platform-id');
-                    this.#showGameSaves(programName, platformId, activePanel.element.getAttribute('data-game-key'));
-                } else {
-                    this.#loadSelected();
-                }
-            }
+            this.#activateSelection();
         } else if (event.key === "Escape" || event.key === "Backspace") {
             if (this.#isGameView) {
                 this.#showGameList(this.#lastGamePosition);
@@ -805,6 +1125,7 @@ export class SaveBrowser {
     }
 
     #handleWheel(event) {
+        if (this.#filterEditing) { event.preventDefault(); return; }
         const flicking = this.#flicking;
         if (!flicking) {
             return;
@@ -933,131 +1254,94 @@ export class SaveBrowser {
         return gameMap;
     }
 
+    #isCurrentView(generation, flicking) {
+        return generation === this.#viewGeneration && this.#activeView === flicking && !this.#isDestroying;
+    }
+
     #showGameList(targetPosition = null, onReady = null) {
         if (this.#isDestroying) { onReady?.(); return; }
-    
+        const preferredKey = this.#isGameView ? this.#lastGameKey : null;
         this.#isGameView = false;
+        this.#gameListReady = false;
+        this.#setViewReady(false);
+        const generation = ++this.#viewGeneration;
+        const flicking = this.#activeView;
+        this.#search.setAvailable(true);
         this.#setUIReady(false);
-
-        // Breadcrumb: back to game list -> 3rd segment shows the platform filter again.
         this.#updateCrumbFilter();
-
-        // Legend: in game-list view A = Select (enter the game's saves), not Load.
         this.#vme.getGamepadManager()?.setBrowserPanelAction('Select');
 
-        const container = document.querySelector('#save-browser');
-        if (!container) { onReady?.(); return; }
-
-        container.setAttribute('data-view', 'game-list');
-    
-        const platformFilterContainer = document.querySelector('#platformFilterContainer');
-        if (platformFilterContainer) {
-            platformFilterContainer.style.display = '';
-            platformFilterContainer.classList.add('hidden');
-        }
-    
+        const container = document.getElementById('save-browser');
+        container.dataset.view = 'game-list';
+        const platformContainer = document.getElementById('platformFilterContainer');
+        platformContainer.style.display = '';
         container.classList.add('transitioning');
-        const flickingElement = document.querySelector('#flicking');
-        if (flickingElement) {
-            flickingElement.classList.add('view-exit');
-        }
-    
-        const emptyElement = document.getElementById('saveBrowserEmpty');
-        if (emptyElement) {
-            emptyElement.style.display = "none";
-        }
-    
-        const loadData = async () => {
+        const viewport = document.getElementById(this.#useGrid ? 'save-grid' : 'flicking');
+        viewport.classList.add('view-exit');
+        const empty = document.getElementById('saveBrowserEmpty');
+        empty.style.display = 'none';
+        const load = async () => {
             try {
-                // Read the saves while the old view fades out, not after.
-                const itemsPromise = this.#db.getAllSaveMeta();
+                const pending = this.#db.getAllSaveMeta();
                 await new Promise(resolve => setTimeout(resolve, VIEW_EXIT_MS));
-    
-                this.#clearPanels();
-    
-                const items = await itemsPromise;
-                const gameMap = this.#groupSavesByGame(items);
-                let latestSaves = Array.from(gameMap.values())
-                    .map(game => game.latestSave);
-    
-                if (this.#currentPlatformFilter !== "all") {
-                    latestSaves = latestSaves.filter(item =>
-                        item.platform_id === this.#currentPlatformFilter
-                    );
+                const items = await pending;
+                if (!this.#isCurrentView(generation, flicking)) return;
+                this.#gameListItems = Array.from(this.#groupSavesByGame(items).values()).map(game => game.latestSave);
+                // Populate platforms before applying the title filter, including zero-result searches.
+                for (const item of this.#gameListItems) {
+                    if (item.platform_id === 'md') item.platform_id = 'smd';
+                    const platform = Object.values(SelectedPlatforms).find(value => value.platform_id === item.platform_id);
+                    this.#addFilterItem(item.platform_id, platform?.short_name || String(item.platform_id).toUpperCase());
                 }
-    
-                if (latestSaves.length > 0 && flickingElement && !this.#isDestroying) {
-                    flickingElement.classList.remove('view-exit');
-                    flickingElement.classList.add('view-enter');
-    
-                    await this.#appendPanels(latestSaves);
-    
-                    if (platformFilterContainer) {
-                        platformFilterContainer.style.display = '';
-                        if (this.#platformDropdown) {
-                            this.#platformDropdown.setValue(this.#currentPlatformFilter);
-                        }
-                    }
-    
-                    if (targetPosition !== null && this.#flicking) {
-                        const maxIndex = this.#flicking.panelCount - 1;
-                        const safePosition = Math.min(Math.max(0, targetPosition), maxIndex);
-                        await this.#flicking.moveTo(safePosition, 0);
-                    }
-
-                    // Show the cards together with the view-enter animation (the .transitioning
-                    // rule hides them; dropping it only at the end delayed them by another fade).
-                    container.classList.remove('transitioning');
-
-                    // New carousel ready -> signal to drop the curtain/overlay.
-                    onReady?.();
-
-                    setTimeout(() => {
-                        if (platformFilterContainer && !this.#isDestroying) {
-                            platformFilterContainer.classList.remove('hidden');
-                        }
-                    }, 50);
-                } else if (emptyElement) {
-                    showBrowserEmpty(emptyElement,
-                        browserT('browser.saves.empty'), browserT('browser.saves.emptyHint'));
-                    onReady?.();
-                }
-    
+                const platformItems = this.#currentPlatformFilter === 'all' ? this.#gameListItems
+                    : this.#gameListItems.filter(item => item.platform_id === this.#currentPlatformFilter);
+                this.#gameListReady = true;
+                const matches = this.#search.setItems(platformItems);
+                this.#platformDropdown?.setValue(this.#currentPlatformFilter);
+                this.#renderGameList(matches, preferredKey, targetPosition ?? 0);
+                platformContainer.classList.remove('hidden');
+                this.#setViewReady(true);
+                viewport.classList.remove('view-exit');
+                if (matches.length) viewport.classList.add('view-enter');
+                container.classList.remove('transitioning');
+                onReady?.();
                 setTimeout(() => {
-                    if (!this.#isDestroying) {
-                        container.classList.remove('transitioning');
-                        if (flickingElement) {
-                            flickingElement.classList.remove('view-enter');
-                        }
-                        
-                        if (this.#flicking) {
-                            this.#flicking.resize();
-                            if (this.#flicking.currentPanel) {
-                                this.#flicking.moveTo(this.#flicking.currentPanel.index, 0);
-                            }
-                        }
-                        
-                        this.#setUIReady(true);
-                    }
+                    if (!this.#isCurrentView(generation, flicking)) return;
+                    this.#revealToolbar();
+                }, 50);
+                setTimeout(() => {
+                    if (!this.#isCurrentView(generation, flicking)) return;
+                    viewport.classList.remove('view-enter');
+                    this.#setUIReady(true);
                 }, VIEW_ENTER_MS);
-    
             } catch (error) {
-                showBrowserEmpty(emptyElement, browserT('browser.saves.loadError'));
+                if (!this.#isCurrentView(generation, flicking)) return;
+                container.classList.remove('transitioning');
+                viewport.classList.remove('view-exit', 'view-enter');
+                platformContainer.classList.remove('hidden');
+                this.#revealToolbar();
+                showBrowserEmpty(empty, browserT('browser.saves.loadError'));
                 this.#setUIReady(true);
                 onReady?.();
             }
         };
-
-        loadData();
+        load();
     }
 
     #showGameSaves(gameId, platformId, encodedGameKey) {
+        if (this.#filterEditing) return;
         const gameKey = decodeURIComponent(encodedGameKey);
-        this.#lastGamePosition = this.#flicking.currentPanel
-          ? this.#flicking.currentPanel.index
+        this.#lastGamePosition = this.#activeView.currentPanel
+          ? this.#activeView.currentPanel.index
           : 0;
     
         this.#isGameView = true;
+        this.#lastGameKey = encodedGameKey;
+        this.#gameListReady = false;
+        this.#setViewReady(false);
+        const generation = ++this.#viewGeneration;
+        const flicking = this.#activeView;
+        this.#search.setAvailable(false);
         this.#setUIReady(false);
 
         // Breadcrumb: 3rd segment = game title (instead of platform filter) in saves view.
@@ -1076,17 +1360,19 @@ export class SaveBrowser {
         }
     
         container.classList.add('transitioning');
-        const flickingElement = document.querySelector('#flicking');
+        const flickingElement = document.getElementById(this.#useGrid ? 'save-grid' : 'flicking');
         flickingElement.classList.add('view-exit');
 
         // Read the saves while the old view fades out, not after.
         const itemsPromise = this.#db.getAllSaveMeta();
     
         setTimeout(() => {
+            if (!this.#isCurrentView(generation, flicking)) return;
             this.#clearPanels();
     
             itemsPromise
                 .then(items => {
+                    if (!this.#isCurrentView(generation, flicking)) return;
                     const gameSaves = items
                         .filter(item =>
                             saveGameKey(item) === gameKey
@@ -1097,10 +1383,12 @@ export class SaveBrowser {
                         flickingElement.classList.remove('view-exit');
                         flickingElement.classList.add('view-enter');
                         this.#appendPanels(gameSaves);
+                        this.#setViewReady(true);
                         container.classList.remove('transitioning');
                     }
     
                     setTimeout(() => {
+                        if (!this.#isCurrentView(generation, flicking)) return;
                         container.classList.remove('transitioning');
                         flickingElement.classList.remove('view-enter');
                         
@@ -1113,6 +1401,12 @@ export class SaveBrowser {
                         
                         this.#setUIReady(true);
                     }, VIEW_ENTER_MS);
+                }).catch(() => {
+                    if (!this.#isCurrentView(generation, flicking)) return;
+                    container.classList.remove('transitioning');
+                    flickingElement.classList.remove('view-exit', 'view-enter');
+                    showBrowserEmpty(document.getElementById('saveBrowserEmpty'), browserT('browser.saves.loadError'));
+                    this.#setUIReady(true);
                 });
         }, VIEW_EXIT_MS);
     }

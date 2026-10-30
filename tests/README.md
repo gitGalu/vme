@@ -97,3 +97,47 @@ bounded grid rendering, and observer/image cleanup. It uses mock storage and doe
 not import ROMs or change IndexedDB. To use the actual private Atari collection's
 thumbnails on the dev server, pass
 `{ zipUrl: '/vme/assets/a8_vme_collection.zip', switches: 24 }`.
+
+Collection Browser title search: in a fresh isolated app page, import
+`tests/collection-search.browser.js` through the same `/@fs/<repository>/` prefix,
+then run `await runCollectionSearchTests()`. It covers grid and coverflow filtering,
+case/diacritics and literal queries, no-result launch guards, native editing keys,
+selection restoration, view switching, debounce cancellation, the gamepad keyboard,
+and launching the matching game. Storage and launches are mocked; no ROMs or
+IndexedDB records are changed. Open search with the magnifier, by typing, or with
+Y on a gamepad. Enter (including the native search key) applies the latest query
+and activates the selected game in one step. Down transfers focus to the cards;
+Left/Right and Backspace still edit the search field. On the gamepad, X returns to
+the results and A activates a card. Escape/B clears and closes search.
+
+Touch search uses the existing VM/E CLI keyboard instead of the system keyboard.
+In a fresh touch-enabled app context, import `tests/collection-touch-search.browser.js`
+and run `await runCollectionTouchSearchTests()`. It covers letters/space, Clear,
+held Backspace and cancellation, keyboard stacking and layout restoration, single
+Enter launch, and returning input to the CLI. Storage and launches are mocked.
+
+Save Browser title search: in a fresh isolated app page, import
+`tests/save-search.browser.js` and run `await runSaveSearchTests()`. It checks
+matching displayed game names (including archive versions and custom captions),
+combined title/platform filters, immediate Enter, no-result guards, gamepad entry,
+query/selection restoration after visiting a game's saves, metadata read counts,
+screenshot URL reuse/cleanup, and closing during a pending read. Storage is mocked.
+Both browsers use `src/ui/BrowserSearch.js`; Save Browser suspends it while showing
+individual saves and resumes the filter when returning to the game list.
+
+Save Browser also supports the Collection-style virtual grid. Run
+`await runSaveSearchTests({ grid: true })` as well as the default list case. Both
+check repeated layout switches, selection/query/platform preservation, game-level
+navigation and screenshot URL reuse/cleanup. The chosen layout is remembered.
+
+Save Browser keyboard filter: Tab from cards opens the platform dropdown; Up/Down
+preview a platform, Enter applies it, Escape cancels, and either returns focus to
+the cards. Search text is retained. `runSaveSearchTests()` covers keyboard ownership
+in both layouts and changing layout before the entrance animation completes.
+
+The Save Browser platform dropdown supports typing to narrow options and Backspace
+to remove characters. All platforms stays visible and is focused when nothing
+matches. Enter applies the preview; Escape cancels it. The query is cleared when
+the filter closes. This also works in the gamepad skin's platform-selection panel.
+The Save Browser regression covers typed matches, literal/case-insensitive input,
+hidden-option navigation, Backspace, cancellation and the unmatched fallback.

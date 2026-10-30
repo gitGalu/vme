@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <div id="save-browser">
+    <div id="save-browser" tabindex="-1">
         <!-- Breadcrumb skorki trybu pada (widoczny tylko gdy body.gamepad-browser-skin).
              3. segment = aktywny filtr platformy (aktualizowany w SaveBrowser). -->
         <div class="gm-browser-crumb"><span class="gm-crumb gm-crumb-app">VM/E</span><span class="gm-crumb-sep">›</span><span class="gm-crumb gm-crumb-section" id="saveBrowserCrumbLabel">Save states</span><span class="gm-crumb-sep">›</span><span class="gm-crumb gm-crumb-section" id="saveBrowserCrumbFilter">All platforms</span></div>
@@ -84,10 +84,36 @@
             <span class="flicking-arrow-prev"></span>
             <span class="flicking-arrow-next"></span>
         </div>
+        <div id="save-grid" class="collection-grid" style="display:none;">
+            <div class="collection-grid-spacer collection-grid-spacer-top"></div>
+            <div class="collection-grid-cells"></div>
+            <div class="collection-grid-spacer collection-grid-spacer-bottom"></div>
+        </div>
+        <div id="saveGridFadeTop" class="collection-grid-fade collection-grid-fade-top"></div>
+        <div id="saveGridFadeBottom" class="collection-grid-fade collection-grid-fade-bottom"></div>
+        <form id="saveBrowserSearch" role="search" hidden>
+            <div class="browser-search-row">
+                <div class="browser-search-field">
+                    <input id="saveBrowserSearchInput" type="search" inputmode="none" readonly placeholder="Search titles…" aria-label="Search titles" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
+                    <div class="browser-search-mirror" aria-hidden="true"><span class="browser-search-mirror-value"></span><span class="browser-search-caret"></span></div>
+                </div>
+                <button id="saveBrowserSearchClear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Z"/><path d="m13 9 5 6m0-6-5 6"/></svg></button>
+                <output id="saveBrowserSearchCount" aria-live="polite"></output>
+                <button id="saveBrowserSearchClose" type="button" aria-label="Close search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div id="saveBrowserSearchKeyboard" hidden></div>
+        </form>
         <div id="saveBrowserUi">
             <div id="saveBrowserUiBack" class="clickable-area disabled">
                 <img src="./assets/images/arrow.png" alt="Back"></img>
             </div>
+            <button id="saveBrowserUiView" class="clickable-area" type="button" title="Switch to grid view" aria-label="Switch to grid view">
+                <svg class="view-icon-grid" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+                <svg class="view-icon-coverflow" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="1.5"/><path d="M2 5v10M18 5v10"/></svg>
+            </button>
+            <button id="saveBrowserSearchToggle" type="button" title="Search titles" aria-label="Search titles" aria-controls="saveBrowserSearch" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+            </button>
             <div id="platformFilterContainer">
                 <select id="platformFilter" class="minimal-combobox">
                     <option value="all">All</option>
@@ -120,6 +146,21 @@
             <span class="flicking-arrow-prev"></span>
             <span class="flicking-arrow-next"></span>
         </div>
+        <button id="collectionBrowserSearchToggle" type="button" title="Search titles" aria-label="Search titles" aria-controls="collectionBrowserSearch" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        </button>
+        <form id="collectionBrowserSearch" role="search" hidden>
+            <div class="browser-search-row">
+                <div class="browser-search-field">
+                    <input id="collectionBrowserSearchInput" type="search" inputmode="none" readonly placeholder="Search titles…" aria-label="Search titles" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
+                    <div class="browser-search-mirror" aria-hidden="true"><span class="browser-search-mirror-value"></span><span class="browser-search-caret"></span></div>
+                </div>
+                <button id="collectionBrowserSearchClear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Z"/><path d="m13 9 5 6m0-6-5 6"/></svg></button>
+                <output id="collectionBrowserSearchCount" aria-live="polite"></output>
+                <button id="collectionBrowserSearchClose" type="button" aria-label="Close search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div id="collectionBrowserSearchKeyboard" hidden></div>
+        </form>
         <div id="collectionBrowserUi">
             <div id="collectionBrowserUiBack" class="clickable-area disabled"><img
                     src="./assets/images/arrow.png"></img></div>

@@ -1,11 +1,16 @@
 export class CustomDropdown {
-    constructor(containerId, options = [], initialValue = null) {
+    constructor(containerId, options = [], initialValue = null, { searchable = false, pinnedValue = null } = {}) {
         this.containerId = containerId;
+        this.searchable = searchable;
+        this.pinnedValue = pinnedValue;
+        this.searchQuery = '';
         this.options = options; // {value, text}
         this.selectedValue = initialValue || (options.length > 0 ? options[0].value : null);
         this.isOpen = false;
         this.focusedIndex = 0;
         this.changeCallback = null;
+        this.openChangeCallback = null;
+        this.outsideClickTimer = null;
 
         this.toggle = this.toggle.bind(this);
         this.close = this.close.bind(this);
@@ -18,6 +23,10 @@ export class CustomDropdown {
 
     onChange(callback) {
         this.changeCallback = callback;
+    }
+
+    onOpenChange(callback) {
+        this.openChangeCallback = callback;
     }
 
     getValue() {
@@ -65,6 +74,13 @@ export class CustomDropdown {
 
         const optionsList = document.createElement('div');
         optionsList.className = 'custom-dropdown-options';
+        this.queryElement = null;
+        if (this.searchable) {
+            this.queryElement = document.createElement('div');
+            this.queryElement.className = 'custom-dropdown-query';
+            this.queryElement.setAttribute('aria-live', 'polite');
+            optionsList.appendChild(this.queryElement);
+        }
 
         this.options.forEach((option, index) => {
             const optionEl = document.createElement('div');
@@ -94,6 +110,7 @@ export class CustomDropdown {
 
         dropdown.addEventListener('keydown', this.handleKeyDown);
         dropdown.setAttribute('tabindex', '0');
+        if (this.searchable) this.setSearchQuery(this.searchQuery);
     }
 
     setWidthForLongestOption() {
@@ -160,19 +177,26 @@ export class CustomDropdown {
 
         const selectedIndex = this.options.findIndex(opt => opt.value === this.selectedValue);
         this.focusedIndex = selectedIndex >= 0 ? selectedIndex : 0;
-        this.updateFocusedOption();
+        if (this.searchable) this.setSearchQuery('');
+        else this.updateFocusedOption();
+        this.openChangeCallback?.(true);
 
-        setTimeout(() => {
-            document.addEventListener('click', this.handleOutsideClick);
+        this.outsideClickTimer = setTimeout(() => {
+            this.outsideClickTimer = null;
+            if (this.isOpen) document.addEventListener('click', this.handleOutsideClick);
         }, 0);
     }
 
     close() {
+        clearTimeout(this.outsideClickTimer);
+        this.outsideClickTimer = null;
         if (!this.isOpen) return;
 
         this.isOpen = false;
         this.dropdown.classList.remove('open');
+        if (this.searchable) this.setSearchQuery('');
         document.removeEventListener('click', this.handleOutsideClick);
+        this.openChangeCallback?.(false);
     }
 
     selectOption(value) {
@@ -190,6 +214,7 @@ export class CustomDropdown {
     }
 
     handleKeyDown(e) {
+        if (this.isOpen && this.handleSearchKey(e)) return;
         if (!this.isOpen) {
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault();
@@ -201,13 +226,11 @@ export class CustomDropdown {
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                this.focusedIndex = Math.min(this.focusedIndex + 1, this.options.length - 1);
-                this.updateFocusedOption();
+                this.moveFocus(1);
                 break;
             case 'ArrowUp':
                 e.preventDefault();
-                this.focusedIndex = Math.max(this.focusedIndex - 1, 0);
-                this.updateFocusedOption();
+                this.moveFocus(-1);
                 break;
             case 'Enter':
             case ' ':
@@ -223,12 +246,65 @@ export class CustomDropdown {
         }
     }
 
+    getVisibleIndices() {
+        const terms = normalize(this.searchQuery).trim().split(/\s+/).filter(Boolean);
+        return this.options.flatMap((option, index) => {
+            const text = normalize(`${option.text} ${option.value}`);
+            return option.value === this.pinnedValue || terms.every(term => text.includes(term)) ? [index] : [];
+        });
+    }
+
+    getVisibleOptions() {
+        return this.getVisibleIndices().map(index => this.options[index]);
+    }
+
+    setSearchQuery(query) {
+        if (!this.searchable) return;
+        this.searchQuery = query;
+        const visible = this.getVisibleIndices();
+        const selected = this.options.findIndex(option => option.value === this.selectedValue);
+        this.focusedIndex = query.trim()
+            ? (visible.find(index => this.options[index].value !== this.pinnedValue) ?? visible[0] ?? -1)
+            : (visible.includes(selected) ? selected : visible[0] ?? -1);
+        const indices = new Set(visible);
+        this.optionsListElement?.querySelectorAll('.custom-dropdown-option').forEach((el, index) => {
+            el.hidden = !indices.has(index);
+        });
+        if (this.queryElement) {
+            this.queryElement.textContent = query;
+            this.queryElement.hidden = !query;
+        }
+        this.updateFocusedOption();
+    }
+
+    handleSearchKey(event) {
+        if (!this.searchable || event.ctrlKey || event.metaKey || event.altKey || event.isComposing || event.keyCode === 229) return false;
+        if (event.key === 'Backspace') {
+            event.preventDefault();
+            this.setSearchQuery(Array.from(this.searchQuery).slice(0, -1).join(''));
+            return true;
+        }
+        if (Array.from(event.key).length === 1 && (event.key !== ' ' || this.searchQuery)) {
+            event.preventDefault();
+            this.setSearchQuery(this.searchQuery + event.key);
+            return true;
+        }
+        return false;
+    }
+
+    moveFocus(delta) {
+        const visible = this.getVisibleIndices();
+        const position = visible.indexOf(this.focusedIndex);
+        this.focusedIndex = visible[Math.max(0, Math.min(position + delta, visible.length - 1))] ?? -1;
+        this.updateFocusedOption();
+    }
+
     updateFocusedOption() {
         const optionElements = this.optionsListElement.querySelectorAll('.custom-dropdown-option');
         optionElements.forEach((el, index) => {
-            if (index === this.focusedIndex) {
+            if (index === this.focusedIndex && !el.hidden) {
                 el.classList.add('focused');
-                el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                if (this.isOpen) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             } else {
                 el.classList.remove('focused');
             }
@@ -265,12 +341,10 @@ export class CustomDropdown {
         if (!this.isOpen) return false;
 
         if (direction === 'up') {
-            this.focusedIndex = Math.max(this.focusedIndex - 1, 0);
-            this.updateFocusedOption();
+            this.moveFocus(-1);
             return true;
         } else if (direction === 'down') {
-            this.focusedIndex = Math.min(this.focusedIndex + 1, this.options.length - 1);
-            this.updateFocusedOption();
+            this.moveFocus(1);
             return true;
         }
         return false;
@@ -289,9 +363,14 @@ export class CustomDropdown {
     }
 
     destroy() {
+        this.close();
         document.removeEventListener('click', this.handleOutsideClick);
         if (this.dropdown) {
             this.dropdown.removeEventListener('keydown', this.handleKeyDown);
         }
     }
+}
+
+function normalize(value) {
+    return String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 }

@@ -8,6 +8,7 @@ import { StorageManager } from "./storage/StorageManager.js";
 import { BOOT_TO, BOOT_TO_COLLECTION_BROWSER, COLLECTION_BROWSER_COLLECTION_INDEX, COLLECTION_BROWSER_ITEM_INDEX, COLLECTION_BROWSER_VIEW } from './Constants.js';
 import { t, browserT } from './i18n/shellStrings.js';
 import { CollectionGrid } from './CollectionGrid.js';
+import { BrowserSearch } from './ui/BrowserSearch.js';
 import { ToastManager } from './ui/ToastManager.js';
 import { setBackdropImage, clearBackdrop } from './ui/BrowserBackdrop.js';
 import { CarouselKeyRepeat } from './ui/CarouselKeyRepeat.js';
@@ -46,6 +47,10 @@ export class CollectionBrowser {
     #viewGeneration = 0;
     #viewTimers = new Set();
     #viewFrames = new Set();
+    #search;
+    #sourceReady = false;
+    #searchSelectionId = null;
+    #lastSearchQuery = '';
 
     #choiceItems = [];
     #choiceActions = [];
@@ -63,6 +68,21 @@ export class CollectionBrowser {
         this.#db = storage_manager;
         this.#cli = cli;
         this.#isDragging = false;
+        this.#search = new BrowserSearch(items => this.#applySearch(items), () => {
+            // Closing an already-cleared filter skips setItems, but still removes
+            // the search padding. Recenter using the normal browser layout.
+            if (!this.#search.isOpen) this.#grid?.scrollFocusedIntoView(true);
+            const gm = this.#vme.getGamepadManager();
+            if (!gm?.hasGamepad?.()) return;
+            if (this.#search.padActive) {
+                gm?.showLegendActions?.([
+                    { glyph: 'A', label: t('legend.type') },
+                    { glyph: 'B', label: t('legend.back') },
+                    { glyph: 'Y', label: t('legend.delete') },
+                    { glyph: 'X', label: t('legend.list') },
+                ]);
+            } else gm?.updateBrowserLegend?.();
+        }, () => this.#activateSelection(), () => this.#vme.getKeyboardManager?.());
 
         this.#kb_event_bound = this.#handleKeyboard.bind(this);
         this.#keyRepeat = new CarouselKeyRepeat((direction, duration) => {
@@ -219,6 +239,12 @@ export class CollectionBrowser {
     
     /** Gamepad skin calls this screen "Collections", the desktop/touch UI "Compilations". */
     #showEmpty() {
+        if (this.#search.query && this.#sourceReady) {
+            showBrowserEmpty(document.getElementById('collectionBrowserEmpty'),
+                browserT('browser.search.empty'), browserT('browser.search.emptyHint'));
+            clearBackdrop(document.getElementById('collection-flicking-background'));
+            return;
+        }
         const prefix = document.body.classList.contains('gamepad-browser-skin')
             ? 'browser.collection' : 'browser.compilation';
         showBrowserEmpty(document.getElementById('collectionBrowserEmpty'),
@@ -308,6 +334,8 @@ export class CollectionBrowser {
 
     async open(collectionIndex = 1, collectionItemIndex = 1) {
         this.#destroy();
+        this.#search.bind();
+        if (!this.#search.query) this.#searchSelectionId = collectionItemIndex;
         const generation = this.#viewGeneration;
         let div = document.querySelector('#collection-browser');
         div.classList.add('show');
@@ -391,29 +419,13 @@ export class CollectionBrowser {
             this.#isDragging = false;
         });
 
-        let isAnimating = false;
-        const handlePanelClick = (index, element) => {
-            if (isAnimating || this.#isDragging || !this.#uiReady) return;
-
-            const activePanel = this.#flicking.currentPanel;
-            const isAlreadyActive = activePanel && activePanel.element === element;
-
-            if (isAlreadyActive) {
-                if (this.#flicking.animating) {
-                    return;
-                }
-                if (element.dataset.save !== "undefined") {
-                    this.#restoreSelected();
-                } else {
-                    this.#loadSelected();
-                }
-            } else {
-                isAnimating = true;
-                this.#flicking.moveTo(index).finally(() => {
-                    isAnimating = false;
-                });
-            }
-        };
+        this.#flicking.on("moveStart", () => {
+            this.#flicking?.panels.forEach(panel => panel.element.classList.remove('active'));
+            document.getElementById('collectionBrowserUiLoad').classList.add('disabled');
+            document.getElementById('collectionBrowserUiRestore').classList.add('disabled');
+            this.#selected = false;
+            this.#isDragging = true;
+        });
 
         this.#items = [];
 
@@ -426,6 +438,8 @@ export class CollectionBrowser {
             .then(items => {
                 if (generation !== this.#viewGeneration) return;
                 if (items.length == 0) {
+                    this.#sourceReady = true;
+                    this.#search.setItems(items);
                     self.#updateActivePanel();
                     this.#settleBackdropZoom();
                     this.#setUIReady(true);
@@ -448,7 +462,7 @@ export class CollectionBrowser {
                             flickingElement.classList.add('view-enter');
                         }
                         
-                        const newPanels = items.map(item => {
+                        items.forEach(item => {
                             const saveAvailable = saveMeta.
                                 filter(save => save.platform_id == item.platform_id && (save.rom_data_id == item.rom_data_id
                                     || (item.rom_hash && save.launch_core_config?._vmeArchive?.archiveHash === item.rom_hash)))
@@ -461,44 +475,9 @@ export class CollectionBrowser {
                                 // id != save_data_id (e.g. after an in-game save).
                                 item.save_data_id = saveAvailable.id;
                             }
-
-                            return self.#createPanelHTML(item);
                         });
-                        // One layout/content-readiness pass instead of one per image.
-                        flicking.append(newPanels);
-                        this.#items = items;
-
-                        const panels = document.querySelectorAll(".flicking-panel");
-                        // click only (as in SaveBrowser): a tap already produces a click and
-                        // preventClickOnDrag suppresses it after a swipe.
-                        panels.forEach((panel, index) => {
-                            panel.addEventListener("click", () => handlePanelClick(index, panel));
-                        });
-
-                        this.#flicking.on("moveStart", e => {
-                            const panels = document.querySelectorAll(".flicking-panel");
-                            panels.forEach(panel => panel.classList.remove("active"));
-                            document.getElementById('collectionBrowserUiLoad').classList.add('disabled');
-                            document.getElementById('collectionBrowserUiRestore').classList.add('disabled');
-                            this.#selected = false;
-                            this.#isDragging = true;
-                        });
-
-                        const targetIndex = self.#flicking.panels.findIndex(panel => 
-                            panel.element.dataset.id === String(collectionItemIndex));
-
-                        if (targetIndex >= 0) {
-                            self.#flicking.moveTo(targetIndex, 0);
-                            
-                            self.#flicking.resize();
-                            
-                            this.#scheduleView(() => {
-                                if (self.#flicking && self.#flicking.panels.length > targetIndex) {
-                                    self.#flicking.moveTo(targetIndex, 0);
-                                    
-                                }
-                            }, 50);
-                        }
+                        this.#sourceReady = true;
+                        this.#renderCoverflowItems(this.#search.setItems(items), collectionItemIndex);
 
                         // The viewport's view-enter animation already fades the row in.
                         // Animating every image separately allocates many iOS GPU layers.
@@ -533,7 +512,8 @@ export class CollectionBrowser {
                 isOpen: () => this.isLaunchChoiceOpen(),
                 navigate: (d) => this.navigateLaunchChoice(d),
                 select: () => this.selectLaunchChoice(),
-                hide: () => this.#hideLaunchChoiceOverlay()
+                hide: () => this.#hideLaunchChoiceOverlay(),
+                search: { handleInput: gamepad => !this.isLaunchChoiceOpen() && this.#search.handleGamepad(gamepad) }
             };
             gamepadManager.initBrowserNavigation(this.#flicking, buttonIds, () => {
                 StorageManager.clearValue(BOOT_TO);
@@ -579,10 +559,10 @@ export class CollectionBrowser {
 
         const saveMeta = await this.#db.getAllSaveMeta({ screenshots: false });   // only matched by id/hash
         if (generation !== this.#viewGeneration) return;
-        const items = await this.#db.getCollectionItems();
+        const allItems = await this.#db.getCollectionItems();
         if (generation !== this.#viewGeneration) return;
 
-        items.forEach(item => {
+        allItems.forEach(item => {
             const saveAvailable = saveMeta
                 .filter(save => save.platform_id == item.platform_id && (save.rom_data_id == item.rom_data_id
                     || (item.rom_hash && save.launch_core_config?._vmeArchive?.archiveHash === item.rom_hash)))
@@ -598,6 +578,8 @@ export class CollectionBrowser {
             }
         });
 
+        this.#sourceReady = true;
+        const items = this.#search.setItems(allItems);
         this.#items = items;
 
         if (items.length === 0) {
@@ -631,15 +613,11 @@ export class CollectionBrowser {
 
         // Grid manages its own focus/launch gating; the coverflow #selected/#uiReady flags should
         // be "ready" so the shared launch methods run.
-        this.#selected = true;
+        this.#selected = items.length > 0;
+        this.#grid.on('changed', () => this.#onGridFocusChanged());
+        this.#onGridFocusChanged();
         this.#setUIReady(true);
-
-        if (!skin && items.length > 0) {
-            // Top bar Continue/Load + backdrop follow the focused card.
-            this.#bindLaunchButtons();
-            this.#grid.on('changed', () => this.#onGridFocusChanged());
-            this.#onGridFocusChanged();
-        }
+        if (!skin) this.#bindLaunchButtons();
 
         StorageManager.storeValue(BOOT_TO, BOOT_TO_COLLECTION_BROWSER);
 
@@ -652,7 +630,8 @@ export class CollectionBrowser {
                 isOpen: () => this.isLaunchChoiceOpen(),
                 navigate: (d) => this.navigateLaunchChoice(d),
                 select: () => this.selectLaunchChoice(),
-                hide: () => this.#hideLaunchChoiceOverlay()
+                hide: () => this.#hideLaunchChoiceOverlay(),
+                search: { handleInput: gamepad => !this.isLaunchChoiceOpen() && this.#search.handleGamepad(gamepad) }
             };
             // Pass the grid facade (not Flicking). No top-bar buttons in grid mode.
             gamepadManager.initBrowserNavigation(
@@ -666,10 +645,58 @@ export class CollectionBrowser {
 
     /** Desktop/touch grid: Continue/Load state and backdrop for the focused card. */
     #onGridFocusChanged() {
-        const hasSave = this.#grid?.getFocusedItem()?.save_data_id !== undefined;
-        document.getElementById('collectionBrowserUiLoad').classList.remove('disabled');
-        document.getElementById('collectionBrowserUiRestore').classList.toggle('disabled', !hasSave);
-        this.#updateBackground();
+        const item = this.#grid?.getFocusedItem();
+        this.#selected = !!item;
+        document.getElementById('collectionBrowserUiLoad').classList.toggle('disabled', !item);
+        document.getElementById('collectionBrowserUiRestore').classList.toggle('disabled', !item || item.save_data_id === undefined);
+        if (item) {
+            document.getElementById('collectionBrowserEmpty').style.display = 'none';
+            this.#updateBackground();
+        } else this.#showEmpty();
+    }
+
+    #applySearch(items) {
+        if (!this.#sourceReady || this.#launched) return;
+        this.#keyRepeat.stop();
+        let id = this.#activePanel()?.element.dataset.id;
+        if (!this.#lastSearchQuery && this.#search.query) this.#searchSelectionId = id ?? this.#searchSelectionId;
+        if (!this.#search.query) id = this.#searchSelectionId ?? id;
+        this.#lastSearchQuery = this.#search.query;
+        this.#items = items;
+        if (this.#useGrid) {
+            const index = Math.max(0, items.findIndex(item => String(item.id) === String(id)));
+            this.#grid.setItems(items, index);
+            this.#onGridFocusChanged();
+        } else this.#renderCoverflowItems(items, id);
+        this.#setUIReady(true);
+    }
+
+    #renderCoverflowItems(items, selectedId) {
+        const flicking = this.#flicking;
+        if (!flicking) return;
+        if (flicking.animating) flicking.control.stopAnimation();
+        clearTimeout(this.#wheelReleaseTimer);
+        this.#wheelReleaseTimer = null;
+        this.#items = items;
+        this.#selected = false;
+        if (flicking.panelCount) flicking.remove(0, flicking.panelCount);
+        if (items.length) {
+            flicking.append(items.map(item => this.#createPanelHTML(item)));
+            flicking.panels.forEach((panel, index) => {
+                panel.element.addEventListener('click', () => {
+                    if (!this.#uiReady || this.#isDragging || flicking.animating) return;
+                    if (flicking.currentPanel === panel) {
+                        if (panel.element.dataset.save !== 'undefined') this.#restoreSelected();
+                        else this.#loadSelected();
+                    } else flicking.moveTo(index).catch(() => {});
+                });
+            });
+            const index = Math.max(0, items.findIndex(item => String(item.id) === String(selectedId)));
+            flicking.resize();
+            flicking.moveTo(index, 0).catch(() => {});
+        }
+        this.#isDragging = false;
+        this.#updateActivePanel();
     }
 
     #bindLaunchButtons() {
@@ -699,6 +726,7 @@ export class CollectionBrowser {
      */
     #toggleView() {
         if (!this.#uiReady) return;
+        this.#search.flush();
         const id = this.#useGrid
             ? this.#grid?.getFocusedItem()?.id
             : this.#flicking?.currentPanel?.element?.getAttribute('data-id');
@@ -718,6 +746,9 @@ export class CollectionBrowser {
 
         document.removeEventListener("keydown", this.#kb_event_bound);
         this.#destroy();
+        this.#search.reset();
+        this.#lastSearchQuery = '';
+        this.#searchSelectionId = null;
         this.#cli.reset();
 
         // Back to the menu (not a launch): restore the CLI theme background - the autostart
@@ -971,6 +1002,8 @@ export class CollectionBrowser {
     }
 
     #destroy() {
+        this.#sourceReady = false;
+        this.#search.unbind();
         this.#viewGeneration++;
         this.#viewTimers.forEach(timer => clearTimeout(timer));
         this.#viewTimers.clear();
@@ -1048,7 +1081,14 @@ export class CollectionBrowser {
         }
     }
 
+    #activateSelection() {
+        if (!this.#selected || !this.#uiReady || this.#launched || this.#flicking?.animating || this.isLaunchChoiceOpen()) return;
+        if (document.body.classList.contains('gamepad-browser-skin')) this.activateCurrentGame();
+        else this.#loadSelected();
+    }
+
     async #handleKeyboard(event) {
+        if (!this.isLaunchChoiceOpen() && this.#search.handleKeyboard(event)) return;
         if (event.key === "Escape" || event.key === "Backspace") {
             if (this.isLaunchChoiceOpen()) {
                 this.#hideLaunchChoiceOverlay();
@@ -1073,9 +1113,7 @@ export class CollectionBrowser {
             else if (event.key === "ArrowDown") this.#grid.focusRow(1);
             else if (event.key === "ArrowUp") this.#grid.focusRow(-1);
             else if (event.key === "Enter" && !this.isLaunchChoiceOpen()) {
-                // As in coverflow: gamepad skin -> choice overlay / start, desktop -> start fresh.
-                if (document.body.classList.contains('gamepad-browser-skin')) this.activateCurrentGame();
-                else this.#loadSelected();
+                this.#activateSelection();
             }
             return;
         }
@@ -1087,12 +1125,7 @@ export class CollectionBrowser {
         if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
             this.#keyRepeat.press(event, event.key === "ArrowRight" ? 1 : -1);
         } else if (event.key === "Enter") {
-            // Gamepad skin mode: A -> choice overlay (if a save exists) or start fresh.
-            if (document.body.classList.contains('gamepad-browser-skin')) {
-                this.activateCurrentGame();
-            } else {
-                this.#loadSelected();
-            }
+            this.#activateSelection();
         }
     }
 

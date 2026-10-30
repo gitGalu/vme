@@ -30,6 +30,7 @@ export class KeyboardManager {
     #keyboardConfig;
     #gamepadManager = null;
     #cliKeyRepeater;
+    #textInput = null;
 
     #handleCliInputBound;
     #handleEmulationInputBound;
@@ -81,8 +82,7 @@ export class KeyboardManager {
         this.#handleEmulationInputBound = this.#handleEmulationInput.bind(this);
         this.#handleEmulationSpecialBound = this.#handleEmulationSpecial.bind(this);
 
-        this.#cliKeyRepeater = new RepeatPressController(() => !this.#mute
-            && !this.#cli.is_loading()
+        this.#cliKeyRepeater = new RepeatPressController(() => (this.#textInput || (!this.#mute && !this.#cli.is_loading()))
             && s('#keyboardContainer')?.classList.contains('visible'));
 
         this.#initTouchKeyboard();
@@ -476,7 +476,8 @@ export class KeyboardManager {
         });
 
         document.querySelector('#kbCtrlClear').addEventListener('click', (e) => {
-            if (!this.#cli.is_loading()) {
+            if (this.#textInput) this.#textInput.onInput('clear');
+            else if (!this.#cli.is_loading()) {
                 this.#cli.reset();
             }
         });
@@ -601,7 +602,8 @@ export class KeyboardManager {
 
         this.#cliKeyRepeater.bind(s('#keyBackspace'), () => {
             this.playSound('Backspace');
-            this.#cli.process_input('backspace');
+            if (this.#textInput) this.#textInput.onInput('backspace');
+            else this.#cli.process_input('backspace');
         });
         this.#cliKeyRepeater.bind(s('#keySelUp'), () => {
             this.playSound('ArrowUp');
@@ -651,6 +653,10 @@ export class KeyboardManager {
             const keyValue = target.getAttribute('data-value');
             const keyCode = target.getAttribute('data-code');
             this.playSound(keyCode);
+            if (this.#textInput) {
+                this.#textInput.onInput(keyValue);
+                return;
+            }
 
             if (keyValue === 'enter') {
                 const listContainer = document.getElementById('cors_results');
@@ -690,6 +696,7 @@ export class KeyboardManager {
     }
 
     #handleEmulationSpecial(e) {
+        if (this.#textInput) return;
         const type = e.type;
 
         e.preventDefault();
@@ -703,6 +710,10 @@ export class KeyboardManager {
     }
 
     #handleEmulationInput(e) {
+        if (this.#textInput) {
+            if (e.type === 'touchstart') this.#handleCliInput(e);
+            return;
+        }
         const type = e.type;
         e.preventDefault();
         e.stopPropagation();
@@ -747,7 +758,7 @@ export class KeyboardManager {
 
     #keyguardHandler(e) {
         try {
-            if (!this.#mute) return;
+            if (!this.#mute || this.#textInput) return;
             if (e.isTrusted === false) return;
             const kbMode = (window.__VME_KB_MODE)
                 ? window.__VME_KB_MODE
@@ -872,6 +883,31 @@ export class KeyboardManager {
         });
     }
 
+    /** Borrow the existing CLI keyboard for a browser field; release restores its controls. */
+    useTextInput(onInput, onClose) {
+        if (this.#textInput) this.hideTouchKeyboard(false);
+        this.#cliKeyRepeater.cancel();
+        const clear = document.querySelector('#kbCtrlClear');
+        const session = { onInput, onClose, mode: this.#mode, layer: this.#layer, clearLabel: clear.textContent };
+        this.#textInput = session;
+        this.#mode = KeyboardManager.Mode.QWERTY;
+        this.#layer = KeyboardManager.Layer.A;
+        const keyboard = document.querySelector('#keyboard');
+        keyboard.classList.remove('keyboardStrip');
+        keyboard.classList.add('keyboardQwerty');
+        document.querySelector('#kbCtrlArrow').innerHTML = '&#x25B3;';
+        clear.textContent = 'Clear';
+        this.setSelectionPanelVisible(false);
+        this.#refresh();
+        document.body.classList.add('browser-text-keyboard');
+        this.showTouchKeyboard();
+        return () => {
+            if (this.#textInput !== session) return;
+            session.onClose = null;
+            this.hideTouchKeyboard(false);
+        };
+    }
+
     showTouchKeyboard() {
         s('#keyboardContainer').style.display = 'block';
         const btn = document.querySelector('#toggle-keyboard');
@@ -879,7 +915,7 @@ export class KeyboardManager {
 
         s('#keyboardContainer').classList.add('visible');
 
-        if (this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
+        if (!this.#textInput && this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
             this.setSelectionPanelVisible(true);
         } else {
             document.body.classList.remove('selection-mode-active');
@@ -887,9 +923,11 @@ export class KeyboardManager {
     }
 
     hideTouchKeyboard(notifyUi = true) {
+        const textInput = this.#textInput;
+        this.#textInput = null;
         this.#cliKeyRepeater.cancel();
         UiManager.keyboardVisible = false;
-        if (this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
+        if (!textInput && this.#cli && this.#cli.is_selection_mode_active && this.#cli.is_selection_mode_active()) {
             this.#cli.set_selection_mode(false);
         }
         s('#keyboardContainer').classList.remove('visible');
@@ -898,7 +936,7 @@ export class KeyboardManager {
         const btn = document.querySelector('#toggle-keyboard');
         btn.style.visibility = "visible";
 
-        if (this.#gamepadManager && this.#gamepadManager.hasGamepad()) {
+        if (!textInput && this.#gamepadManager && this.#gamepadManager.hasGamepad()) {
             this.#gamepadManager.keyboardHasFocus = false;
             this.#gamepadManager.cliHasFocus = false;
 
@@ -908,7 +946,18 @@ export class KeyboardManager {
             this.#gamepadManager.updateFocus();
         }
 
-        if (notifyUi) {
+        if (textInput) {
+            this.#mode = textInput.mode;
+            this.#layer = textInput.layer;
+            const keyboard = document.querySelector('#keyboard');
+            keyboard.classList.toggle('keyboardQwerty', this.#mode === KeyboardManager.Mode.QWERTY);
+            keyboard.classList.toggle('keyboardStrip', this.#mode === KeyboardManager.Mode.STRIP);
+            document.querySelector('#kbCtrlClear').textContent = textInput.clearLabel;
+            document.querySelector('#kbCtrlArrow').innerHTML = this.#mode === KeyboardManager.Mode.QWERTY ? '&#x25B3;' : '&#x25BD;';
+            document.body.classList.remove('browser-text-keyboard');
+            this.#refresh();
+            textInput.onClose?.();
+        } else if (notifyUi) {
             UiManager.keyboardClosed();
         }
     }

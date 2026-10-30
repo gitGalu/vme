@@ -31,6 +31,7 @@ export class CollectionGrid {
     #spacerBottom;
 
     #items = [];
+    #renderCell = null;
     #onActivate = null;    // (index) => void, supplied by the owner (CollectionBrowser)
 
     #focusedIndex = 0;
@@ -50,13 +51,16 @@ export class CollectionGrid {
     /**
      * @param {object} opts
      * @param {Array}  opts.items      collection items (as from getCollectionItems, with .image / .save_data_id)
+     * @param {string} [opts.rootId] grid container (defaults to the collection grid)
+     * @param {(item:object,index:number)=>Element} [opts.renderCell] optional browser-specific card
      * @param {(index:number)=>void} opts.onActivate launch the item at index (owner reuses its load logic)
      */
-    constructor({ items, onActivate }) {
+    constructor({ items, onActivate, rootId = 'collection-grid', renderCell = null }) {
         this.#items = items || [];
         this.#onActivate = onActivate;
+        this.#renderCell = renderCell;
 
-        this.#root = document.getElementById('collection-grid');
+        this.#root = document.getElementById(rootId);
         this.#cellsEl = this.#root.querySelector('.collection-grid-cells');
         this.#spacerTop = this.#root.querySelector('.collection-grid-spacer-top');
         this.#spacerBottom = this.#root.querySelector('.collection-grid-spacer-bottom');
@@ -108,12 +112,29 @@ export class CollectionGrid {
         this.#focusedCell = null;
         this.#items = [];
         this.#onActivate = null;
+        this.#renderCell = null;
         this.#spacerTop.style.height = '0px';
         this.#spacerBottom.style.height = '0px';
         this.#root.style.display = 'none';
         this.#root.classList.remove('can-scroll-up', 'can-scroll-down');
         this.#changeListeners.clear();
         this.#renderedRange = { start: -1, end: -1 };
+    }
+
+    /** Replace visible results without creating another observer or loading more images. */
+    setItems(items, initialIndex = 0) {
+        this.#cellsEl.replaceChildren();
+        this.#cellEls.clear();
+        this.#focusedCell = null;
+        this.#items = items;
+        this.#focusedIndex = this.#clampIndex(initialIndex);
+        this.#renderedRange = { start: -1, end: -1 };
+        this.#spacerTop.style.height = '0px';
+        this.#spacerBottom.style.height = `${Math.ceil(items.length / this.#cols) * this.#rowHeight()}px`;
+        this.scrollFocusedIntoView(true);
+        this.#render(true);
+        this.#updateScrollFades();
+        this.#changeListeners.forEach(callback => callback());
     }
 
     // --- input-agnostic navigation API ---------------------------------------
@@ -133,6 +154,7 @@ export class CollectionGrid {
 
     /** Mimics Flicking.currentPanel: { index, element } of the focused cell (element used for .active). */
     get currentPanel() {
+        if (!this.#items.length) return null;
         let element = this.#cellEls.get(this.#focusedIndex);
         if (!element && this.#items.length > 0) {
             // The user may scroll away from the selection. Keep its launch metadata
@@ -260,11 +282,16 @@ export class CollectionGrid {
     }
 
     #createCell(index) {
-        const tpl = document.createElement('template');
-        tpl.innerHTML = this.#cellHTML(this.#items[index], index).trim();
-        const cell = tpl.content.firstElementChild;
+        let cell;
+        if (this.#renderCell) cell = this.#renderCell(this.#items[index], index);
+        else {
+            const tpl = document.createElement('template');
+            tpl.innerHTML = this.#cellHTML(this.#items[index], index).trim();
+            cell = tpl.content.firstElementChild;
+        }
+        cell.dataset.index = index;
         const credits = String(this.#items[index].credits ?? '').trim();
-        if (credits) {
+        if (credits && !this.#renderCell) {
             const line = document.createElement('span');
             line.className = 'collection-grid-credits';
             line.textContent = credits;
