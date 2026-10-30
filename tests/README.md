@@ -52,9 +52,9 @@ Pass `'coleco'` to either function to check ColecoVision's keypad and placement.
 Application version detection: run `npm run test:app-version`.
 VM/E records `package.json`'s version after successful startup in
 `VME_INTERNAL.LAST_APP_VERSION`. First launch establishes a baseline; only a higher
-numeric version reports an update. Automatic splash playback remains disabled.
+numeric version reports an update.
 `vme:version-checked` on `document` carries `{ currentVersion, previousVersion,
-isFirstRun, isUpdate }` in `detail`, for the future splash to consume.
+isFirstRun, isUpdate }` in `detail`.
 
 To test in an isolated dev browser, set
 `localStorage.setItem('VME_INTERNAL.LAST_APP_VERSION', '0.96')` and reload.
@@ -74,7 +74,16 @@ check that a downgrade does not report an update.
 The `SPLASH` command is manual and CLI-only: type `SPLASH` and press Enter.
 It can be replayed regardless of update state; Escape dismisses it. The renderer
 is loaded on demand, honors reduced motion and releases its WebGL resources on close.
-Automatic splash playback after an update remains disabled.
+Automatic splash playback is enabled only in PWA mode. It uses a separate marker,
+`VME_INTERNAL.LAST_PWA_SPLASH_VERSION`, so visits in a browser tab cannot consume it.
+The first PWA launch shows the app name and version; a newer release shows the
+localized update caption. Refreshing the same release does not replay it. Escape
+and devices without WebGL also consume that release's automatic playback attempt.
+PWA detection uses iOS standalone mode, standalone display mode, or the manifest's
+fullscreen launch with `source=pwa`. The URL parameter alone does not enable it.
+To test, use a fresh isolated PWA context: remove the PWA marker for the welcome
+splash, set it to `0.96` for the update splash, and reload after dismissing to verify
+one-time playback. A browser tab must leave the PWA marker unchanged.
 The manual caption is `Virtual Machine / Emulator` plus the current version.
 Update playback uses `Updated to version` (or its configured-language translation).
 

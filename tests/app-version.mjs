@@ -73,3 +73,24 @@ test('a failed write preserves the update for a later launch', () => {
     assert.equal(version.remember(), false);
     assert.equal(new AppVersion('0.97', storage).info.isUpdate, true);
 });
+
+test('PWA first launch is independent of ordinary browser visits', () => {
+    const storage = memoryStorage('0.97');
+    const firstPwa = new AppVersion('0.97', storage, AppVersion.PWA_STORAGE_KEY);
+    assert.equal(firstPwa.info.isFirstRun, true);
+    assert.equal(firstPwa.info.isUpdate, false);
+    firstPwa.remember();
+    assert.equal(storage.getValue(AppVersion.PWA_STORAGE_KEY), '0.97');
+    assert.equal(new AppVersion('0.97', storage, AppVersion.PWA_STORAGE_KEY).info.isFirstRun, false);
+});
+
+test('a browser upgrade does not consume an update in the PWA', () => {
+    const storage = memoryStorage('0.97');
+    storage.storeValue(AppVersion.PWA_STORAGE_KEY, '0.96');
+    new AppVersion('0.97', storage).remember();
+    const pwa = new AppVersion('0.97', storage, AppVersion.PWA_STORAGE_KEY);
+    assert.equal(pwa.info.isUpdate, true);
+    pwa.remember();
+    assert.equal(new AppVersion('0.97', storage, AppVersion.PWA_STORAGE_KEY).info.isUpdate, false);
+    assert.equal(storage.getValue(AppVersion.STORAGE_KEY), '0.97');
+});

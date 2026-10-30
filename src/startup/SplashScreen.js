@@ -34,7 +34,7 @@ async function displaySplash({ version = __APP_VERSION__, mode = 'update', onRea
     caption.className = 'caption';
     const versionLabel = document.createElement('span');
     versionLabel.textContent = version;
-    caption.append(mode === 'manual' ? 'Virtual Machine / Emulator · ' : `${t('splash.updated')} `, versionLabel);
+    caption.append(mode === 'manual' || mode === 'welcome' ? 'Virtual Machine / Emulator · ' : `${t('splash.updated')} `, versionLabel);
     shadow.append(style, stage, caption);
 
     const background = [...document.body.children].filter(element => element instanceof HTMLElement);

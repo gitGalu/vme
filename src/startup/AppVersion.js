@@ -18,15 +18,18 @@ function isNewerVersion(current, previous) {
 
 export class AppVersion {
     static STORAGE_KEY = 'LAST_APP_VERSION';
+    static PWA_STORAGE_KEY = 'LAST_PWA_SPLASH_VERSION';
 
     #storage;
+    #storageKey;
     #info;
 
-    constructor(currentVersion, storage) {
+    constructor(currentVersion, storage, storageKey = AppVersion.STORAGE_KEY) {
         this.#storage = storage;
+        this.#storageKey = storageKey;
         let previousVersion = null;
         try {
-            const stored = storage.getValue(AppVersion.STORAGE_KEY);
+            const stored = storage.getValue(this.#storageKey);
             if (versionParts(stored)) previousVersion = stored;
         } catch {
             // Storage can be unavailable; version detection must not block startup.
@@ -46,7 +49,7 @@ export class AppVersion {
     // Call only after successful startup. Detection alone does not consume an update.
     remember() {
         try {
-            this.#storage.storeValue(AppVersion.STORAGE_KEY, this.#info.currentVersion);
+            this.#storage.storeValue(this.#storageKey, this.#info.currentVersion);
             return true;
         } catch {
             return false;

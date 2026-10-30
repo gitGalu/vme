@@ -48,6 +48,15 @@ export class EnvironmentManager {
         return (window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches;
     }
 
+    static isPwa() {
+        if (EnvironmentManager.isStandalone()) return true;
+        // VM/E's manifest launches fullscreen with source=pwa. The URL alone
+        // also works in a browser tab, so require the matching display mode.
+        return new URLSearchParams(window.location.search).get('source') === 'pwa'
+            && !document.fullscreenElement
+            && window.matchMedia('(display-mode: fullscreen)').matches;
+    }
+
     static isQuest() {
         var ua = navigator.userAgent;
 

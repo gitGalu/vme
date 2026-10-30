@@ -82,7 +82,11 @@ export async function runSplashTests() {
     assert(document.getElementById('cors_query'), 'Open the normal VM/E app before running this test.');
     assert(!overlay(), 'No splash on normal startup');
     assert(!document.getElementById('menu-item-splash'), 'No shell or menu button for SPLASH');
+    key('Escape');
+    await until(() => document.getElementById('cors_results').textContent.trim().length > 0, 'Default platform status did not appear');
+    const defaultStatus = document.getElementById('cors_results').textContent;
     const savedVersion = localStorage.getItem('VME_INTERNAL.LAST_APP_VERSION');
+    const savedPwaVersion = localStorage.getItem('VME_INTERNAL.LAST_PWA_SPLASH_VERSION');
     const background = [...document.body.children].map(element => [element, element.inert]);
     const previousFocus = document.activeElement;
     let rendererStarted = false;
@@ -116,15 +120,22 @@ export async function runSplashTests() {
     for (const [element, inert] of background) assert(element.inert === inert, 'Restores background interactivity');
     assert(document.activeElement === previousFocus, 'Restores keyboard focus');
     assert(localStorage.getItem('VME_INTERNAL.LAST_APP_VERSION') === savedVersion, 'Manual playback preserves the update marker');
+    assert(localStorage.getItem('VME_INTERNAL.LAST_PWA_SPLASH_VERSION') === savedPwaVersion, 'Manual playback preserves the PWA update marker');
 
-    type('help');
-    assert(document.getElementById('cors_results').textContent.includes('SPLASH'), 'HELP lists the CLI command');
+    assert(document.getElementById('cors_query').textContent === '', 'Natural completion returns to an empty CLI prompt');
+    await until(() => document.getElementById('cors_results').textContent === defaultStatus, 'Natural completion did not restore the default platform status');
+    for (const value of 'help') key(value);
+    assert(document.getElementById('cors_results').textContent.includes('SPLASH'), 'CLI accepts a new command without clearing after playback');
     type('splash');
     key('Enter');
     await until(() => overlay()?.shadowRoot.querySelector('canvas'), 'Repeat playback did not start');
     key('Escape');
     await until(() => !overlay(), 'Escape did not dismiss the splash');
     for (const [element, inert] of background) assert(element.inert === inert, 'Escape restores input');
+    assert(document.getElementById('cors_query').textContent === '', 'Escape returns to an empty CLI prompt');
+    await until(() => document.getElementById('cors_results').textContent === defaultStatus, 'Escape did not restore the default platform status');
+    for (const value of 'help') key(value);
+    assert(document.getElementById('cors_results').textContent.includes('SPLASH'), 'CLI accepts a new command without clearing after Escape');
 
     // A device without WebGL must return to an interactive CLI, too.
     const getContext = HTMLCanvasElement.prototype.getContext;
@@ -136,6 +147,7 @@ export async function runSplashTests() {
         key('Enter');
         await until(() => document.getElementById('cors_results').textContent.includes('Could not display'), 'WebGL failure was not reported');
         assert(!overlay(), 'Failure removes the overlay');
+        assert(document.getElementById('cors_query').textContent === '', 'WebGL failure also consumes the command');
         for (const [element, inert] of background) assert(element.inert === inert, 'Failure restores input');
     } finally {
         HTMLCanvasElement.prototype.getContext = getContext;

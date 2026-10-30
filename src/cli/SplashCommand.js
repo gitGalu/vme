@@ -26,27 +26,42 @@ export class SplashCommand extends CommandBase {
             this.cli.print('Press ENTER to display the splash screen.');
             return;
         }
+        return this.play();
+    }
+
+    async play(mode = 'manual') {
         if (this.#playing) return;
         this.#playing = true;
+        const manual = mode === 'manual';
+        const wasLoading = this.cli.is_loading();
+        if (manual) this.cli.reset();
         this.cli.set_loading(true);
         const navigationEnabled = this.#gamepad.guiNavigationEnabled;
         const triggerEnabled = this.#gamepad.isMenuTriggerEnabled();
         this.#gamepad.setGuiNavigationEnabled(false);
         this.#gamepad.setMenuTrigger(false);
         this.#gamepad.stopAutoRepeat();
+        let cliRestored = false;
+        const restoreCli = () => {
+            if (cliRestored) return;
+            cliRestored = true;
+            if (manual) this.cli.process_input('escape');
+            this.cli.set_loading(wasLoading);
+        };
         try {
             const { showSplash } = await import('../startup/SplashScreen.js');
             await showSplash({
                 version: __APP_VERSION__,
-                mode: 'manual',
+                mode,
                 // Restore the CLI behind the opaque overlay before the final dissolve.
-                onReady: () => this.cli.set_loading(false),
+                onReady: restoreCli,
             });
         } catch (error) {
             console.error('Could not display splash screen', error);
-            this.cli.print('Could not display the splash screen.');
+            restoreCli();
+            if (manual) this.cli.print('Could not display the splash screen.');
         } finally {
-            this.cli.set_loading(false);
+            restoreCli();
             this.#gamepad.setGuiNavigationEnabled(navigationEnabled);
             this.#gamepad.setMenuTrigger(triggerEnabled);
             this.#playing = false;

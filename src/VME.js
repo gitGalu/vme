@@ -136,6 +136,9 @@ export class VME {
         }
 
         const appVersion = new AppVersion(__APP_VERSION__, StorageManager);
+        const pwaVersion = EnvironmentManager.isPwa()
+            ? new AppVersion(__APP_VERSION__, StorageManager, AppVersion.PWA_STORAGE_KEY)
+            : null;
 
         this.#cli = new CLI();
         this.#net = new NetworkManager();
@@ -252,7 +255,8 @@ export class VME {
         this.#cli.register_command(new CheckFixCommand(this.#db));
         this.#cli.register_command(new SetCommand());
         this.#cli.register_command(new BootCommand(this.#pl));
-        this.#cli.register_command(new SplashCommand(this.#gamepad));
+        const splashCommand = new SplashCommand(this.#gamepad);
+        this.#cli.register_command(splashCommand);
 
         this.#cli.register_default('find');
 
@@ -289,8 +293,15 @@ export class VME {
 
         appVersion.remember();
         VME.#versionInfo = appVersion.info;
-        // Future update splash can subscribe here; no splash is enabled in this release.
         document.dispatchEvent(new CustomEvent('vme:version-checked', { detail: appVersion.info }));
+        if (pwaVersion) {
+            // Browser visits must not consume PWA's first launch or update splash.
+            // Remember after startup, including dismissal/fallback, so it is once per release.
+            pwaVersion.remember();
+            if (pwaVersion.info.isFirstRun || pwaVersion.info.isUpdate) {
+                void splashCommand.play(pwaVersion.info.isFirstRun ? 'welcome' : 'update');
+            }
+        }
     }
 
     #addListeners() {
