@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.98] - 2026-10-30
+
+- Save Browser/Collection Browser: add title search and coverflow/grid view toggle
+- Save Browser/Collection Browser: improve card layout, captions, selection feedback and keyboard/touch navigation
+- Save Browser: add keyboard filtering of platform choices
+- add PWA update splashscreen animation
+
 ## [0.97] - 2026-10-29
 
 - add Atari Jaguar emulation (uses Virtual Jaguar core) 
