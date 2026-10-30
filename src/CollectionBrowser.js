@@ -43,6 +43,9 @@ export class CollectionBrowser {
     #backButton;
     #backHandler;
     #viewButton;
+    #viewGeneration = 0;
+    #viewTimers = new Set();
+    #viewFrames = new Set();
 
     #choiceItems = [];
     #choiceActions = [];
@@ -112,6 +115,7 @@ export class CollectionBrowser {
     
     #setUIReady(ready) {
         this.#uiReady = ready;
+        this.#viewButton?.classList.toggle('disabled', !ready);
         const buttons = ['collectionBrowserUiLoad', 'collectionBrowserUiRestore'];
         buttons.forEach(id => {
             const button = document.getElementById(id);
@@ -168,7 +172,6 @@ export class CollectionBrowser {
         if (item.platform_id == "md") item.platform_id = "smd"; //temp fix
         const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
         const platformName = platform?.platform_name || String(item.platform_id || 'Unknown').toUpperCase();
-        const randomDegree = tiltDegrees(item.id);
         
         if (item.image && item.image.startsWith('blob:')) {
             this.#urlsToRevoke.add(item.image);
@@ -176,7 +179,7 @@ export class CollectionBrowser {
         
         return `
         <div class="flicking-panel" data-id="${item.id}" data-save="${item.save_data_id}">
-            <img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}" style="transform: rotate(${randomDegree}deg)">
+            <img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}">
             <div class="flicking-title flicking-title-name">
             <span class="flicking-primary-label">${escapeHTML(item.title)}</span>
             <br/>
@@ -280,29 +283,47 @@ export class CollectionBrowser {
         const flickingWidth = this.#flicking.element.clientWidth;
         const scrollRatio = this.#flicking.camera.position / flickingWidth;
 
-        requestAnimationFrame(() => {
+        this.#requestViewFrame(() => {
             background.style.setProperty('--backdrop-shift', `${scrollRatio * 50}px`);
         });
     }
 
+    #scheduleView(callback, delay) {
+        const generation = this.#viewGeneration;
+        const timer = setTimeout(() => {
+            this.#viewTimers.delete(timer);
+            if (generation === this.#viewGeneration) callback();
+        }, delay);
+        this.#viewTimers.add(timer);
+    }
+
+    #requestViewFrame(callback) {
+        const generation = this.#viewGeneration;
+        const frame = requestAnimationFrame(() => {
+            this.#viewFrames.delete(frame);
+            if (generation === this.#viewGeneration) callback();
+        });
+        this.#viewFrames.add(frame);
+    }
+
     async open(collectionIndex = 1, collectionItemIndex = 1) {
+        this.#destroy();
+        const generation = this.#viewGeneration;
         let div = document.querySelector('#collection-browser');
         div.classList.add('show');
         div.style.opacity = 0;
         
-        setTimeout(() => {
+        this.#scheduleView(() => {
             div.style.opacity = 1;
             
             const bg = document.getElementById('collection-flicking-background');
             if (bg) {
                 bg.classList.remove('show');
-                setTimeout(() => {
+                this.#scheduleView(() => {
                     bg.classList.add('show');
                 }, 10);
             }
         }, 10);
-
-        this.#destroy();
 
         if (this.#backButton && this.#backHandler) {
             addButtonEventListeners(this.#backButton, this.#backHandler);
@@ -323,7 +344,7 @@ export class CollectionBrowser {
         this.#useGrid = skin || StorageManager.getValue(COLLECTION_BROWSER_VIEW, 'coverflow') === 'grid';
         div.dataset.view = this.#useGrid ? 'grid' : 'coverflow';
         if (this.#useGrid) {
-            await this.#openGrid(collectionItemIndex, skin);
+            await this.#openGrid(collectionItemIndex, skin, generation);
             return;
         }
 
@@ -400,12 +421,14 @@ export class CollectionBrowser {
         // while data is still loading - don't touch the old/destroyed instance then.
         const flicking = this.#flicking;
         const saveMeta = await this.#db.getAllSaveMeta({ screenshots: false });   // only matched by id/hash
+        if (generation !== this.#viewGeneration) return;
         this.#db.getCollectionItems()
             .then(items => {
-                if (this.#flicking !== flicking) return;
+                if (generation !== this.#viewGeneration) return;
                 if (items.length == 0) {
                     self.#updateActivePanel();
                     this.#settleBackdropZoom();
+                    this.#setUIReady(true);
                 } else {
                     const container = document.querySelector('#collection-browser');
                     container.classList.add('transitioning');
@@ -414,7 +437,7 @@ export class CollectionBrowser {
                         flickingElement.classList.add('view-exit');
                     }
                     
-                    setTimeout(() => {
+                    this.#scheduleView(() => {
                         if (this.#flicking !== flicking) {
                             container.classList.remove('transitioning');
                             flickingElement?.classList.remove('view-exit');
@@ -425,7 +448,7 @@ export class CollectionBrowser {
                             flickingElement.classList.add('view-enter');
                         }
                         
-                        items.forEach(item => {
+                        const newPanels = items.map(item => {
                             const saveAvailable = saveMeta.
                                 filter(save => save.platform_id == item.platform_id && (save.rom_data_id == item.rom_data_id
                                     || (item.rom_hash && save.launch_core_config?._vmeArchive?.archiveHash === item.rom_hash)))
@@ -439,10 +462,11 @@ export class CollectionBrowser {
                                 item.save_data_id = saveAvailable.id;
                             }
 
-                            const newPanel = self.#createPanelHTML(item);
-                            self.#flicking.append(newPanel);
-                            this.#items.push(item);
+                            return self.#createPanelHTML(item);
                         });
+                        // One layout/content-readiness pass instead of one per image.
+                        flicking.append(newPanels);
+                        this.#items = items;
 
                         const panels = document.querySelectorAll(".flicking-panel");
                         // click only (as in SaveBrowser): a tap already produces a click and
@@ -460,10 +484,6 @@ export class CollectionBrowser {
                             this.#isDragging = true;
                         });
 
-                        panels.forEach(panel => {
-                            panel.style.opacity = '0';
-                        });
-
                         const targetIndex = self.#flicking.panels.findIndex(panel => 
                             panel.element.dataset.id === String(collectionItemIndex));
 
@@ -472,26 +492,17 @@ export class CollectionBrowser {
                             
                             self.#flicking.resize();
                             
-                            setTimeout(() => {
+                            this.#scheduleView(() => {
                                 if (self.#flicking && self.#flicking.panels.length > targetIndex) {
                                     self.#flicking.moveTo(targetIndex, 0);
                                     
-                                    requestAnimationFrame(() => {
-                                        panels.forEach(panel => {
-                                            panel.style.transition = 'opacity 0.3s ease-in';
-                                            panel.style.opacity = '1';
-                                        });
-                                    });
                                 }
                             }, 50);
-                        } else {
-                            panels.forEach(panel => {
-                                panel.style.transition = 'opacity 0.3s ease-in';
-                                panel.style.opacity = '1';
-                            });
                         }
 
-                        setTimeout(() => {
+                        // The viewport's view-enter animation already fades the row in.
+                        // Animating every image separately allocates many iOS GPU layers.
+                        this.#scheduleView(() => {
                             container.classList.remove('transitioning');
                             if (flickingElement) {
                                 flickingElement.classList.remove('view-enter');
@@ -557,7 +568,7 @@ export class CollectionBrowser {
      * wire gamepad navigation via the grid's flicking-like facade. Launch + choice-overlay logic
      * is shared with the coverflow path (activateCurrentGame / showLaunchChoiceOverlay).
      */
-    async #openGrid(collectionItemIndex, skin) {
+    async #openGrid(collectionItemIndex, skin, generation) {
         // Gamepad shell: skin is already on (we branched on it), but ensure legend/return-to-shell
         // are armed. Desktop/touch grid (view toggle) keeps the regular top bar instead.
         if (skin) {
@@ -567,7 +578,9 @@ export class CollectionBrowser {
         }
 
         const saveMeta = await this.#db.getAllSaveMeta({ screenshots: false });   // only matched by id/hash
+        if (generation !== this.#viewGeneration) return;
         const items = await this.#db.getCollectionItems();
+        if (generation !== this.#viewGeneration) return;
 
         items.forEach(item => {
             const saveAvailable = saveMeta
@@ -619,7 +632,7 @@ export class CollectionBrowser {
         // Grid manages its own focus/launch gating; the coverflow #selected/#uiReady flags should
         // be "ready" so the shared launch methods run.
         this.#selected = true;
-        this.#uiReady = true;
+        this.#setUIReady(true);
 
         if (!skin && items.length > 0) {
             // Top bar Continue/Load + backdrop follow the focused card.
@@ -685,12 +698,15 @@ export class CollectionBrowser {
      * handler that open() -> #destroy() is about to unbind.
      */
     #toggleView() {
+        if (!this.#uiReady) return;
         const id = this.#useGrid
             ? this.#grid?.getFocusedItem()?.id
             : this.#flicking?.currentPanel?.element?.getAttribute('data-id');
         StorageManager.storeValue(COLLECTION_BROWSER_VIEW, this.#useGrid ? 'coverflow' : 'grid');
+        this.#setUIReady(false);
+        const generation = this.#viewGeneration;
         Promise.resolve().then(() => {
-            this.open(1, id != null ? parseInt(id, 10) : 1);
+            if (generation === this.#viewGeneration) this.open(1, id != null ? parseInt(id, 10) : 1);
         });
     }
 
@@ -751,8 +767,9 @@ export class CollectionBrowser {
         const id = this.#flicking?.currentPanel?.element?.getAttribute('data-id');
         // Enable the skin now (markReturnToShell + legend); open() will branch to the grid.
         this.#enableGamepadSkin();
+        const generation = this.#viewGeneration;
         Promise.resolve().then(() => {
-            this.open(1, id != null ? parseInt(id, 10) : 1);
+            if (generation === this.#viewGeneration) this.open(1, id != null ? parseInt(id, 10) : 1);
         });
     }
 
@@ -954,6 +971,13 @@ export class CollectionBrowser {
     }
 
     #destroy() {
+        this.#viewGeneration++;
+        this.#viewTimers.forEach(timer => clearTimeout(timer));
+        this.#viewTimers.clear();
+        this.#viewFrames.forEach(frame => cancelAnimationFrame(frame));
+        this.#viewFrames.clear();
+        this.#vme.getGamepadManager()?.clearBrowserNavigation();
+        document.removeEventListener('keydown', this.#kb_event_bound);
         this.#keyRepeat.stop();
         this.#backdropZoomInPending = false;
         this.#urlsToRevoke.forEach(url => {
@@ -991,13 +1015,6 @@ export class CollectionBrowser {
                 this.#flicking.off("moveEnd");
                 this.#flicking.off("moveStart");
                 
-                if (this.#flicking.panelCount > 0) {
-                    const totalPanels = this.#flicking.panelCount;
-                    for (let i = totalPanels - 1; i >= 0; i--) {
-                        this.#flicking.remove(i);
-                    }
-                }
-                
                 this.#flicking.destroy();
             } catch (e) {
                 console.error('Error during flicking cleanup:', e);
@@ -1005,10 +1022,18 @@ export class CollectionBrowser {
             
             this.#flicking = null;
         }
+
+        const viewport = document.getElementById('collection-flicking');
+        viewport?.querySelectorAll('img').forEach(image => image.removeAttribute('src'));
+        viewport?.querySelector('.flicking-camera')?.replaceChildren();
+        viewport?.classList.remove('view-enter', 'view-exit');
+        document.getElementById('collection-browser').classList.remove('transitioning');
+        this.#items = [];
         
         this.#selected = false;
         this.#launched = false;
         this.#uiReady = false;
+        this.#viewButton?.classList.add('disabled');
         this.#isDragging = false;
         if (this.#wheelReleaseTimer) {
             clearTimeout(this.#wheelReleaseTimer);
@@ -1205,15 +1230,4 @@ export class CollectionBrowser {
 
 function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-}
-
-const MAX_TILT_DEG = 6;
-
-/** Stable pseudo-random tilt in [-MAX_TILT_DEG, MAX_TILT_DEG) for a key, so cards keep their angle across rebuilds. */
-function tiltDegrees(key) {
-    let h = 2166136261;
-    for (const ch of String(key)) {
-        h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-    }
-    return ((h >>> 0) % 10000) / 10000 * 2 * MAX_TILT_DEG - MAX_TILT_DEG;
 }

@@ -88,3 +88,12 @@ Also run `await runSplashRenderingTests()` with reduced motion disabled. This
 checks actual colored pixels in the final WebGL framebuffer while modeling a GPU
 that returns NaN for signed `pow` arguments. It catches a black logo even when
 the HTML caption, animation timing and close/replay behavior all work.
+
+Collection Browser lifecycle and virtualization: in a fresh isolated app page,
+import `tests/collection-browser.browser.js` through the `/@fs/<repository>/`
+prefix, then run `await runCollectionBrowserTests()`. It covers overlapping opens,
+closing during database reads, rapid grid/coverflow switching, distant selections,
+bounded grid rendering, and observer/image cleanup. It uses mock storage and does
+not import ROMs or change IndexedDB. To use the actual private Atari collection's
+thumbnails on the dev server, pass
+`{ zipUrl: '/vme/assets/a8_vme_collection.zip', switches: 24 }`.

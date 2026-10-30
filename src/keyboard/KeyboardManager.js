@@ -23,6 +23,7 @@ export class KeyboardManager {
     #touchCapsEnabled = false;
     #audioContextInitialized = false;
     #mute
+    #clicksEnabled = true;
     audioContext;
     audioBuffers = {};
 
@@ -387,11 +388,14 @@ export class KeyboardManager {
     }
 
     clicks_on() {
+        this.#clicksEnabled = true;
         document.addEventListener('keydown', this.keydownHandlerBound, true);
         document.addEventListener('keyup', this.keyupHandlerBound, true);
     }
 
     clicks_off() {
+        this.#clicksEnabled = false;
+        this.keysDown = {};
         document.removeEventListener('keydown', this.keydownHandlerBound, true);
         document.removeEventListener('keyup', this.keyupHandlerBound, true);
     }
@@ -423,7 +427,7 @@ export class KeyboardManager {
     }
 
     playSound(key) {
-        if (this.#mute) return;
+        if (this.#mute || !this.#clicksEnabled) return;
         if (!this.audioContext) {
             console.error("AudioContext is not initialized.");
             return;
@@ -441,6 +445,8 @@ export class KeyboardManager {
     }
 
     playSoundHelper(key) {
+        // Resuming audio may finish after switching away from the CLI.
+        if (this.#mute || !this.#clicksEnabled) return;
         const soundName = this.audioMap[key];
         const audioBuffer = this.audioBuffers[soundName];
         if (audioBuffer) {

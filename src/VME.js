@@ -576,6 +576,7 @@ export class VME {
                 break;
             case VME.CURRENT_SCREEN.SAVE_BROWSER:
                 this.#cli.off();
+                this.#kb.clicks_off();
                 hide('#warningStandalone');
                 hide('#settings');
                 hide('#emulator');
@@ -588,6 +589,7 @@ export class VME {
                 break;
             case VME.CURRENT_SCREEN.COLLECTION_BROWSER:
                 this.#cli.off();
+                this.#kb.clicks_off();
                 hide('#warningStandalone');
                 hide('#save-browser');
                 hide('#emulator');

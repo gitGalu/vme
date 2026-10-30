@@ -1,4 +1,4 @@
-import { saveGameKey } from './utils/ArchivePrograms.js';
+import { archiveSelection, saveGameKey } from './utils/ArchivePrograms.js';
 import { s, addButtonEventListeners, removeButtonEventListeners } from "./dom";
 import { VME } from './VME.js';
 import Flicking from "@egjs/flicking";
@@ -193,6 +193,21 @@ export class SaveBrowser {
         this.#eventListeners = [];
     }
 
+    #displayCaption(item) {
+        const caption = item.caption ?? FileUtils.cleanRomName(item.program_name);
+        const entryPath = archiveSelection(item.launch_core_config)?.entryPath;
+        if (typeof entryPath !== 'string' || !entryPath) return caption;
+
+        const filename = entryPath.split('/').pop();
+        // Auto-generated ZIP captions include the entry and its source archive.
+        // Keep the selected version's filename, including tags such as (v1),
+        // while preserving captions explicitly named by the user.
+        const generated = item.caption == null || item.caption === item.program_name
+            || (typeof caption === 'string' && [entryPath, filename].some(name =>
+                caption === name || caption.startsWith(`${name} · `) || caption.startsWith(`${name} * `)));
+        return generated ? filename : caption;
+    }
+
     #createPanelHTML(item) {
         if (item.platform_id == "md") item.platform_id = "smd"; //temp fix
         const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id)
@@ -208,22 +223,20 @@ export class SaveBrowser {
             this.#urlsToRevoke.add(url);
         }
 
-        // Game list: one card per game (its latest save changes), saves view: one per save.
-        const randomDegree = tiltDegrees(this.#isGameView ? item.id : saveGameKey(item));
-        if (item.caption == undefined) {
-            item.caption = FileUtils.cleanRomName(item.program_name);
-        }
+        const caption = this.#displayCaption(item);
 
         const timestamp = new Date(item.timestamp).toLocaleString();
-        const timeDisplay = this.#isGameView ? `<div class="flicking-title flicking-title-time">${timestamp}</div>` : '';
-        const quicksaveLabel = (this.#isGameView && item.is_quicksave === true) ? `<div class="flicking-title flicking-title-time" style="color: #ff6b9d;">QUICKSAVE</div>` : '';
+        const timeDisplay = this.#isGameView ? `<div class="flicking-title save-card-timestamp">${escapeHTML(timestamp)}</div>` : '';
+        const quicksaveLabel = (this.#isGameView && item.is_quicksave === true) ? `<div class="flicking-title save-card-quicksave">QUICKSAVE</div>` : '';
 
         return `
             <div class="flicking-panel" data-id="${item.id}" data-game-key="${encodeURIComponent(saveGameKey(item))}" data-program-name="${escapeHTML(item.program_name)}" data-platform-id="${platform.platform_id}">
-                <img src="${url}" alt="${escapeHTML(item.program_name)}" style="transform: rotate(${randomDegree}deg)">
-                ${quicksaveLabel}
-                <div class="flicking-title flicking-title-name">${escapeHTML(item.caption)} (${platform.short_name})</div>
-                ${timeDisplay}
+                <img src="${url}" alt="${escapeHTML(item.program_name)}">
+                <div class="save-card-caption">
+                    ${timeDisplay}
+                    <div class="flicking-title flicking-title-name">${escapeHTML(caption)} (${platform.short_name})</div>
+                    ${quicksaveLabel}
+                </div>
             </div>
         `;
     }
@@ -1130,15 +1143,4 @@ export class SaveBrowser {
 
 function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-}
-
-const MAX_TILT_DEG = 6;
-
-/** Stable pseudo-random tilt in [-MAX_TILT_DEG, MAX_TILT_DEG) for a key, so cards keep their angle across rebuilds. */
-function tiltDegrees(key) {
-    let h = 2166136261;
-    for (const ch of String(key)) {
-        h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-    }
-    return ((h >>> 0) % 10000) / 10000 * 2 * MAX_TILT_DEG - MAX_TILT_DEG;
 }

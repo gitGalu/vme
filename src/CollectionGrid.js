@@ -39,6 +39,7 @@ export class CollectionGrid {
     #changeListeners = new Set();
     #renderedRange = { start: -1, end: -1 };
     #cellEls = new Map(); // index -> rendered cell element (reused while it stays in range)
+    #focusedCell = null; // at most one detached cell, for launching an offscreen selection
     #stepLock = false;     // one nav step per animation frame (see #stepLocked)
 
     /** flicking-like facade flag (read by GamepadManager). */
@@ -67,6 +68,10 @@ export class CollectionGrid {
         this.#focusedIndex = this.#clampIndex(initialIndex);
 
         this.#computeLayout();
+        // Establish the total height before restoring a selection near the end.
+        // Otherwise the first render needlessly decodes every row up to that item.
+        this.#spacerBottom.style.height = `${Math.ceil(this.#items.length / this.#cols) * this.#rowHeight()}px`;
+        this.scrollFocusedIntoView(true);
         this.#render(true);
         this.scrollFocusedIntoView(true);
         this.#updateScrollFades();
@@ -100,6 +105,9 @@ export class CollectionGrid {
         }
         this.#cellsEl.innerHTML = '';
         this.#cellEls.clear();
+        this.#focusedCell = null;
+        this.#items = [];
+        this.#onActivate = null;
         this.#spacerTop.style.height = '0px';
         this.#spacerBottom.style.height = '0px';
         this.#root.style.display = 'none';
@@ -125,7 +133,13 @@ export class CollectionGrid {
 
     /** Mimics Flicking.currentPanel: { index, element } of the focused cell (element used for .active). */
     get currentPanel() {
-        const element = this.#cellsEl.querySelector(`.collection-grid-cell[data-index="${this.#focusedIndex}"]`);
+        let element = this.#cellEls.get(this.#focusedIndex);
+        if (!element && this.#items.length > 0) {
+            // The user may scroll away from the selection. Keep its launch metadata
+            // without rendering all the rows between it and the visible window.
+            this.#focusedCell ??= this.#createCell(this.#focusedIndex);
+            element = this.#focusedCell;
+        }
         return { index: this.#focusedIndex, element: element || this.#cellsEl };
     }
 
@@ -164,6 +178,7 @@ export class CollectionGrid {
         const next = this.#clampIndex(index);
         if (next === this.#focusedIndex) return;
         this.#focusedIndex = next;
+        this.#focusedCell = null;
         this.#render(false);
         this.scrollFocusedIntoView(false);
         this.#changeListeners.forEach(cb => { try { cb(); } catch (_) {} });
@@ -201,12 +216,6 @@ export class CollectionGrid {
         let firstRow = Math.floor(scrollTop / rowH) - this.#bufferRows;
         let lastRow = Math.ceil((scrollTop + viewH) / rowH) + this.#bufferRows;
 
-        // Always include the focused row even if scrollTop hasn't caught up yet (smooth scroll is
-        // async) — guarantees currentPanel.element exists for the launch path.
-        const focusRow = Math.floor(this.#focusedIndex / this.#cols);
-        firstRow = Math.min(firstRow, focusRow - this.#bufferRows);
-        lastRow = Math.max(lastRow, focusRow + 1 + this.#bufferRows);
-
         firstRow = Math.max(0, firstRow);
         lastRow = Math.min(totalRows, lastRow);
 
@@ -228,6 +237,7 @@ export class CollectionGrid {
         // the grid blinked for a frame while scrolling.
         for (const [i, el] of this.#cellEls) {
             if (i < start || i >= end) {
+                if (i === this.#focusedIndex) this.#focusedCell = el;
                 el.remove();
                 this.#cellEls.delete(i);
             }
@@ -238,7 +248,8 @@ export class CollectionGrid {
         const after = document.createDocumentFragment();
         for (let i = start; i < end; i++) {
             if (this.#cellEls.has(i)) continue;
-            const el = this.#createCell(i);
+            const el = i === this.#focusedIndex && this.#focusedCell
+                ? this.#focusedCell : this.#createCell(i);
             this.#cellEls.set(i, el);
             (i < keptStart ? before : after).appendChild(el);
         }
@@ -252,6 +263,13 @@ export class CollectionGrid {
         const tpl = document.createElement('template');
         tpl.innerHTML = this.#cellHTML(this.#items[index], index).trim();
         const cell = tpl.content.firstElementChild;
+        const credits = String(this.#items[index].credits ?? '').trim();
+        if (credits) {
+            const line = document.createElement('span');
+            line.className = 'collection-grid-credits';
+            line.textContent = credits;
+            cell.querySelector('.collection-grid-title').after(line);
+        }
         cell.addEventListener('click', () => {
             if (index === this.#focusedIndex) {
                 this.activate();
