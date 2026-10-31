@@ -33,6 +33,7 @@ export class CustomControllerManager extends TouchControllerBase {
     #onPresetActivated;
     #onPickerDismissed;
     #modal;
+    #modalPreviousFocus;
     #modalScrollHintHandler;
     #resizeHandler;
     #isGameFocusEnabledForActivePreset = true;
@@ -69,38 +70,52 @@ export class CustomControllerManager extends TouchControllerBase {
 
         const dialog = document.createElement('div');
         dialog.className = 'custom-controller-dialog';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-label', 'Custom controller');
 
-        const description = document.createElement('p');
-        description.className = 'custom-controller-dialog__hint';
-        description.textContent = 'Select custom touch controller scheme';
-        dialog.appendChild(description);
+        const header = document.createElement('div');
+        header.className = 'custom-controller-dialog__header';
+        const title = document.createElement('h2');
+        title.className = 'custom-controller-dialog__title';
+        title.textContent = 'CUSTOM CONTROLLER';
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'custom-controller-dialog__close';
+        closeButton.setAttribute('aria-label', 'Close controller selection');
+        closeButton.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+        closeButton.addEventListener('click', () => this.#closeModal(true));
+        header.append(title, closeButton);
+        dialog.appendChild(header);
 
         const list = document.createElement('div');
         list.className = 'custom-controller-dialog__list';
         const listShell = document.createElement('div');
         listShell.className = 'custom-controller-dialog__list-shell';
-        const moreHint = document.createElement('div');
-        moreHint.className = 'custom-controller-dialog__more';
-        moreHint.setAttribute('aria-hidden', 'true');
-        moreHint.textContent = 'Scroll for more';
 
         this.#config.presets.forEach((preset) => {
             const item = document.createElement('button');
             item.type = 'button';
             item.className = 'custom-controller-dialog__item';
             item.dataset.presetId = preset.id;
+            item.setAttribute('aria-pressed', String(preset.id === this.#activePresetId));
+
+            const content = document.createElement('span');
+            content.className = 'custom-controller-dialog__item-content';
 
             const name = document.createElement('span');
             name.className = 'custom-controller-dialog__item-name';
             name.textContent = preset.name;
-            item.appendChild(name);
+            content.appendChild(name);
 
             if (preset.description) {
                 const desc = document.createElement('span');
                 desc.className = 'custom-controller-dialog__item-description';
                 desc.textContent = preset.description;
-                item.appendChild(desc);
+                content.appendChild(desc);
             }
+
+            item.appendChild(content);
 
             item.addEventListener('click', () => {
                 this.setActivePreset(preset.id);
@@ -112,10 +127,8 @@ export class CustomControllerManager extends TouchControllerBase {
 
         const updateScrollHint = () => {
             const maxScrollTop = Math.max(0, list.scrollHeight - list.clientHeight);
-            listShell.dataset.hasOverflow = maxScrollTop > 1 ? 'true' : 'false';
-            listShell.dataset.showTopFade = list.scrollTop > 2 ? 'true' : 'false';
-            listShell.dataset.showBottomFade = list.scrollTop < maxScrollTop - 2 ? 'true' : 'false';
-            dialog.dataset.showMore = maxScrollTop > 1 && list.scrollTop < maxScrollTop - 2 ? 'true' : 'false';
+            listShell.dataset.showTopFade = String(maxScrollTop > 2 && list.scrollTop > 2);
+            listShell.dataset.showBottomFade = String(maxScrollTop > 2 && list.scrollTop < maxScrollTop - 2);
         };
         const handleViewportChange = () => {
             requestAnimationFrame(updateScrollHint);
@@ -127,13 +140,33 @@ export class CustomControllerManager extends TouchControllerBase {
 
         listShell.appendChild(list);
         dialog.appendChild(listShell);
-        dialog.appendChild(moreHint);
 
+        overlay.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.#closeModal(true);
+            } else if (event.key === 'Tab') {
+                const buttons = Array.from(dialog.querySelectorAll('button'));
+                const first = buttons[0];
+                const last = buttons[buttons.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            }
+        });
+
+        this.#modalPreviousFocus = document.activeElement;
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
         this.#modal = overlay;
         this.#modalScrollHintHandler = handleViewportChange;
+        closeButton.focus({ preventScroll: true });
         requestAnimationFrame(updateScrollHint);
     }
 
@@ -572,6 +605,10 @@ export class CustomControllerManager extends TouchControllerBase {
             }, 220);
 
             this.#modal = null;
+            if (modalEl.contains(document.activeElement) && this.#modalPreviousFocus?.isConnected) {
+                this.#modalPreviousFocus.focus({ preventScroll: true });
+            }
+            this.#modalPreviousFocus = null;
 
             if (canceled && typeof this.#onPickerDismissed === 'function') {
                 this.#onPickerDismissed();
