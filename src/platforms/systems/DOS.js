@@ -652,9 +652,10 @@ const DOS = {
                                 "keyCode": "39"
                             }
                         },
+                        "quickjoyRole": "left-right",
                         "gridArea": {
-                            "landscape": "39 / 1 / span 14 / span 16",
-                            "portrait": "45 / 1 / span 6 / span 18"
+                            "landscape": "39 / 1 / span 12 / span 16",
+                            "portrait": "38 / 1 / span 13 / span 22"
                         },
                         "labels": [
                             "LEFT",
@@ -679,9 +680,10 @@ const DOS = {
                                 "keyCode": "40"
                             }
                         },
+                        "quickjoyRole": "up-down",
                         "gridArea": {
                             "landscape": "27 / 43 / span 24 / span 8",
-                            "portrait": "39 / 40 / span 12 / span 11"
+                            "portrait": "27 / 41 / span 24 / span 10"
                         },
                         "labels": [
                             "UP",
@@ -701,9 +703,10 @@ const DOS = {
                                 "keyCode": "32"
                             }
                         },
+                        "quickjoyRole": "action",
                         "gridArea": {
                             "landscape": "27 / 35 / span 24 / span 8",
-                            "portrait": "39 / 29 / span 12 / span 11"
+                            "portrait": "27 / 30 / span 24 / span 11"
                         },
                         "label": "SPACE"
                     }
@@ -740,9 +743,10 @@ const DOS = {
                                 "keyCode": "39"
                             }
                         },
+                        "quickjoyRole": "left-right",
                         "gridArea": {
-                            "landscape": "39 / 1 / span 14 / span 16",
-                            "portrait": "45 / 1 / span 6 / span 18"
+                            "landscape": "39 / 1 / span 12 / span 16",
+                            "portrait": "38 / 1 / span 13 / span 22"
                         },
                         "labels": [
                             "LEFT",
@@ -767,9 +771,10 @@ const DOS = {
                                 "keyCode": "40"
                             }
                         },
+                        "quickjoyRole": "up-down",
                         "gridArea": {
                             "landscape": "27 / 43 / span 24 / span 8",
-                            "portrait": "39 / 40 / span 12 / span 11"
+                            "portrait": "27 / 41 / span 24 / span 10"
                         },
                         "labels": [
                             "UP",
@@ -789,9 +794,10 @@ const DOS = {
                                 "keyCode": "16"
                             }
                         },
+                        "quickjoyRole": "action",
                         "gridArea": {
                             "landscape": "27 / 35 / span 24 / span 8",
-                            "portrait": "39 / 29 / span 12 / span 11"
+                            "portrait": "27 / 30 / span 24 / span 11"
                         },
                         "label": "SHIFT"
                     }
@@ -840,8 +846,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "3 / 5 / span 4 / span 4",
-                            "portrait": "26 / 11 / span 2 / span 9"
+                            "landscape": "3 / 5 / span 5 / span 4",
+                            "portrait": "26 / 11 / span 3 / span 10"
                         },
                         "label": "▲"
                     },
@@ -856,8 +862,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "8 / 5 / span 4 / span 4",
-                            "portrait": "29 / 11 / span 2 / span 9"
+                            "landscape": "8 / 5 / span 5 / span 4",
+                            "portrait": "29 / 11 / span 3 / span 10"
                         },
                         "label": "OK"
                     },
@@ -872,8 +878,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "13 / 5 / span 4 / span 4",
-                            "portrait": "32 / 11 / span 2 / span 9"
+                            "landscape": "13 / 5 / span 5 / span 4",
+                            "portrait": "32 / 11 / span 3 / span 10"
                         },
                         "label": "▼"
                     },
@@ -904,8 +910,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 43 / span 8 / span 8",
-                            "portrait": "38 / 32 / span 5 / span 19"
+                            "landscape": "28 / 43 / span 9 / span 8",
+                            "portrait": "39 / 31 / span 5 / span 20"
                         },
                         "label": "PLUNGER"
                     },
@@ -920,8 +926,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 1 / span 8 / span 8",
-                            "portrait": "38 / 1 / span 5 / span 19"
+                            "landscape": "28 / 1 / span 9 / span 8",
+                            "portrait": "39 / 1 / span 5 / span 20"
                         },
                         "label": "TILT"
                     }
@@ -986,8 +992,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 43 / span 8 / span 8",
-                            "portrait": "38 / 32 / span 5 / span 19"
+                            "landscape": "28 / 43 / span 9 / span 8",
+                            "portrait": "39 / 31 / span 5 / span 20"
                         },
                         "label": "TILT<br/>PLUNGER"
                     },
@@ -1002,8 +1008,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 1 / span 8 / span 8",
-                            "portrait": "38 / 1 / span 5 / span 19"
+                            "landscape": "28 / 1 / span 9 / span 8",
+                            "portrait": "39 / 1 / span 5 / span 20"
                         },
                         "label": "TILT<br/>PLUNGER"
                     },
@@ -1018,8 +1024,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "3 / 5 / span 4 / span 4",
-                            "portrait": "26 / 11 / span 2 / span 9"
+                            "landscape": "3 / 5 / span 5 / span 4",
+                            "portrait": "26 / 11 / span 3 / span 10"
                         },
                         "label": "Y"
                     },
@@ -1034,8 +1040,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "8 / 5 / span 4 / span 4",
-                            "portrait": "29 / 11 / span 2 / span 9"
+                            "landscape": "8 / 5 / span 5 / span 4",
+                            "portrait": "29 / 11 / span 3 / span 10"
                         },
                         "label": "N"
                     },
@@ -1050,8 +1056,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "13 / 5 / span 4 / span 4",
-                            "portrait": "32 / 11 / span 2 / span 9"
+                            "landscape": "13 / 5 / span 5 / span 4",
+                            "portrait": "32 / 11 / span 3 / span 10"
                         },
                         "label": "▲"
                     },
@@ -1066,8 +1072,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "18 / 5 / span 4 / span 4",
-                            "portrait": "35 / 11 / span 2 / span 9"
+                            "landscape": "18 / 5 / span 5 / span 4",
+                            "portrait": "35 / 11 / span 3 / span 10"
                         },
                         "label": "▼"
                     }
@@ -1097,7 +1103,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "27 / 16 / span 24 / span 21",
-                            "portrait": "38 / 16 / span 13 / span 19"
+                            "portrait": "39 / 16 / span 12 / span 19"
                         },
                         "label": "worms-pad",
                         "options": {
@@ -1114,8 +1120,8 @@ const DOS = {
                             "type": "joy"
                         },
                         "gridArea": {
-                            "landscape": "32 / 1 / span 19 / span 11",
-                            "portrait": "38 / 1 / span 13 / span 14"
+                            "landscape": "33 / 1 / span 18 / span 11",
+                            "portrait": "39 / 1 / span 12 / span 14"
                         },
                         "label": "worms-mv",
                         "options": {
@@ -1158,8 +1164,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "41 / 40 / span 10 / span 11",
-                            "portrait": "43 / 36 / span 8 / span 15"
+                            "landscape": "42 / 40 / span 9 / span 11",
+                            "portrait": "44 / 36 / span 7 / span 15"
                         },
                         "label": "JUMP"
                     },
@@ -1174,8 +1180,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "3 / 47 / span 4 / span 4",
-                            "portrait": "26 / 42 / span 2 / span 9"
+                            "landscape": "3 / 47 / span 5 / span 4",
+                            "portrait": "26 / 41 / span 3 / span 10"
                         },
                         "label": "ESC"
                     },
@@ -1190,10 +1196,11 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "8 / 43 / span 4 / span 4",
-                            "portrait": "29 / 32 / span 2 / span 9"
+                            "landscape": "8 / 43 / span 5 / span 4",
+                            "portrait": "29 / 31 / span 3 / span 10"
                         },
-                        "label": "PAUSE"
+                        "label": "PAUSE",
+                        "id": "dos-worms-pause"
                     },
                     {
                         "component": "SingleTouchButton",
@@ -1206,8 +1213,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "8 / 47 / span 4 / span 4",
-                            "portrait": "29 / 42 / span 2 / span 9"
+                            "landscape": "8 / 47 / span 5 / span 4",
+                            "portrait": "29 / 41 / span 3 / span 10"
                         },
                         "label": "CENTER"
                     },
@@ -1222,8 +1229,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "13 / 47 / span 4 / span 4",
-                            "portrait": "32 / 42 / span 2 / span 9"
+                            "landscape": "13 / 47 / span 5 / span 4",
+                            "portrait": "32 / 41 / span 3 / span 10"
                         },
                         "label": "ZOOM"
                     },
@@ -1238,8 +1245,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "32 / 40 / span 8 / span 11",
-                            "portrait": "38 / 36 / span 4 / span 15"
+                            "landscape": "33 / 40 / span 8 / span 11",
+                            "portrait": "39 / 36 / span 4 / span 15"
                         },
                         "label": "FIRE"
                     },
@@ -1254,8 +1261,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 3 / span 3 / span 2",
-                            "portrait": "26 / 11 / span 2 / span 6"
+                            "landscape": "28 / 3 / span 4 / span 2",
+                            "portrait": "26 / 12 / span 3 / span 6"
                         },
                         "label": "F1"
                     },
@@ -1270,8 +1277,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 1 / span 3 / span 2",
-                            "portrait": "26 / 18 / span 2 / span 6"
+                            "landscape": "28 / 1 / span 4 / span 2",
+                            "portrait": "26 / 18 / span 3 / span 6"
                         },
                         "label": "F2"
                     },
@@ -1286,8 +1293,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 5 / span 3 / span 2",
-                            "portrait": "26 / 25 / span 2 / span 6"
+                            "landscape": "28 / 5 / span 4 / span 2",
+                            "portrait": "26 / 24 / span 3 / span 6"
                         },
                         "label": "F3"
                     },
@@ -1302,8 +1309,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 7 / span 3 / span 2",
-                            "portrait": "29 / 11 / span 2 / span 6"
+                            "landscape": "28 / 7 / span 4 / span 2",
+                            "portrait": "29 / 12 / span 3 / span 6"
                         },
                         "label": "F4"
                     },
@@ -1318,8 +1325,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 9 / span 3 / span 2",
-                            "portrait": "29 / 18 / span 2 / span 6"
+                            "landscape": "28 / 9 / span 4 / span 2",
+                            "portrait": "29 / 18 / span 3 / span 6"
                         },
                         "label": "F5"
                     },
@@ -1334,8 +1341,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 11 / span 3 / span 2",
-                            "portrait": "29 / 25 / span 2 / span 6"
+                            "landscape": "28 / 11 / span 4 / span 2",
+                            "portrait": "29 / 24 / span 3 / span 6"
                         },
                         "label": "F6"
                     },
@@ -1350,8 +1357,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 39 / span 3 / span 2",
-                            "portrait": "32 / 11 / span 2 / span 6"
+                            "landscape": "28 / 39 / span 4 / span 2",
+                            "portrait": "32 / 12 / span 3 / span 6"
                         },
                         "label": "F7"
                     },
@@ -1366,8 +1373,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 41 / span 3 / span 2",
-                            "portrait": "32 / 18 / span 2 / span 6"
+                            "landscape": "28 / 41 / span 4 / span 2",
+                            "portrait": "32 / 18 / span 3 / span 6"
                         },
                         "label": "F8"
                     },
@@ -1382,8 +1389,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 43 / span 3 / span 2",
-                            "portrait": "32 / 25 / span 2 / span 6"
+                            "landscape": "28 / 43 / span 4 / span 2",
+                            "portrait": "32 / 24 / span 3 / span 6"
                         },
                         "label": "F9"
                     },
@@ -1398,8 +1405,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 45 / span 3 / span 2",
-                            "portrait": "35 / 11 / span 2 / span 6"
+                            "landscape": "28 / 45 / span 4 / span 2",
+                            "portrait": "35 / 12 / span 3 / span 6"
                         },
                         "label": "F10"
                     },
@@ -1414,8 +1421,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 47 / span 3 / span 2",
-                            "portrait": "35 / 18 / span 2 / span 6"
+                            "landscape": "28 / 47 / span 4 / span 2",
+                            "portrait": "35 / 18 / span 3 / span 6"
                         },
                         "label": "F11"
                     },
@@ -1430,8 +1437,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "28 / 49 / span 3 / span 2",
-                            "portrait": "35 / 25 / span 2 / span 6"
+                            "landscape": "28 / 49 / span 4 / span 2",
+                            "portrait": "35 / 24 / span 3 / span 6"
                         },
                         "label": "F12"
                     },
@@ -1442,10 +1449,11 @@ const DOS = {
                             "button": 2
                         },
                         "gridArea": {
-                            "landscape": "18 / 5 / span 4 / span 4",
-                            "portrait": "35 / 32 / span 2 / span 9"
+                            "landscape": "18 / 5 / span 5 / span 4",
+                            "portrait": "35 / 31 / span 3 / span 10"
                         },
-                        "label": "ARMS"
+                        "label": "ARMS",
+                        "id": "dos-worms-arms"
                     },
                     {
                         "component": "SingleTouchButton",
@@ -1459,7 +1467,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "5 / 7 / span 3 / span 2",
-                            "portrait": "24 / 15 / span 1 / span 3"
+                            "portrait": "26 / 28 / span 3 / span 3"
                         },
                         "label": "1"
                     },
@@ -1475,7 +1483,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "8 / 5 / span 3 / span 2",
-                            "portrait": "24 / 18 / span 1 / span 3"
+                            "portrait": "26 / 31 / span 3 / span 3"
                         },
                         "label": "2"
                     },
@@ -1491,7 +1499,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "8 / 7 / span 3 / span 2",
-                            "portrait": "24 / 21 / span 1 / span 3"
+                            "portrait": "29 / 28 / span 3 / span 3"
                         },
                         "label": "3"
                     },
@@ -1507,7 +1515,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "11 / 5 / span 3 / span 2",
-                            "portrait": "24 / 24 / span 1 / span 3"
+                            "portrait": "29 / 31 / span 3 / span 3"
                         },
                         "label": "4"
                     },
@@ -1523,7 +1531,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "11 / 7 / span 3 / span 2",
-                            "portrait": "24 / 27 / span 1 / span 3"
+                            "portrait": "32 / 28 / span 3 / span 3"
                         },
                         "label": "5"
                     },
@@ -1539,7 +1547,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "14 / 5 / span 3 / span 2",
-                            "portrait": "24 / 30 / span 1 / span 3"
+                            "portrait": "32 / 31 / span 3 / span 3"
                         },
                         "label": "LO"
                     },
@@ -1556,7 +1564,7 @@ const DOS = {
                         },
                         "gridArea": {
                             "landscape": "14 / 7 / span 3 / span 2",
-                            "portrait": "24 / 33 / span 1 / span 3"
+                            "portrait": "35 / 31 / span 3 / span 3"
                         },
                         "label": "HI"
                     }
@@ -1598,9 +1606,10 @@ const DOS = {
                                 "keyCode": "39"
                             }
                         },
+                        "quickjoyRole": "left-right",
                         "gridArea": {
-                            "landscape": "39 / 1 / span 14 / span 16",
-                            "portrait": "45 / 1 / span 6 / span 18"
+                            "landscape": "39 / 1 / span 12 / span 16",
+                            "portrait": "38 / 1 / span 13 / span 22"
                         },
                         "labels": [
                             "LEFT",
@@ -1625,9 +1634,10 @@ const DOS = {
                                 "keyCode": "40"
                             }
                         },
+                        "quickjoyRole": "up-down",
                         "gridArea": {
                             "landscape": "27 / 43 / span 24 / span 8",
-                            "portrait": "39 / 40 / span 12 / span 11"
+                            "portrait": "27 / 41 / span 24 / span 10"
                         },
                         "labels": [
                             "ACC",
@@ -1647,9 +1657,10 @@ const DOS = {
                                 "keyCode": 13
                             }
                         },
+                        "quickjoyRole": "action",
                         "gridArea": {
                             "landscape": "27 / 35 / span 24 / span 8",
-                            "portrait": "39 / 29 / span 12 / span 11"
+                            "portrait": "27 / 30 / span 24 / span 11"
                         },
                         "label": "ENTER"
                     },
@@ -1664,8 +1675,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "3 / 47 / span 4 / span 4",
-                            "portrait": "26 / 42 / span 2 / span 9"
+                            "landscape": "3 / 47 / span 5 / span 4",
+                            "portrait": "26 / 42 / span 3 / span 9"
                         },
                         "label": "ESC"
                     },
@@ -1680,8 +1691,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "8 / 47 / span 4 / span 4",
-                            "portrait": "29 / 42 / span 2 / span 9"
+                            "landscape": "8 / 47 / span 5 / span 4",
+                            "portrait": "29 / 42 / span 3 / span 9"
                         },
                         "label": "CAM"
                     },
@@ -1696,8 +1707,8 @@ const DOS = {
                             }
                         },
                         "gridArea": {
-                            "landscape": "13 / 47 / span 4 / span 4",
-                            "portrait": "32 / 42 / span 2 / span 9"
+                            "landscape": "13 / 47 / span 5 / span 4",
+                            "portrait": "32 / 42 / span 3 / span 9"
                         },
                         "label": "DASH"
                     }

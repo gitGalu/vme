@@ -235,9 +235,6 @@ export class MultiSelectTouchButton {
         this.isExpanded = true;
         this.optionsContainer.classList.add('is-open');
         this.mainButton.classList.add('is-open');
-
-        const displayLabel = this.fixedLabel || this.options[this.selectedIndex];
-        this.mainButton.innerHTML = this.#createButtonContent(displayLabel, true).replace('►', '◄');
     }
 
     #collapse() {

@@ -690,31 +690,31 @@ a {
   }
 
   #fast1 {
-    grid-area: 26 / -10 / span 2 / span 9;
+    grid-area: 26 / -11 / span 3 / span 10;
   }
 
   #fast2 {
-    grid-area: 29 / -10 / span 2 / span 9;
+    grid-area: 29 / -11 / span 3 / span 10;
   }
 
   #fast3 {
-    grid-area: 32 / -10 / span 2 / span 9;
+    grid-area: 32 / -11 / span 3 / span 10;
   }
 
   #fastkeypad {
-    grid-area: 32 / -10 / span 2 / span 9;
+    grid-area: 32 / -11 / span 3 / span 10;
   }
 
   #fastui[data-platform-id="coleco"] #fastkeypad {
-    grid-area: 26 / -10 / span 2 / span 9;
+    grid-area: 26 / -11 / span 3 / span 10;
   }
 
   #fast4 {
-    grid-area: 35 / -10 / span 2 / span 9;
+    grid-area: 35 / -11 / span 3 / span 10;
   }
 
   #fastspectrumjoy {
-    grid-area: 35 / 1 / span 2 / span 12;
+    grid-area: 35 / 1 / span 3 / span 10;
   }
 
   #fastui-msg {
@@ -726,11 +726,11 @@ a {
   }
 
   #fastrewind {
-    grid-area: 35 / -20 / span 2 / span 9
+    grid-area: 35 / -21 / span 3 / span 10
   }
 
   #fastffd {
-    grid-area: 35 / -10 / span 2 / span 9
+    grid-area: 35 / -11 / span 3 / span 10
   }
 
   #cursorb2 {
@@ -746,11 +746,11 @@ a {
   }
 
   #fastsave {
-    grid-area: 29 / 1 / span 2 / span 9;
+    grid-area: 29 / 1 / span 3 / span 10;
   }
 
   #fastmenu {
-    grid-area: 26 / 1 / span 2 / span 9;
+    grid-area: 26 / 1 / span 3 / span 10;
   }
 
   #fastsize {
@@ -758,35 +758,35 @@ a {
   }
 
   #fastkb {
-    grid-area: 32 / 32 / span 2 / span 9;
+    grid-area: 32 / 31 / span 3 / span 10;
   }
 
   #fastcursors {
-    grid-area: 29 / 32 / span 2 / span 9;
+    grid-area: 29 / 31 / span 3 / span 10;
   }
 
   #fastcustom {
-    grid-area: 26 / 32 / span 2 / span 9;
+    grid-area: 26 / 31 / span 3 / span 10;
   }
 
   #fastjoyport {
-    grid-area: 26 / 32 / span 2 / span 9;
+    grid-area: 26 / 31 / span 3 / span 10;
   }
 
   #fastjoy {
-    grid-area: 32 / 1 / span 2 / span 9;
+    grid-area: 32 / 1 / span 3 / span 10;
   }
 
   #fastdisk {
-    grid-area: 23 / 1 / span 2 / span 9;
+    grid-area: 35 / 1 / span 3 / span 10;
   }
 
   #fastmouse {
-    grid-area: 35 / 1 / span 2 / span 9;
+    grid-area: 35 / 1 / span 3 / span 10;
   }
 
   #fastui[data-platform-id="dos"] #fastspectrumjoy {
-    grid-area: 32 / 1 / span 2 / span 9;
+    grid-area: 32 / 1 / span 3 / span 10;
   }
 
   #qjlr {
@@ -875,35 +875,35 @@ a {
   }
 
   #fast1 {
-    grid-area: 3 / -5 / span 4 / span 4;
+    grid-area: 3 / -5 / span 5 / span 4;
   }
 
   #fast2 {
-    grid-area: 8 / -5 / span 4 / span 4;
+    grid-area: 8 / -5 / span 5 / span 4;
   }
 
   #fast3 {
-    grid-area: 13 / -5 / span 4 / span 4;
+    grid-area: 13 / -5 / span 5 / span 4;
   }
 
   #fastkeypad {
-    grid-area: 13 / -5 / span 4 / span 4;
+    grid-area: 13 / -5 / span 5 / span 4;
   }
 
   #fastui[data-platform-id="coleco"] #fastkeypad {
-    grid-area: 3 / -5 / span 4 / span 4;
+    grid-area: 3 / -5 / span 5 / span 4;
   }
 
   #fast4 {
-    grid-area: 19 / -5 / span 4 / span 4;
+    grid-area: 19 / -5 / span 5 / span 4;
   }
 
   #fastspectrumjoy {
-    grid-area: 23 / 1 / span 4 / span 7;
+    grid-area: 23 / 1 / span 5 / span 4;
   }
 
   #fastui[data-platform-id="dos"] #fastspectrumjoy {
-    grid-area: 13 / 1 / span 4 / span 4;
+    grid-area: 13 / 1 / span 5 / span 4;
   }
 
   #qjlr {
@@ -931,47 +931,47 @@ a {
   }
 
   #fastsave {
-    grid-area: 8 / 1 / span 4 / span 4;
+    grid-area: 8 / 1 / span 5 / span 4;
   }
 
   #fastmenu {
-    grid-area: 3 / 1 / span 4 / span 4;
+    grid-area: 3 / 1 / span 5 / span 4;
   }
 
   #fastkb {
-    grid-area: 13 / 43 / span 4 / span 4;
+    grid-area: 13 / 43 / span 5 / span 4;
   }
 
   #fastcursors {
-    grid-area: 8 / 43 / span 4 / span 4;
+    grid-area: 8 / 43 / span 5 / span 4;
   }
 
   #fastcustom {
-    grid-area: 3 / 43 / span 4 / span 4;
+    grid-area: 3 / 43 / span 5 / span 4;
   }
 
   #fastjoyport {
-    grid-area: 3 / 43 / span 4 / span 4;
+    grid-area: 3 / 43 / span 5 / span 4;
   }
 
   #fastjoy {
-    grid-area: 13 / 1 / span 4 / span 4;
+    grid-area: 13 / 1 / span 5 / span 4;
   }
 
   #fastdisk {
-    grid-area: 23 / 1 / span 4 / span 4;
+    grid-area: 23 / 1 / span 5 / span 4;
   }
 
   #fastmouse {
-    grid-area: 18 / 1 / span 4 / span 4;
+    grid-area: 18 / 1 / span 5 / span 4;
   }
 
   #fastrewind {
-    grid-area: 18 / -9 / span 4 / span 4;
+    grid-area: 18 / -9 / span 5 / span 4;
   }
 
   #fastffd {
-    grid-area: 18 / -5 / span 4 / span 4;
+    grid-area: 18 / -5 / span 5 / span 4;
   }
 
   #cursorb2 {
@@ -2538,12 +2538,157 @@ body.selection-mode-active .menu-strip-spacer {
 }
 
 .custom-touch-controller__grid .fast-button.custom-small-button {
-  font-size: 50% !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
   border-radius: 6px !important;
 }
 
 .custom-touch-controller__grid .fast-button.custom-medium-button {
   border-radius: 6px !important;
+}
+
+/* Match standard QuickJoy dimensions inside the existing full-screen 50x50 grid.
+   Corrections account for its extra line gaps and half-height portrait container. */
+.custom-touch-controller__grid > [data-quickjoy-role] {
+  position: relative;
+  place-self: end;
+}
+
+@media (orientation: portrait) {
+  .custom-touch-controller__grid > [data-quickjoy-role] {
+    --quickjoy-safe-height: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+    height: calc(50% - 0.52px - var(--quickjoy-safe-height) * 0.24);
+  }
+
+  .custom-touch-controller__grid > [data-quickjoy-role="left-right"] {
+    justify-self: start;
+    width: calc(100% - 4.4px);
+    height: calc(50% - 0.74px - var(--quickjoy-safe-height) * 0.13);
+  }
+
+  .custom-touch-controller__grid > [data-quickjoy-role="up-down"] {
+    width: calc(100% + 8px);
+  }
+
+  .custom-touch-controller__grid > [data-quickjoy-role="action"] {
+    width: calc(100% - 2.2px);
+    left: -8px;
+  }
+}
+
+@media (orientation: landscape) {
+  .custom-touch-controller__grid > [data-quickjoy-role] {
+    height: calc(100% - 1.92px);
+    top: -4px;
+  }
+
+  .custom-touch-controller__grid > [data-quickjoy-role="left-right"] {
+    justify-self: start;
+    width: calc(100% - 0.64px);
+    height: calc(100% + 3.04px);
+    top: 0;
+  }
+
+  .custom-touch-controller__grid > [data-quickjoy-role="up-down"] {
+    width: calc(100% + 1.68px);
+  }
+
+  .custom-touch-controller__grid > [data-quickjoy-role="action"] {
+    width: calc(100% - 0.32px);
+    left: -1.68px;
+  }
+}
+
+/* Portrait size trial: pack smaller buttons against the sides and the bottom of the strip. */
+@media (orientation: portrait) {
+  /* Reserve the bottom-left slot for DISK even when the game has one disk. */
+  .custom-touch-controller__grid > .custom-fast-button {
+    position: relative;
+    top: calc(-80% - 2px);
+  }
+
+  #fastui > :is(.fast-button, #fastmenu, #fastsave, #fastjoy, #fastdisk, #fastspectrumjoy, #fastkeypad),
+  .custom-touch-controller__grid:is([data-preset-id^="amiga-pinball-"], [data-preset-id^="dos-pinball-"], [data-preset-id="pinball-1"], [data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button {
+    width: 80%;
+    height: 80%;
+    place-self: end start;
+    position: relative;
+    left: var(--portrait-fast-offset-x, 0%);
+    top: calc(var(--portrait-fast-offset-y, 0%) - 80% - 2px);
+  }
+
+  #fastui > :is(#fast1, #fast2, #fast3, #fast4, #fastkeypad, #fastffd),
+  .custom-touch-controller__grid:is([data-preset-id^="amiga-pinball-"], [data-preset-id^="dos-pinball-"], [data-preset-id="pinball-1"], [data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button[data-grid-column="41"] {
+    justify-self: end;
+  }
+
+  #fastui > :is(#fastcustom, #fastjoyport, #fastcursors, #fastkb, #fastrewind) {
+    justify-self: end;
+    --portrait-fast-offset-x: 20%;
+  }
+
+  .custom-touch-controller__grid:is([data-preset-id^="amiga-pinball-"], [data-preset-id^="dos-pinball-"], [data-preset-id="pinball-1"]) > .custom-fast-button[data-grid-column="11"] {
+    --portrait-fast-offset-x: -20%;
+  }
+
+  .custom-touch-controller__grid:is([data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button[data-grid-column="12"] {
+    --portrait-fast-offset-x: calc(-30.666667% - 0.853333px);
+  }
+
+  .custom-touch-controller__grid:is([data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button[data-grid-column="18"] {
+    --portrait-fast-offset-x: calc(-50.666667% - 0.853333px);
+  }
+
+  .custom-touch-controller__grid:is([data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button[data-grid-column="24"] {
+    --portrait-fast-offset-x: calc(-70.666667% - 0.853333px);
+  }
+
+  /* Keep equal side gaps around Fx and the two narrower numeric-key columns. */
+  .custom-touch-controller__grid:is([data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button:is([data-grid-column="28"], [data-grid-column="31"]) {
+    width: calc(154.666667% + 0.533333px);
+    --portrait-fast-offset-x: calc(-114.666667% - 1.333333px);
+  }
+
+  .custom-touch-controller__grid:is([data-preset-id="amiga-worms"], [data-preset-id="preset-worms"]) > .custom-fast-button[data-grid-column="31"] {
+    --portrait-fast-offset-x: calc(-60% - 0.8px);
+  }
+
+  .custom-touch-controller__grid[data-preset-id="preset-worms"] > #dos-worms-pause {
+    width: 80%;
+    justify-self: end;
+    --portrait-fast-offset-x: 20%;
+  }
+
+  /* DOS keeps F11/F12, so ARMS fills the right-hand row where REWIND/FFD are absent. */
+  .custom-touch-controller__grid[data-preset-id="preset-worms"] > #dos-worms-arms {
+    width: calc(160% + 2px);
+    justify-self: start;
+    --portrait-fast-offset-x: 40%;
+  }
+
+  /* ARMS spans two Fx columns and the numeric-key column freed by moving HI below LO. */
+  .custom-touch-controller__grid[data-preset-id="amiga-worms"] > #worms-right {
+    width: calc(118.666667% + 0.613333px);
+    --portrait-fast-offset-x: calc(-25.333333% - 0.346667px);
+  }
+
+  #fastui > :is(#fastmenu, #fast1, #fastcustom, #fastjoyport),
+  #fastui[data-platform-id="coleco"] > #fastkeypad {
+    --portrait-fast-offset-y: 60%;
+  }
+
+  #fastui > :is(#fastsave, #fast2, #fastcursors) {
+    --portrait-fast-offset-y: 40%;
+  }
+
+  #fastui > :is(#fastjoy, #fast3, #fastkb, #fastkeypad),
+  #fastui[data-platform-id="dos"] > #fastspectrumjoy {
+    --portrait-fast-offset-y: 20%;
+  }
+
+  #fastui > #fastdisk {
+    top: 0;
+  }
 }
 
 @keyframes custom-controller-fade-in {

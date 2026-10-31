@@ -354,8 +354,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 43 / span 8 / span 8",
-              "portrait": "38 / 32 / span 5 / span 19"
+              "landscape": "28 / 43 / span 9 / span 8",
+              "portrait": "39 / 31 / span 5 / span 20"
             },
             "label": "PLUNGER"
           },
@@ -370,8 +370,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 1 / span 8 / span 8",
-              "portrait": "38 / 1 / span 5 / span 19"
+              "landscape": "28 / 1 / span 9 / span 8",
+              "portrait": "39 / 1 / span 5 / span 20"
             },
             "label": "START<br/>TILT"
           },
@@ -386,8 +386,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 5 / span 4 / span 4",
-              "portrait": "26 / 11 / span 2 / span 9"
+              "landscape": "3 / 5 / span 5 / span 4",
+              "portrait": "26 / 11 / span 3 / span 10"
             },
             "label": "F1"
           },
@@ -402,8 +402,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 5 / span 4 / span 4",
-              "portrait": "29 / 11 / span 2 / span 9"
+              "landscape": "8 / 5 / span 5 / span 4",
+              "portrait": "29 / 11 / span 3 / span 10"
             },
             "label": "F2"
           },
@@ -418,8 +418,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "13 / 5 / span 4 / span 4",
-              "portrait": "32 / 11 / span 2 / span 9"
+              "landscape": "13 / 5 / span 5 / span 4",
+              "portrait": "32 / 11 / span 3 / span 10"
             },
             "label": "F3"
           },
@@ -434,8 +434,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "18 / 5 / span 4 / span 4",
-              "portrait": "35 / 11 / span 2 / span 9"
+              "landscape": "18 / 5 / span 5 / span 4",
+              "portrait": "35 / 11 / span 3 / span 10"
             },
             "label": "F4"
           },
@@ -450,8 +450,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 47 / span 4 / span 4",
-              "portrait": "26 / 42 / span 2 / span 9"
+              "landscape": "3 / 47 / span 5 / span 4",
+              "portrait": "26 / 41 / span 3 / span 10"
             },
             "label": "ESC"
           },
@@ -466,8 +466,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 47 / span 4 / span 4",
-              "portrait": "29 / 42 / span 2 / span 9"
+              "landscape": "8 / 47 / span 5 / span 4",
+              "portrait": "29 / 41 / span 3 / span 10"
             },
             "label": "Y"
           },
@@ -482,8 +482,8 @@ const ST = {
               }
             },
             "gridArea": {
-              "landscape": "13 / 47 / span 4 / span 4",
-              "portrait": "32 / 42 / span 2 / span 9"
+              "landscape": "13 / 47 / span 5 / span 4",
+              "portrait": "32 / 41 / span 3 / span 10"
             },
             "label": "MUSIC"
           }

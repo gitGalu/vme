@@ -692,8 +692,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 43 / span 8 / span 8",
-              "portrait": "38 / 32 / span 5 / span 19"
+              "landscape": "28 / 43 / span 9 / span 8",
+              "portrait": "39 / 31 / span 5 / span 20"
             },
             "label": "PLUNGER"
           },
@@ -709,8 +709,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 1 / span 8 / span 8",
-              "portrait": "38 / 1 / span 5 / span 19"
+              "landscape": "28 / 1 / span 9 / span 8",
+              "portrait": "39 / 1 / span 5 / span 20"
             },
             "label": "TILT"
           },
@@ -726,8 +726,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 5 / span 4 / span 4",
-              "portrait": "26 / 11 / span 2 / span 9"
+              "landscape": "3 / 5 / span 5 / span 4",
+              "portrait": "26 / 11 / span 3 / span 10"
             },
             "label": "F1"
           },
@@ -743,8 +743,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 5 / span 4 / span 4",
-              "portrait": "29 / 11 / span 2 / span 9"
+              "landscape": "8 / 5 / span 5 / span 4",
+              "portrait": "29 / 11 / span 3 / span 10"
             },
             "label": "F2"
           },
@@ -760,8 +760,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "13 / 5 / span 4 / span 4",
-              "portrait": "32 / 11 / span 2 / span 9"
+              "landscape": "13 / 5 / span 5 / span 4",
+              "portrait": "32 / 11 / span 3 / span 10"
             },
             "label": "F3"
           },
@@ -777,8 +777,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "18 / 5 / span 4 / span 4",
-              "portrait": "35 / 11 / span 2 / span 9"
+              "landscape": "18 / 5 / span 5 / span 4",
+              "portrait": "35 / 11 / span 3 / span 10"
             },
             "label": "F4"
           },
@@ -794,8 +794,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 47 / span 4 / span 4",
-              "portrait": "26 / 42 / span 2 / span 9"
+              "landscape": "3 / 47 / span 5 / span 4",
+              "portrait": "26 / 41 / span 3 / span 10"
             },
             "label": "ESC"
           },
@@ -811,8 +811,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 47 / span 4 / span 4",
-              "portrait": "29 / 42 / span 2 / span 9"
+              "landscape": "8 / 47 / span 5 / span 4",
+              "portrait": "29 / 41 / span 3 / span 10"
             },
             "label": "Y"
           }
@@ -880,8 +880,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 43 / span 8 / span 8",
-              "portrait": "38 / 32 / span 5 / span 19"
+              "landscape": "28 / 43 / span 9 / span 8",
+              "portrait": "39 / 31 / span 5 / span 20"
             },
             "label": "PLUNGER"
           },
@@ -897,8 +897,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 1 / span 8 / span 4",
-              "portrait": "38 / 1 / span 5 / span 9"
+              "landscape": "28 / 1 / span 9 / span 4",
+              "portrait": "39 / 1 / span 5 / span 10"
             },
             "label": "TILT"
           },
@@ -914,8 +914,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 5 / span 4 / span 4",
-              "portrait": "26 / 11 / span 2 / span 9"
+              "landscape": "3 / 5 / span 5 / span 4",
+              "portrait": "26 / 11 / span 3 / span 10"
             },
             "label": "F1"
           },
@@ -931,8 +931,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 5 / span 4 / span 4",
-              "portrait": "29 / 11 / span 2 / span 9"
+              "landscape": "8 / 5 / span 5 / span 4",
+              "portrait": "29 / 11 / span 3 / span 10"
             },
             "label": "▲"
           },
@@ -948,8 +948,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "13 / 5 / span 4 / span 4",
-              "portrait": "32 / 11 / span 2 / span 9"
+              "landscape": "13 / 5 / span 5 / span 4",
+              "portrait": "32 / 11 / span 3 / span 10"
             },
             "label": "▼"
           },
@@ -965,8 +965,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "18 / 5 / span 4 / span 4",
-              "portrait": "35 / 11 / span 2 / span 9"
+              "landscape": "18 / 5 / span 5 / span 4",
+              "portrait": "35 / 11 / span 3 / span 10"
             },
             "label": "OK"
           },
@@ -982,8 +982,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 47 / span 4 / span 4",
-              "portrait": "26 / 42 / span 2 / span 9"
+              "landscape": "3 / 47 / span 5 / span 4",
+              "portrait": "26 / 41 / span 3 / span 10"
             },
             "label": "ESC"
           },
@@ -999,8 +999,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 47 / span 4 / span 4",
-              "portrait": "29 / 42 / span 2 / span 9"
+              "landscape": "8 / 47 / span 5 / span 4",
+              "portrait": "29 / 41 / span 3 / span 10"
             },
             "label": "Y"
           },
@@ -1016,8 +1016,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 5 / span 8 / span 4",
-              "portrait": "38 / 11 / span 5 / span 9"
+              "landscape": "28 / 5 / span 9 / span 4",
+              "portrait": "39 / 11 / span 5 / span 10"
             },
             "label": "TILT"
           }
@@ -1085,8 +1085,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "27 / 43 / span 9 / span 8",
-              "portrait": "38 / 32 / span 5 / span 19"
+              "landscape": "27 / 43 / span 10 / span 8",
+              "portrait": "39 / 31 / span 5 / span 20"
             },
             "label": "PLUNGER"
           },
@@ -1102,8 +1102,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 1 / span 8 / span 4",
-              "portrait": "38 / 1 / span 5 / span 9"
+              "landscape": "28 / 1 / span 9 / span 4",
+              "portrait": "39 / 1 / span 5 / span 10"
             },
             "label": "TILT"
           },
@@ -1119,8 +1119,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 5 / span 4 / span 4",
-              "portrait": "26 / 11 / span 2 / span 9"
+              "landscape": "3 / 5 / span 5 / span 4",
+              "portrait": "26 / 11 / span 3 / span 10"
             },
             "label": "F1"
           },
@@ -1136,8 +1136,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 5 / span 4 / span 4",
-              "portrait": "29 / 11 / span 2 / span 9"
+              "landscape": "8 / 5 / span 5 / span 4",
+              "portrait": "29 / 11 / span 3 / span 10"
             },
             "label": "▲"
           },
@@ -1153,8 +1153,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "13 / 5 / span 4 / span 4",
-              "portrait": "32 / 11 / span 2 / span 9"
+              "landscape": "13 / 5 / span 5 / span 4",
+              "portrait": "32 / 11 / span 3 / span 10"
             },
             "label": "▼"
           },
@@ -1170,8 +1170,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "18 / 5 / span 4 / span 4",
-              "portrait": "35 / 11 / span 2 / span 9"
+              "landscape": "18 / 5 / span 5 / span 4",
+              "portrait": "35 / 11 / span 3 / span 10"
             },
             "label": "OK"
           },
@@ -1187,8 +1187,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 47 / span 4 / span 4",
-              "portrait": "26 / 42 / span 2 / span 9"
+              "landscape": "3 / 47 / span 5 / span 4",
+              "portrait": "26 / 41 / span 3 / span 10"
             },
             "label": "ESC"
           },
@@ -1204,8 +1204,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 47 / span 4 / span 4",
-              "portrait": "29 / 42 / span 2 / span 9"
+              "landscape": "8 / 47 / span 5 / span 4",
+              "portrait": "29 / 41 / span 3 / span 10"
             },
             "label": "Y"
           },
@@ -1221,8 +1221,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 5 / span 8 / span 4",
-              "portrait": "38 / 11 / span 5 / span 9"
+              "landscape": "28 / 5 / span 9 / span 4",
+              "portrait": "39 / 11 / span 5 / span 10"
             },
             "label": "TILT"
           }
@@ -1252,7 +1252,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "27 / 16 / span 24 / span 21",
-              "portrait": "38 / 16 / span 13 / span 19"
+              "portrait": "39 / 16 / span 12 / span 19"
             },
             "label": "worms-pad",
             "options": {
@@ -1269,8 +1269,8 @@ const Amiga = {
               "type": "joy"
             },
             "gridArea": {
-              "landscape": "32 / 1 / span 19 / span 11",
-              "portrait": "38 / 1 / span 13 / span 14"
+              "landscape": "33 / 1 / span 18 / span 11",
+              "portrait": "39 / 1 / span 12 / span 14"
             },
             "label": "worms-mv",
             "options": {
@@ -1314,8 +1314,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "41 / 40 / span 10 / span 11",
-              "portrait": "43 / 36 / span 8 / span 15"
+              "landscape": "42 / 40 / span 9 / span 11",
+              "portrait": "44 / 36 / span 7 / span 15"
             },
             "label": "JUMP"
           },
@@ -1331,8 +1331,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "3 / 47 / span 4 / span 4",
-              "portrait": "26 / 42 / span 2 / span 9"
+              "landscape": "3 / 47 / span 5 / span 4",
+              "portrait": "26 / 41 / span 3 / span 10"
             },
             "label": "PAUSE"
           },
@@ -1348,8 +1348,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "8 / 47 / span 4 / span 4",
-              "portrait": "29 / 42 / span 2 / span 9"
+              "landscape": "8 / 47 / span 5 / span 4",
+              "portrait": "29 / 41 / span 3 / span 10"
             },
             "label": "CENTER"
           },
@@ -1365,8 +1365,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "13 / 47 / span 4 / span 4",
-              "portrait": "32 / 42 / span 2 / span 9"
+              "landscape": "13 / 47 / span 5 / span 4",
+              "portrait": "32 / 41 / span 3 / span 10"
             },
             "label": "NAMES"
           },
@@ -1382,8 +1382,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "32 / 40 / span 8 / span 11",
-              "portrait": "38 / 36 / span 4 / span 15"
+              "landscape": "33 / 40 / span 8 / span 11",
+              "portrait": "39 / 36 / span 4 / span 15"
             },
             "label": "FIRE"
           },
@@ -1399,8 +1399,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 3 / span 3 / span 2",
-              "portrait": "26 / 18 / span 2 / span 6"
+              "landscape": "28 / 3 / span 4 / span 2",
+              "portrait": "26 / 18 / span 3 / span 6"
             },
             "label": "F2"
           },
@@ -1416,8 +1416,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 1 / span 3 / span 2",
-              "portrait": "26 / 11 / span 2 / span 6"
+              "landscape": "28 / 1 / span 4 / span 2",
+              "portrait": "26 / 12 / span 3 / span 6"
             },
             "label": "F1"
           },
@@ -1433,8 +1433,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 5 / span 3 / span 2",
-              "portrait": "26 / 25 / span 2 / span 6"
+              "landscape": "28 / 5 / span 4 / span 2",
+              "portrait": "26 / 24 / span 3 / span 6"
             },
             "label": "F3"
           },
@@ -1450,8 +1450,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 7 / span 3 / span 2",
-              "portrait": "29 / 11 / span 2 / span 6"
+              "landscape": "28 / 7 / span 4 / span 2",
+              "portrait": "29 / 12 / span 3 / span 6"
             },
             "label": "F4"
           },
@@ -1467,8 +1467,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 9 / span 3 / span 2",
-              "portrait": "29 / 18 / span 2 / span 6"
+              "landscape": "28 / 9 / span 4 / span 2",
+              "portrait": "29 / 18 / span 3 / span 6"
             },
             "label": "F5"
           },
@@ -1484,8 +1484,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 41 / span 3 / span 2",
-              "portrait": "29 / 25 / span 2 / span 6"
+              "landscape": "28 / 41 / span 4 / span 2",
+              "portrait": "29 / 24 / span 3 / span 6"
             },
             "label": "F6"
           },
@@ -1501,8 +1501,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 43 / span 3 / span 2",
-              "portrait": "32 / 11 / span 2 / span 6"
+              "landscape": "28 / 43 / span 4 / span 2",
+              "portrait": "32 / 12 / span 3 / span 6"
             },
             "label": "F7"
           },
@@ -1518,8 +1518,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 45 / span 3 / span 2",
-              "portrait": "32 / 18 / span 2 / span 6"
+              "landscape": "28 / 45 / span 4 / span 2",
+              "portrait": "32 / 18 / span 3 / span 6"
             },
             "label": "F8"
           },
@@ -1535,8 +1535,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 47 / span 3 / span 2",
-              "portrait": "32 / 25 / span 2 / span 6"
+              "landscape": "28 / 47 / span 4 / span 2",
+              "portrait": "32 / 24 / span 3 / span 6"
             },
             "label": "F9"
           },
@@ -1552,8 +1552,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "28 / 49 / span 3 / span 2",
-              "portrait": "35 / 11 / span 2 / span 6"
+              "landscape": "28 / 49 / span 4 / span 2",
+              "portrait": "35 / 12 / span 3 / span 6"
             },
             "label": "F10"
           },
@@ -1569,8 +1569,8 @@ const Amiga = {
               }
             },
             "gridArea": {
-              "landscape": "18 / 5 / span 4 / span 4",
-              "portrait": "35 / 18 / span 2 / span 13"
+              "landscape": "18 / 5 / span 5 / span 4",
+              "portrait": "35 / 18 / span 3 / span 12"
             },
             "label": "ARMS"
           },
@@ -1587,7 +1587,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "5 / 7 / span 3 / span 2",
-              "portrait": "24 / 15 / span 1 / span 3"
+              "portrait": "26 / 28 / span 3 / span 3"
             },
             "label": "1"
           },
@@ -1604,7 +1604,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "8 / 5 / span 3 / span 2",
-              "portrait": "24 / 18 / span 1 / span 3"
+              "portrait": "26 / 31 / span 3 / span 3"
             },
             "label": "2"
           },
@@ -1621,7 +1621,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "8 / 7 / span 3 / span 2",
-              "portrait": "24 / 21 / span 1 / span 3"
+              "portrait": "29 / 28 / span 3 / span 3"
             },
             "label": "3"
           },
@@ -1638,7 +1638,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "11 / 5 / span 3 / span 2",
-              "portrait": "24 / 24 / span 1 / span 3"
+              "portrait": "29 / 31 / span 3 / span 3"
             },
             "label": "4"
           },
@@ -1655,7 +1655,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "11 / 7 / span 3 / span 2",
-              "portrait": "24 / 27 / span 1 / span 3"
+              "portrait": "32 / 28 / span 3 / span 3"
             },
             "label": "5"
           },
@@ -1672,7 +1672,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "14 / 5 / span 3 / span 2",
-              "portrait": "24 / 30 / span 1 / span 3"
+              "portrait": "32 / 31 / span 3 / span 3"
             },
             "label": "LO"
           },
@@ -1690,7 +1690,7 @@ const Amiga = {
             },
             "gridArea": {
               "landscape": "14 / 7 / span 3 / span 2",
-              "portrait": "24 / 33 / span 1 / span 3"
+              "portrait": "35 / 31 / span 3 / span 3"
             },
             "label": "HI"
           }

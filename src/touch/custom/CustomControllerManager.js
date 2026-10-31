@@ -222,6 +222,7 @@ export class CustomControllerManager extends TouchControllerBase {
 
         this.#clearActiveElements();
 
+        this.#gridHost.dataset.presetId = preset.id;
         this.#gridHost.style.gridTemplateColumns = 'repeat(50, 1fr)';
         this.#gridHost.style.gridTemplateRows = 'repeat(50, 1fr)';
 
@@ -468,6 +469,10 @@ export class CustomControllerManager extends TouchControllerBase {
         }
 
         if (instance) {
+            if (elementDef.quickjoyRole) {
+                const element = instance.el ?? instance.container;
+                element.dataset.quickjoyRole = elementDef.quickjoyRole;
+            }
             // Safari
             this.#addSizeBasedClasses(instance.el, gridArea);
             this.#activeElements.push({ instance, release: releaseFn });
@@ -653,6 +658,12 @@ export class CustomControllerManager extends TouchControllerBase {
         const rowSpan = parseInt(rowSpanMatch[1], 10);
         const colSpan = parseInt(colSpanMatch[1], 10);
 
+        if (rowSpan === 3) {
+            element.classList.add('custom-fast-button');
+            element.dataset.gridColumn = parts[1].trim();
+            const rowStart = parseInt(parts[0], 10);
+            element.style.setProperty('--portrait-fast-offset-y', `${(35 - rowStart) / 3 * 20}%`);
+        }
 
         if ((rowSpan === 5 || rowSpan === 6) && (colSpan === 5 || colSpan === 6 || colSpan === 10)) {
             element.classList.add('custom-medium-button');

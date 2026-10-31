@@ -42,6 +42,13 @@ launch packaging, IndexedDB storage and RetroArch disk-switch commands.
 Run the filename convention checks separately with:
 `node tests/atari800-disk-sets.mjs`.
 
+DOS custom quickjoy sizing: in a fresh isolated app context, import
+`tests/custom-quickjoy.browser.js` through the `/@fs/<repository>/` prefix and run
+`runCustomQuickJoyTests()`. Run once in portrait and once in landscape. It compares
+Arrows + Space, Arrows + Shift and Stunts against the standard Atari800-style
+QuickJoy, checks the shared custom grid stays 50 × 50, exercises keyboard bindings,
+and verifies that resizing releases a held direction. It uses no ROM or storage.
+
 The Jaguar and ColecoVision touch keypad has a standalone browser test page at
 `tests/touch-keypad.html` (use the same `/@fs/<repository>/tests/` URL prefix).
 Run `await window.runTouchKeypadTests()` to check tap/drag selection, held keys,

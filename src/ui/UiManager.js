@@ -591,8 +591,7 @@ export class UiManager {
                 const defaultMap = keyMapConfig?.default;
                 const defaultIndex = Math.max(0, keyMapOptions.findIndex((option) => keyMapConfig.keyMap[option] === defaultMap));
                 const initialLabel = keyMapOptions[defaultIndex];
-                const fixedTouchKeyLabel = platform.platform_id === 'dos' ? 'ARROWS' : null;
-                const showTouchKeyArrow = platform.platform_id !== 'dos';
+                const fixedTouchKeyLabel = platform.platform_id === 'dos' ? 'ARROWS' : 'KEYMAP';
 
                 UiManager.#keymapSelector = new MultiSelectTouchButton(
                     document.getElementById('fastui'),
@@ -602,9 +601,10 @@ export class UiManager {
                     new KeymapOptionsListener(),
                     defaultIndex,
                     FAST_BTN_RADIUS,
-                    showTouchKeyArrow,
+                    false,
                     () => UiManager.#currentInputMethod === TOUCH_INPUT.CURSORS,
-                    fixedTouchKeyLabel
+                    fixedTouchKeyLabel,
+                    platform.platform_id !== 'dos'
                 );
 
                 // Ensure default mapping is active immediately, not only after first manual selection.
