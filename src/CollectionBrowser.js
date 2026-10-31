@@ -180,6 +180,7 @@ export class CollectionBrowser {
         }
         element?.classList.remove('launch-feedback', 'zoom-out');
         document.getElementById('collectionBrowserUi').style.display = "";
+        this.#search.setAvailable(true);
         const flickingElement = document.querySelector('#collection-flicking');
         if (flickingElement) {
             flickingElement.style.opacity = "";
@@ -335,6 +336,7 @@ export class CollectionBrowser {
     async open(collectionIndex = 1, collectionItemIndex = 1) {
         this.#destroy();
         this.#search.bind();
+        this.#search.setAvailable(true);
         if (!this.#search.query) this.#searchSelectionId = collectionItemIndex;
         const generation = this.#viewGeneration;
         let div = document.querySelector('#collection-browser');
@@ -747,6 +749,8 @@ export class CollectionBrowser {
         document.removeEventListener("keydown", this.#kb_event_bound);
         this.#destroy();
         this.#search.reset();
+        // The browser remains visible while the core starts; reset() makes the icon visible again.
+        if (skipPlatformUpdate) this.#search.setAvailable(false);
         this.#lastSearchQuery = '';
         this.#searchSelectionId = null;
         this.#cli.reset();
@@ -930,6 +934,7 @@ export class CollectionBrowser {
                         const item = filteredItems[0];
 
                         document.getElementById('collectionBrowserUi').style.display = "none";
+                        this.#search.setAvailable(false);
                         const flickingElement = document.querySelector('#collection-flicking');
                         if (flickingElement) {
                             flickingElement.style.opacity = "0";
@@ -984,6 +989,7 @@ export class CollectionBrowser {
                         const rom = await this.#db.getRomData(item.rom_data_id);
 
                         document.getElementById('collectionBrowserUi').style.display = "none";
+                        this.#search.setAvailable(false);
                         const flickingElement = document.querySelector('#collection-flicking');
                         if (flickingElement) {
                             flickingElement.style.opacity = "0";

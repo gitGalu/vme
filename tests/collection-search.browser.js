@@ -164,6 +164,10 @@ export async function runCollectionSearchTests() {
             key('Enter');
             await until(() => launched, 'Card Enter did not launch');
             assert(launched[3] === 'Fred: The Return', 'Card navigation launched the wrong game');
+            launched[5](); // PlatformManager closes the browser before the core finishes starting.
+            const searchToggle = document.getElementById('collectionBrowserSearchToggle');
+            assert(getComputedStyle(searchToggle).display === 'none' && searchToggle.getClientRects().length === 0,
+                'Closing for launch must keep the search icon hidden until emulation starts');
             browser.close();
 
             // Confirmation during IME composition or held Enter must not launch a card.
