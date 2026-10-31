@@ -7,8 +7,23 @@ export class EnvironmentManager {
     static #deviceTypes = new Set();
 
     constructor() {
+        EnvironmentManager.#initPwaStatusBar();
         EnvironmentManager.detectDevice();
         EnvironmentManager.updateDeviceType(); 
+    }
+
+    static #initPwaStatusBar() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (!isIOS || !EnvironmentManager.isPwa() || document.getElementById('pwa-status-bar')) return;
+
+        // iOS 27 may blur page content below the status bar. A painted fixed strip at
+        // the top requests a solid status-bar background without changing the layout.
+        // Experimental workaround: modernwebweekly.substack.com/p/so-whats-up-with-the-ios27-blur
+        const strip = document.createElement('div');
+        strip.id = 'pwa-status-bar';
+        strip.setAttribute('aria-hidden', 'true');
+        document.body.prepend(strip);
     }
 
     static updateDeviceType() {

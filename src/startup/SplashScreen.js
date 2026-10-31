@@ -37,12 +37,16 @@ async function displaySplash({ version = __APP_VERSION__, mode = 'update', onRea
     caption.append(mode === 'manual' || mode === 'welcome' ? 'Virtual Machine / Emulator · ' : `${t('splash.updated')} `, versionLabel);
     shadow.append(style, stage, caption);
 
-    const background = [...document.body.children].filter(element => element instanceof HTMLElement);
+    const statusBar = document.getElementById('pwa-status-bar');
+    const background = [...document.body.children].filter(element => element instanceof HTMLElement && element !== statusBar);
     const previousInert = background.map(element => [element, element.inert]);
     const events = new AbortController();
     let animation;
     try {
         document.body.append(overlay);
+        // Both use the maximum z-index. Keep the painted status-bar strip last
+        // so iOS continues sampling it instead of the full-screen animation.
+        if (statusBar) document.body.append(statusBar);
         background.forEach(element => { element.inert = true; });
         overlay.focus({ preventScroll: true });
         window.addEventListener('keydown', event => {

@@ -217,6 +217,40 @@ body.fade-in-visible {
   transition: opacity 0.25s ease-in;
 }
 
+/* Painted top edge for the iOS PWA status-bar blur workaround. Keep it above
+   WebKit's 10px thin-border cutoff so it reads background-color directly
+   instead of reusing a sampled color when the view changes. */
+#pwa-status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 11px;
+  z-index: 2147483647;
+  background-color: inherit;
+  pointer-events: none;
+}
+
+/* iOS also samples the page background for the clock/battery area. Keep all
+   three surfaces in sync while a browser or emulation covers the CLI. */
+body.black > #pwa-status-bar,
+body.black:has(> #pwa-status-bar),
+html:has(> body.black > #pwa-status-bar) {
+  background-color: #000 !important;
+}
+
+body:is(.gamepad-shell-open, .gamepad-browser-skin, .gamepad-emulation, .gamepad-launch-active) > #pwa-status-bar,
+body:is(.gamepad-shell-open, .gamepad-browser-skin, .gamepad-emulation, .gamepad-launch-active):has(> #pwa-status-bar),
+html:has(> body:is(.gamepad-shell-open, .gamepad-browser-skin, .gamepad-emulation, .gamepad-launch-active) > #pwa-status-bar) {
+  background-color: #05070d !important;
+}
+
+body:has(> #vme-splash) > #pwa-status-bar,
+body:has(> #pwa-status-bar):has(> #vme-splash),
+html:has(> body > #pwa-status-bar):has(> body > #vme-splash) {
+  background-color: #000 !important;
+}
+
 /* Tryb pada (shell / skorka browsera / in-game): tlo body = baza shella (#05070d),
    nie per-platformowy --color0 (kolor CLI, ktore jest ukryte). Safari samplowuje tlo
    body pod paskami przegladarki - dzieki temu chrome zleje sie z shellem, nie z CLI. */
