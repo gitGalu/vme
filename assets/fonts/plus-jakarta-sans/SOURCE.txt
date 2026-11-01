@@ -1,0 +1,6 @@
+Plus Jakarta Sans variable font (weight axis 200-800)
+Source: https://github.com/google/fonts/tree/main/ofl/plusjakartasans
+Font: https://raw.githubusercontent.com/google/fonts/main/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf
+Designer: Tokotype
+License: SIL Open Font License 1.1 (see OFL.txt)
+Bundled unmodified; includes Latin, Polish and the other scripts supplied by the source font.
