@@ -1,0 +1,70 @@
+:root {
+  color-scheme: dark;
+  font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e6e7e9;
+  background: #101113;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; height: 100dvh; display: flex; flex-direction: column; }
+header { display: flex; align-items: center; gap: 18px; padding: 14px 24px; border-bottom: 1px solid #303236; }
+.brand { color: #eceef1; font-size: 20px; font-weight: 700; text-decoration: none; }
+h1 { margin: 0; font-size: 16px; font-weight: 600; }
+header p { margin: 1px 0 0; color: #93989f; font-size: 12px; }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
+aside { padding: 22px 20px; overflow-y: auto; border-right: 1px solid #303236; }
+label { display: block; margin-bottom: 7px; font-weight: 500; }
+select, input, button { font: inherit; color: inherit; }
+select, input { width: 100%; min-width: 0; border: 1px solid #42464d; border-radius: 5px; background: #1d1f23; padding: 9px 10px; }
+select:focus-visible, input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #cbd1d9; outline-offset: 3px; }
+button { border: 1px solid #42464d; border-radius: 5px; background: #25282d; min-height: 40px; padding: 7px 11px; cursor: pointer; }
+button:hover { background: #33373e; }
+button:disabled, select:disabled { opacity: .5; cursor: default; }
+button[aria-pressed="true"] { background: #e2e5ea; color: #101113; border-color: #e2e5ea; }
+.font-picker { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 5px; }
+.font-picker button { padding-inline: 0; }
+#custom-font-form { margin-block: 20px 14px; }
+#custom-font-form label { font-size: 12px; color: #b3b8c0; }
+.custom-picker { display: flex; gap: 5px; }
+.custom-picker input { width: 0; flex: 1; }
+.custom-picker button { padding-inline: 9px; font-size: 12px; }
+#compare { width: 100%; }
+#status { min-height: 54px; margin-block: 12px 0; font-size: 12px; color: #b4bdc9; overflow-wrap: anywhere; }
+#status.error { color: #ffb5ab; }
+.separator { height: 1px; background: #303236; margin: 18px 0; }
+#view, #device { margin-bottom: 18px; }
+.checkbox { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 400; }
+.checkbox input { width: 15px; height: 15px; margin: 0; accent-color: #cbd1d9; }
+.checkbox:has(input:disabled) { opacity: .5; }
+.view-help { color: #b3b8c0; font-size: 12px; margin: 0 0 16px; }
+.hint { color: #93989f; font-size: 12px; margin-block: 16px; }
+#font-source { color: #c6d0de; font-size: 12px; text-underline-offset: 3px; }
+.workspace { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.preview-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; padding: 12px 20px; border-bottom: 1px solid #303236; }
+.preview-heading strong { font-size: 14px; font-weight: 500; }
+.preview-heading span { color: #93989f; font-size: 12px; }
+#stage { min-height: 0; flex: 1; overflow: auto; background: #08090b; }
+#preview { display: block; border: 0; background: #000; }
+#stage.fixed-size { padding: 20px; }
+#stage.fixed-size #preview { margin-inline: auto; outline: 1px solid #42464d; }
+
+@media (max-width: 760px) {
+  body { height: auto; min-height: 100dvh; }
+  header { padding: 12px 16px; }
+  main { display: flex; flex-direction: column; }
+  aside { padding: 16px; border-right: 0; border-bottom: 1px solid #303236; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 12px; }
+  aside > label[for="font"], .font-picker, #custom-font-form, #compare, #status, .checkbox, #font-source { grid-column: 1 / -1; }
+  aside > label[for="view"] { grid-column: 1; grid-row: 7; }
+  aside > label[for="device"] { grid-column: 2; grid-row: 7; }
+  #view { grid-column: 1; grid-row: 8; }
+  #device { grid-column: 2; grid-row: 8; }
+  label, #view, #device { margin-bottom: 0; }
+  #custom-font-form { margin: 2px 0; }
+  #custom-font-form label { margin-bottom: 5px; }
+  #status { margin: 0; min-height: 36px; }
+  .separator, .hint { display: none; }
+  .view-help { grid-column: 1 / -1; margin: 4px 0; }
+  .workspace { height: 75dvh; min-height: 450px; flex: none; }
+  .preview-heading { padding: 10px 16px; }
+  #stage.fixed-size { padding: 12px; }
+}

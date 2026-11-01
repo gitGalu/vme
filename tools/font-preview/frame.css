@@ -1,0 +1,63 @@
+html,
+body {
+  display: block;
+  background: #000;
+  opacity: 1;
+}
+
+#collection-browser {
+  display: flex;
+}
+
+/* Font overrides are confined to the sample GUI in this isolated document. */
+:is(#collection-browser, #desktopUi, #gamepad-menu, #gamepad-legend-bar),
+:is(#collection-browser, #desktopUi, #gamepad-menu, #gamepad-legend-bar) * {
+  font-family: var(--preview-font, Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif) !important;
+}
+
+.preview-all-labels .collection-grid-label {
+  opacity: 1;
+  transform: none;
+}
+
+#collection-browser:not(.preview-all-labels) #collection-grid .collection-grid-cell:not(.focused):not(:hover) .collection-grid-label {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+#preview-desktop-scene,
+#preview-vr-stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+#preview-desktop-scene img {
+  width: min(82vw, 960px);
+  max-height: 78vh;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+#preview-vr-stage {
+  padding: 16px;
+  overflow: auto;
+  place-items: start center;
+  background: #05070d;
+}
+
+#preview-vr-canvas {
+  width: min(100%, 1024px);
+  height: auto !important;
+  flex-shrink: 0;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+#preview-desktop-scene[hidden],
+#preview-vr-stage[hidden],
+body[data-preview-view="shell-vr"] #gamepad-menu {
+  display: none;
+}

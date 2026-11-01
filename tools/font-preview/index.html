@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>VM/E · Podgląd czcionek</title>
+  <script type="module" src="./preview.js"></script>
+</head>
+<body>
+  <header>
+    <a class="brand" href="./">VM/E</a>
+    <div><h1>Podgląd czcionek</h1><p>Collection Browser · Desktop · VM/E Shell</p></div>
+  </header>
+  <main>
+    <aside aria-label="Ustawienia podglądu">
+      <label for="font">Krój pisma</label>
+      <div class="font-picker">
+        <button id="previous" type="button" aria-label="Poprzedni krój">←</button>
+        <select id="font" disabled></select>
+        <button id="next" type="button" aria-label="Następny krój">→</button>
+      </div>
+      <form id="custom-font-form">
+        <label for="custom-font">Inny krój z Google Fonts</label>
+        <div class="custom-picker"><input id="custom-font" placeholder="np. Onest" maxlength="80" autocomplete="off"><button type="submit">Sprawdź</button></div>
+      </form>
+      <button id="compare" type="button" aria-pressed="false" disabled>Porównaj z Avenir</button>
+      <p id="status" role="status" aria-live="polite">Przygotowywanie podglądu…</p>
+      <div class="separator"></div>
+      <label for="view">Widok</label>
+      <select id="view">
+        <optgroup label="Collection Browser"><option value="grid">Siatka</option><option value="coverflow">Karuzela</option></optgroup>
+        <optgroup label="Pozostałe GUI">
+          <option value="desktop">Desktop · pasek menu</option>
+          <option value="shell">VM/E Shell · gamepad</option>
+          <option value="shell-vr">VM/E Shell · VR (canvas)</option>
+        </optgroup>
+      </select>
+      <label for="device">Rozmiar ekranu</label>
+      <select id="device">
+        <option value="fit">Dopasuj do okna</option>
+        <option value="desktop">Desktop · 1280 × 800</option>
+        <option value="phone">Telefon · 390 × 844</option>
+        <option value="phone-landscape">Telefon · 844 × 390</option>
+        <option value="tablet">Tablet · 820 × 1180</option>
+        <option value="tablet-landscape">Tablet · 1180 × 820</option>
+      </select>
+      <p id="view-help" class="view-help"></p>
+      <label class="checkbox"><input id="labels" type="checkbox" checked> Podpisy wszystkich miniatur</label>
+      <p class="hint">Rozmiary i grubości tekstu pochodzą z aplikacji. Podgląd ma skalę 1:1; większy ekran można przewijać.</p>
+      <p class="hint">Fonty Google wymagają internetu. Avenir używa tego samego zestawu fontów zastępczych co VM/E.</p>
+      <a id="font-source" href="https://fonts.google.com/" target="_blank" rel="noopener noreferrer">Zobacz w Google Fonts ↗</a>
+    </aside>
+    <section class="workspace" aria-label="Podgląd GUI VM/E">
+      <div class="preview-heading"><strong id="applied-font">Avenir</strong><span id="viewport-label">Dopasuj do okna</span></div>
+      <div id="stage"><iframe id="preview" src="./frame.html" title="GUI VM/E z wybraną czcionką"></iframe></div>
+    </section>
+  </main>
+</body>
+</html>

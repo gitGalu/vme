@@ -62,6 +62,12 @@ including Polish characters. It is served locally and included in the PWA precac
 Platform-specific CLI fonts remain part of their themes. Plus Jakarta Sans is licensed under
 the [SIL Open Font License 1.1](src/assets/fonts/plus-jakarta-sans/OFL.txt).
 
+## Development tools
+
+The standalone [font preview](tools/font-preview/README.md) compares typefaces in
+actual VM/E components. Run it separately with `npm run font-preview`; its files
+are excluded from the application build and PWA.
+
 ## Built using
 
 Libretro https://github.com/libretro
