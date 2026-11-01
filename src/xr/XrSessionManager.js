@@ -22,6 +22,7 @@
 // thumbstick click (~0.7s) exits to 2D (in pad-launched games the menu
 // long-press fires first at 550ms - VME redirects it to exit while in VR).
 import { XrScreenRenderer } from './XrScreenRenderer.js';
+import { UI_FONT_STACK } from '../ui/UiFont.js';
 import { buildSyntheticGamepad, rightStickClicked,
     rightUpperButtonPressed, rightLowerButtonPressed } from './XrInputAdapter.js';
 
@@ -222,7 +223,7 @@ export class XrSessionManager {
         const ctx = this.#overlayCtx;
         ctx.drawImage(src, 0, 0);
         const fs = Math.max(14, Math.round(src.height * 0.042));
-        ctx.font = `600 ${fs}px "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif`;
+        ctx.font = `600 ${fs}px ${UI_FONT_STACK}`;
         const tw = ctx.measureText(this.#overlayText).width;
         const pad = fs * 0.9;
         const bw = tw + pad * 2, bh = fs * 2.1;

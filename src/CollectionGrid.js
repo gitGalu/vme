@@ -324,8 +324,7 @@ export class CollectionGrid {
         const img = item.image || '';
         // Text via textContent would be safer, but innerHTML here mirrors CollectionBrowser's
         // existing pattern; titles come from the local collection DB, not remote input.
-        // Cell IS the thumbnail (4:3). The label is an overlay on the bottom of the cover, shown
-        // only when the cell is focused (CSS) — so unfocused covers stay clean and large.
+        // Captions overlay the thumbnail (4:3); each browser controls visibility in CSS.
         return `
         <div class="collection-grid-cell" data-index="${index}" data-id="${item.id}" data-save="${hasSave ? item.save_data_id : 'undefined'}">
             <img class="collection-grid-img" src="${img}" alt="${item.title}">

@@ -73,6 +73,7 @@ export default defineConfig(({ command }) => {
           { src: 'assets/boot/*', dest: 'assets/boot' },
           // Include the font package's license alongside the bundled font.
           { src: 'assets/fonts/pixel-operator', dest: 'assets/fonts' },
+          { src: 'assets/fonts/plus-jakarta-sans/*.txt', dest: 'assets/fonts/plus-jakarta-sans' },
           { src: 'assets/images/vme-512.png', dest: '.' },
           { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
           ...(includePrivateAssets ? [{ src: '../private-assets/*.zip', dest: 'assets' }] : []),
@@ -101,7 +102,7 @@ export default defineConfig(({ command }) => {
         filename: 'sw.js',
         strategies: 'injectManifest',
         injectManifest: {
-          globPatterns: ['**/*.{js,css,html,png}'],
+          globPatterns: ['**/*.{js,css,html,png}', '**/PlusJakartaSans-Variable*.ttf', '**/fonts/plus-jakarta-sans/*.txt'],
         },
       }),
       obfuscator({

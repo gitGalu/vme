@@ -1,4 +1,5 @@
 import { precacheAndRoute } from 'workbox-precaching';
+import { cacheNames } from 'workbox-core';
 
 const appVersion = __APP_VERSION__;
 const CACHE_NAME = `my-app-cache-v${appVersion}`;
@@ -14,7 +15,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log(`Service Worker activating. Version: ${appVersion}`);
   
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, cacheNames.precache];
   
   event.waitUntil(
     caches.keys().then((cacheNames) => {

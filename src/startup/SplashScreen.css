@@ -34,7 +34,7 @@ canvas {
     margin: 0;
     padding: 0 24px;
     text-align: center;
-    font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: var(--ui-font-family, "Plus Jakarta Sans", Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif);
     font-size: clamp(14px, 1.1vw, 16px);
     font-weight: 400;
     line-height: 1.6;

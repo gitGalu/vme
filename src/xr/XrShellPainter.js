@@ -6,11 +6,12 @@
 //
 // Look loosely mirrors the DOM shell / launch screen: dark navy, light focus.
 import { t } from '../i18n/shellStrings.js';
+import { UI_FONT_STACK } from '../ui/UiFont.js';
 
 // 4:3, like the emulated screens - a 16:9 (or wider) shell felt too panoramic
 // as a quad in XR (user feedback from Quest 3).
 const W = 1024, H = 768;
-const FONT = '"Avenir Next", Avenir, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif';
+const FONT = UI_FONT_STACK;
 
 // Thumbnail box (right side, list views only). Rows shrink when it's active.
 const THUMB_W = 280, THUMB_H = 220, THUMB_X = W - THUMB_W - 40, THUMB_Y = 120;
@@ -51,6 +52,7 @@ export class XrShellPainter {
     #ctx;
     #thumbs;
     #thumbReserved = false;
+    #fontFamily = FONT;
     /** Fired when a thumbnail finished loading - repaint the current view. */
     onThumbLoad = null;
 
@@ -60,6 +62,11 @@ export class XrShellPainter {
         this.canvas.height = H;
         this.#ctx = this.canvas.getContext('2d');
         this.#thumbs = new ThumbCache(() => this.onThumbLoad?.());
+    }
+
+    /** Set the typeface for all canvas text; omitting it restores the UI font stack. */
+    setFontFamily(family = FONT) {
+        this.#fontFamily = family;
     }
 
     /** Repaints the whole frame from a GamepadMenu snapshot (null = closed -> blank). */
@@ -107,7 +114,7 @@ export class XrShellPainter {
         // 'right stick = screen placement' hint).
         if (snap.footnote) {
             const ctx2 = this.#ctx;
-            ctx2.font = `400 18px ${FONT}`;
+            ctx2.font = `400 18px ${this.#fontFamily}`;
             ctx2.fillStyle = '#5b6b7d';
             ctx2.textAlign = 'center';
             ctx2.textBaseline = 'middle';
@@ -124,7 +131,7 @@ export class XrShellPainter {
         ctx.textAlign = 'left';
 
         const segment = (text, color, weight = '600') => {
-            ctx.font = `${weight} 24px ${FONT}`;
+            ctx.font = `${weight} 24px ${this.#fontFamily}`;
             ctx.fillStyle = color;
             ctx.fillText(text, x, y);
             x += ctx.measureText(text).width;
@@ -168,13 +175,13 @@ export class XrShellPainter {
                 ctx.fill();
             }
             const color = row.disabled ? '#4a5058' : (row.focused ? '#ffffff' : '#9ba4b0');
-            ctx.font = `${row.focused ? '700' : '500'} 26px ${FONT}`;
+            ctx.font = `${row.focused ? '700' : '500'} 26px ${this.#fontFamily}`;
             ctx.fillStyle = color;
             ctx.textAlign = 'left';
             const hintSpace = row.hint ? 210 : 0;
             ctx.fillText(this.#ellipsize(row.label, rightEdge - xLabel - hintSpace - 16), xLabel, y);
             if (row.hint) {
-                ctx.font = `400 22px ${FONT}`;
+                ctx.font = `400 22px ${this.#fontFamily}`;
                 ctx.fillStyle = row.focused ? '#cfe6ff' : '#5b6b7d';
                 ctx.textAlign = 'right';
                 ctx.fillText(this.#ellipsize(row.hint, 200), xHintRight, y);
@@ -183,7 +190,7 @@ export class XrShellPainter {
 
         // Position indicator for long lists (Browse can have >100k entries).
         if (snap.total > rows.length) {
-            ctx.font = `400 18px ${FONT}`;
+            ctx.font = `400 18px ${this.#fontFamily}`;
             ctx.fillStyle = '#5b6b7d';
             ctx.textAlign = 'right';
             const focusPos = snap.start + snap.rows.findIndex(r => r.focused) + 1;
@@ -231,7 +238,7 @@ export class XrShellPainter {
                 ctx.lineWidth = focused ? 2 : 1;
                 this.#roundRect(x, y, w, keyH, 8);
                 ctx.stroke();
-                ctx.font = `600 22px ${FONT}`;
+                ctx.font = `600 22px ${this.#fontFamily}`;
                 ctx.fillStyle = focused ? '#ffffff' : '#9ba4b0';
                 ctx.fillText(key, x + w / 2, y + keyH / 2);
                 x += w + gap;
@@ -242,7 +249,7 @@ export class XrShellPainter {
 
     #paintNotice(snap) {
         const ctx = this.#ctx;
-        ctx.font = `600 26px ${FONT}`;
+        ctx.font = `600 26px ${this.#fontFamily}`;
         ctx.fillStyle = snap.isNotice === 'error' ? '#ff9b9b' : '#cfe6ff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -251,7 +258,7 @@ export class XrShellPainter {
 
     #paintEmptyHint(hint) {
         const ctx = this.#ctx;
-        ctx.font = `400 26px ${FONT}`;
+        ctx.font = `400 26px ${this.#fontFamily}`;
         ctx.fillStyle = '#5b6b7d';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -278,9 +285,9 @@ export class XrShellPainter {
         // Measure total width to center the legend.
         let total = 0;
         const parts = actions.map(([glyph, label]) => {
-            ctx.font = `700 20px ${FONT}`;
+            ctx.font = `700 20px ${this.#fontFamily}`;
             const gw = ctx.measureText(glyph).width;
-            ctx.font = `400 20px ${FONT}`;
+            ctx.font = `400 20px ${this.#fontFamily}`;
             const lw = ctx.measureText(label).width;
             const w = 30 + 8 + lw + 40;
             total += w;
@@ -309,12 +316,12 @@ export class XrShellPainter {
                 ctx.beginPath();
                 ctx.arc(x + 15, y, 15, 0, Math.PI * 2);
                 ctx.stroke();
-                ctx.font = `700 18px ${FONT}`;
+                ctx.font = `700 18px ${this.#fontFamily}`;
                 ctx.fillStyle = '#cfd6e4';
                 ctx.textAlign = 'center';
                 ctx.fillText(p.glyph, x + 15, y + 1);
             }
-            ctx.font = `400 20px ${FONT}`;
+            ctx.font = `400 20px ${this.#fontFamily}`;
             ctx.fillStyle = '#9ba4b0';
             ctx.textAlign = 'left';
             ctx.fillText(p.label, x + 38, y);

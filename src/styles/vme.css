@@ -1,4 +1,16 @@
 @font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url('../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+:root {
+  --ui-font-family: "Plus Jakarta Sans", Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+@font-face {
   font-family: Emulogic;
   src: url('../assets/fonts/emulogic.ttf') format("truetype");
   font-display: block;
@@ -169,7 +181,7 @@
   width: 100%;
   height: 100%;
   color: white;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 #warningStandalone p {
@@ -1509,7 +1521,7 @@ body.selection-mode-active .menu-strip-spacer {
   font-size: 14px;
   display: none;
   overflow-y: auto;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 .kb-mode-popover p {
@@ -2804,7 +2816,7 @@ body.selection-mode-active .menu-strip-spacer {
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   text-shadow: none;
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
@@ -2992,7 +3004,7 @@ body.selection-mode-active .menu-strip-spacer {
     inset 0 -1px 0 rgba(0, 0, 0, 0.05);
   color: #000000;
   text-shadow: none;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   animation: launch-settings-sheet-in 180ms ease-out forwards;
 }
 
@@ -3331,7 +3343,7 @@ body.selection-mode-active .menu-strip-spacer {
   justify-content: space-between;
   align-items: center;
   z-index: 2000 !important;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
   font-size: 80%;
   color: white;
   pointer-events: none;
@@ -3503,7 +3515,7 @@ body.selection-mode-active .menu-strip-spacer {
   opacity: 0;
   text-align: center;
   transition: opacity 0.25s;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 .fast-control {
@@ -3716,7 +3728,7 @@ body.selection-mode-active .menu-strip-spacer {
   overflow: visible !important;
   position: relative;
   color: lightgray;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 .flicking-camera {
@@ -3989,7 +4001,7 @@ body.selection-mode-active .menu-strip-spacer {
   opacity: 0;
   z-index: 9999999;
   transition: opacity 0.25s;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 .caption.show {
@@ -4006,7 +4018,7 @@ body.selection-mode-active .menu-strip-spacer {
   justify-content: space-between;
   align-items: center;
   z-index: 2000 !important;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
   font-size: 80%;
 }
 
@@ -4046,7 +4058,7 @@ body.selection-mode-active .menu-strip-spacer {
   margin: auto;
   justify-content: center;
   align-items: center;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 /* Empty / error state (BrowserEmptyState.js), shared by Save and Collection browsers. */
@@ -4101,7 +4113,7 @@ body.selection-mode-active .menu-strip-spacer {
   border: 1px solid #555;
   padding: 8px 32px 8px 16px;
   font-size: 14px;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   color: lightgray;
   border-radius: 4px;
   cursor: pointer;
@@ -4156,7 +4168,7 @@ body.selection-mode-active .menu-strip-spacer {
   border: 1px solid #555;
   padding: 8px 32px 8px 16px;
   font-size: 14px;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   color: lightgray;
   border-radius: 4px;
   cursor: pointer;
@@ -4205,7 +4217,7 @@ body.selection-mode-active .menu-strip-spacer {
 .custom-dropdown-option {
   padding: 8px 16px;
   font-size: 14px;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   color: lightgray;
   cursor: pointer;
   user-select: none;
@@ -4279,7 +4291,7 @@ body.selection-mode-active .menu-strip-spacer {
   justify-content: space-between;
   align-items: center;
   z-index: 2000 !important;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
   font-size: 80%;
 }
 
@@ -4385,7 +4397,7 @@ body.gamepad-browser-skin :is(#collectionBrowserSearchToggle, #saveBrowserSearch
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
   transition: border-color 140ms ease, background-color 140ms ease;
   color: #ddd;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   z-index: 2102;
 }
 
@@ -4613,7 +4625,7 @@ body.gamepad-browser-skin :is(#saveBrowserUi, #collectionBrowserUi) {
   margin: auto;
   justify-content: center;
   align-items: center;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
 }
 
 #collectionBrowserUiBack img:hover {
@@ -5011,7 +5023,7 @@ i {
   border-radius: 0px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   font-size: 20px;
   font-weight: 500;
   white-space: nowrap;
@@ -5083,7 +5095,7 @@ i {
   background-image:
     radial-gradient(130% 100% at 50% -10%, rgba(56, 72, 110, 0.45) 0%, rgba(20, 26, 42, 0) 60%),
     radial-gradient(150% 130% at 50% 50%, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.7) 100%);
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   color: lightgray;
   overflow: hidden;
 }
@@ -5106,7 +5118,7 @@ i {
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(40, 54, 86, 0.5) 0%, rgba(8, 11, 20, 0) 60%),
     rgba(5, 7, 13, 0.82);
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
 }
 
 #gamepad-ingame.visible {
@@ -5153,7 +5165,7 @@ i {
   background-image:
     radial-gradient(130% 100% at 50% -10%, rgba(56, 72, 110, 0.45) 0%, rgba(20, 26, 42, 0) 60%),
     radial-gradient(150% 130% at 50% 50%, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.7) 100%);
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   color: lightgray;
   /* Klik/dotyk przechodzi do document.body (gdzie loadRom czeka na gest). */
   cursor: pointer;
@@ -5295,7 +5307,7 @@ body.xr-active #gamepad-legend-bar {
   border-radius: 999px;
   color: #cfe6ff;
   background: rgba(5, 7, 13, 0.9);
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   font-size: clamp(18px, 3vh, 26px);
   letter-spacing: 0.04em;
 }
@@ -6014,7 +6026,7 @@ body.gamepad-browser-skin .gm-browser-crumb {
   z-index: 2001;   /* nad #saveBrowserUi (z-index 2000) */
   align-items: baseline;
   gap: 0.45em;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   font-size: clamp(18px, 4vh, 30px);   /* ten sam co .gm-topbar (shell Browse/Search) */
   letter-spacing: 0.02em;
   pointer-events: none;
@@ -6083,7 +6095,7 @@ body.gamepad-browser-skin #collection-browser .flicking-panel img {
 
 /* =========================================================================
    COLLECTION GRID (tryb pada): siatka miniaturek zamiast karuzeli Flicking.
-   Widoczna tylko w skorce; styl spojny z shellem (Avenir, aero focus, glebia
+   Widoczna tylko w skorce; styl spojny z shellem (Plus Jakarta Sans, aero focus, glebia
    tla dziedziczona z #collection-browser). Wirtualizacja: tylko widoczne wiersze
    sa renderowane, spacery trzymaja calkowita wysokosc scrolla.
    ========================================================================= */
@@ -6102,7 +6114,7 @@ body.gamepad-browser-skin #collection-browser .flicking-panel img {
            calc(env(safe-area-inset-bottom, 0px) + var(--gm-legend-h, 64px))
            max(12px, env(safe-area-inset-left, 0px));
   box-sizing: border-box;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   z-index: 1500;   /* nad tlem/karuzela, pod breadcrumb (2001) i overlayem (2100) */
   scrollbar-width: thin;
   /* Wirtualizacja podmienia kafle i wysokosc spacera przy kazdym renderze - scroll anchoring
@@ -6257,7 +6269,7 @@ body.gamepad-browser-skin .collection-grid-fade,
   z-index: 2;
 }
 
-/* Podpis: overlay na dole okładki, WIDOCZNY TYLKO PRZY FOKUSIE (nie rusza siatki). */
+/* Stałe podpisy na dole miniatur w obu browserach. */
 .collection-grid-label {
   position: absolute;
   left: 0;
@@ -6278,6 +6290,8 @@ body.gamepad-browser-skin .collection-grid-fade,
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
+#collection-grid .collection-grid-label,
+#save-grid .collection-grid-label,
 .collection-grid-cell.focused .collection-grid-label {
   opacity: 1;
   transform: translateY(0);
@@ -6354,7 +6368,7 @@ body.gamepad-browser-skin .collection-grid-fade,
   /* Pelna nieprzezroczystosc - po wyborze platformy overlay zostaje jako ZASLONA,
      dopoki nowa karuzela nie bedzie gotowa (bez tego przeswitywalby stary widok). */
   background: #05070d;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0s linear 0.3s;
@@ -6405,7 +6419,7 @@ body.gamepad-browser-skin .collection-grid-fade,
   padding: 12px 20px;
   background: rgba(0, 0, 0, 0.85);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--ui-font-family);
   color: lightgray;
   opacity: 0;
   transform: translateY(100%);
@@ -6619,7 +6633,7 @@ body.gamepad-browser-active .flicking-panel.active::after {
   text-align: center;
   padding: 40px;
   color: #ffffff;
-  font-family: Avenir, "Avenir Next", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif !important;
+  font-family: var(--ui-font-family) !important;
   max-width: 90%;
   max-height: 90%;
   overflow-y: auto;
@@ -6721,6 +6735,29 @@ body.gamepad-browser-active .flicking-panel.active::after {
 }
 #save-grid .save-card-quicksave { text-align: left; }
 
+/* Smaller grid captions on tablet/desktop windows. Requiring both dimensions
+   keeps phone typography unchanged in portrait and landscape. Values are 80%
+   of the original sizes, capped at 20px for headings and 14px for details. */
+@media (min-width: 600px) and (min-height: 600px) {
+  .collection-grid-title {
+    font-size: min(clamp(14.4px, 2.24vh, 20px), clamp(8.8px, 6.4cqi, 20px));
+  }
+
+  .collection-grid-credits,
+  .collection-grid-platform {
+    font-size: min(clamp(10.4px, 1.6vh, 14px), clamp(7.2px, 4.4cqi, 14px));
+  }
+
+  /* The timestamp is the primary heading within a game's saves. */
+  #save-grid .save-card-timestamp {
+    font-size: min(clamp(11.2px, 1.76vh, 19.2px), clamp(8px, 5.6cqi, 19.2px));
+  }
+
+  #save-browser[data-view="game-saves"] #save-grid .collection-grid-title {
+    font-size: clamp(12px, 1.2vh, 14px);
+  }
+}
+
 #save-browser[data-layout="grid"] #save-grid { opacity: 1; }
 #save-browser[data-layout="grid"] #save-grid.view-exit { opacity: 0; }
 /* The carousel scales during view transitions; the grid only fades. */
@@ -6745,7 +6782,6 @@ body.gamepad-browser-active .flicking-panel.active::after {
   z-index: auto;
 }
 #save-browser.filter-editing .collection-grid-cell.focused::after { opacity: 0; animation: none; }
-#save-browser.filter-editing .collection-grid-label { opacity: 0; transform: translateY(6px); }
 #save-browser.filter-editing .right-area .clickable-area { opacity: .5; pointer-events: none; }
 
 /* Typed platform filter: a text readout, keeping input on the hardware keyboard. */

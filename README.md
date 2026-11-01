@@ -55,6 +55,13 @@ Future support for systems without physical keyboard and touch screen input, all
 
 A customizable VR/XR experience in "Immersive XR Mode" with features not possible in MODE E, like additional 3D models of emulated devices, support for custom gestures and Quest controllers etc.
 
+## Interface font
+
+The application GUI uses the bundled Plus Jakarta Sans variable font (weights 200–800),
+including Polish characters. It is served locally and included in the PWA precache.
+Platform-specific CLI fonts remain part of their themes. Plus Jakarta Sans is licensed under
+the [SIL Open Font License 1.1](src/assets/fonts/plus-jakarta-sans/OFL.txt).
+
 ## Built using
 
 Libretro https://github.com/libretro

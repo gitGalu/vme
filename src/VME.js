@@ -42,6 +42,7 @@ import { GamepadManager } from './gamepad/GamepadManager.js';
 import { GamepadMenu } from './gamepad/GamepadMenu.js';
 import { XrSessionManager } from './xr/XrSessionManager.js';
 import { XrShellPainter } from './xr/XrShellPainter.js';
+import { ensureUiFont } from './ui/UiFont.js';
 import { UnsupportedDiskFormatError } from './utils/DiskFormats.js';
 import { createGuiButton } from './GuiButton.js';
 
@@ -2042,6 +2043,7 @@ export class VME {
         if (!this.#xr_painter) {
             this.#xr_painter = new XrShellPainter();
             this.#xr_painter.onThumbLoad = () => this.#paintVrShell();
+            ensureUiFont().then(loaded => { if (loaded) this.#paintVrShell(); });
         }
         return this.#xr_painter;
     }
