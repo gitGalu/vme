@@ -36,6 +36,7 @@ const SNES = {
     ],
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     fire_buttons: 6,
+    desktop_inline_special_keys: true,
     additional_buttons: {
         1: {
             "label": "SELECT",

@@ -77,6 +77,7 @@ export class UiManager {
     #kbModeDropdown = null;
     #diskDropdown = null;
     #focusSyncUnsub = null;
+    #controlsCleanup = null;
 
     constructor(platform_manager, kb_manager) {
         UiManager.#platform_manager = platform_manager;
@@ -622,20 +623,28 @@ export class UiManager {
     }
 
     initControlsButton() {
+        this.#controlsCleanup?.();
+        const listeners = new AbortController();
+        let cleanupInline = () => {};
+        this.#controlsCleanup = () => {
+            listeners.abort();
+            cleanupInline();
+        };
         const controlsButton = document.getElementById('desktopUiControls');
         const controlsMenu = document.getElementById('controlsMenu');
         const saveMenu = document.getElementById('saveMenu');
         const nostalgist = UiManager.#platform_manager.getNostalgist();
+        const platform = UiManager.#platform_manager.getSelectedPlatform();
+        controlsMenu.style.display = 'none';
+        controlsButton.style.display = Object.keys(platform.additional_buttons).length ? '' : 'none';
 
         const menuOptions = [];
 
-        let keys = Object.keys(UiManager.#platform_manager.getSelectedPlatform().additional_buttons);
+        const keys = Object.keys(platform.additional_buttons);
         if (keys.length > 0) {
             for (let i = 0; i < keys.length; i++) {
                 let key = keys[i];
-                let label = UiManager.#platform_manager.getSelectedPlatform().additional_buttons[key].label;
-                let keyCode = UiManager.#platform_manager.getSelectedPlatform().additional_buttons[key].keyCode;
-                let kbKey = UiManager.#platform_manager.getSelectedPlatform().additional_buttons[key].key;
+                const { label, keyCode, key: kbKey } = platform.additional_buttons[key];
 
                 menuOptions.push({
                     name: label, action: () => {
@@ -647,9 +656,6 @@ export class UiManager {
                     }
                 });
             }
-
-        } else {
-            controlsButton.style.display = "none";
         }
 
         function simulateKeydown(key, code, keyCode) {
@@ -709,10 +715,83 @@ export class UiManager {
             if (!controlsButton.contains(event.target) && !controlsMenu.contains(event.target)) {
                 controlsMenu.style.display = 'none';
             }
-        });
+        }, { signal: listeners.signal });
 
-        controlsButton.addEventListener('click', toggleMenu);
+        controlsButton.addEventListener('click', toggleMenu, { signal: listeners.signal });
         createMenu();
+
+        if (platform.desktop_inline_special_keys && menuOptions.length) {
+            cleanupInline = this.#initInlineSpecialKeys(controlsButton, controlsMenu, menuOptions);
+        }
+    }
+
+    #initInlineSpecialKeys(controlsButton, controlsMenu, menuOptions) {
+        const toolbar = document.getElementById('desktopUi');
+        const left = document.getElementById('desktopUiLeft');
+        const back = document.getElementById('desktopUiBack');
+        const right = controlsButton.parentElement;
+        const group = document.createElement('div');
+        group.className = 'desktop-special-keys';
+        group.setAttribute('role', 'group');
+        group.setAttribute('aria-label', 'Special keys');
+        right.classList.add('has-inline-special-keys');
+        controlsButton.before(group);
+
+        for (const option of menuOptions) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'desktop-special-key';
+            button.textContent = option.name;
+            // Keep keyboard input directed at the emulator after a mouse click.
+            button.addEventListener('pointerdown', event => event.preventDefault());
+            button.addEventListener('click', () => {
+                document.getElementById('saveMenu').style.display = 'none';
+                this.#diskDropdown?.close();
+                option.action();
+            });
+            group.appendChild(button);
+        }
+
+        const outerWidth = element => {
+            const style = getComputedStyle(element);
+            if (style.display === 'none' || style.position === 'absolute' || style.position === 'fixed') return 0;
+            return element.getBoundingClientRect().width
+                + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+        };
+        const updateLayout = () => {
+            if (!toolbar.clientWidth) return;
+            // The collapsed group stays measurable, outside the toolbar's flex layout.
+            // Compare intrinsic content widths so switching modes cannot change the threshold.
+            const otherButtonsWidth = Array.from(right.children)
+                .filter(element => element !== group && element !== controlsButton)
+                .reduce((width, element) => width + outerWidth(element), 0);
+            const leftWidth = Array.from(left.children)
+                .reduce((width, element) => width + outerWidth(element), 0);
+            const requiredWidth = outerWidth(back) + leftWidth + otherButtonsWidth
+                + group.getBoundingClientRect().width + parseFloat(getComputedStyle(right).marginLeft);
+            const expanded = toolbar.clientWidth >= requiredWidth + 16;
+            group.classList.toggle('is-collapsed', !expanded);
+            group.inert = !expanded;
+            group.setAttribute('aria-hidden', String(!expanded));
+            controlsButton.style.display = expanded ? 'none' : '';
+            if (expanded) controlsMenu.style.display = 'none';
+        };
+
+        let layoutFrame = 0;
+        const observer = new ResizeObserver(() => {
+            cancelAnimationFrame(layoutFrame);
+            layoutFrame = requestAnimationFrame(updateLayout);
+        });
+        for (const element of [toolbar, back, left, right, group, ...left.children, ...right.children]) {
+            observer.observe(element);
+        }
+        updateLayout();
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(layoutFrame);
+            group.remove();
+            right.classList.remove('has-inline-special-keys');
+        };
     }
 
     initSaveButton() {

@@ -302,6 +302,7 @@ const A800 = {
         overrides: {
         }
     },
+    desktop_inline_special_keys: true,
     additional_buttons: {
         1: {
             "label": "OPTION",

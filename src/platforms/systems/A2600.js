@@ -33,6 +33,7 @@ const A2600 = {
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
     fire_buttons: 1,
+    desktop_inline_special_keys: true,
     additional_buttons: {
         1: {
             "label": "SELECT",

@@ -3369,6 +3369,62 @@ body.selection-mode-active .menu-strip-spacer {
   margin-left: 16px;
 }
 
+#desktopUi .right-area.has-inline-special-keys {
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+#desktopUi:has(.desktop-special-keys) #desktopUiLeft {
+  white-space: nowrap;
+}
+
+.desktop-special-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  width: max-content;
+  padding-right: 16px;
+}
+
+.desktop-special-keys.is-collapsed {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.desktop-special-key {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 12px;
+  min-width: 36px;
+  min-height: 36px;
+  font: inherit;
+  font-size: 12pt;
+  color: lightgray;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.desktop-special-key:hover,
+.desktop-special-key:focus-visible {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.desktop-special-key:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.desktop-special-key:focus-visible {
+  outline: 1px solid lightgray;
+  outline-offset: -2px;
+}
+
 #desktopUiLeft {
   display: flex;
   align-items: center;

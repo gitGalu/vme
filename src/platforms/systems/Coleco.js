@@ -79,7 +79,8 @@ const Coleco = {
         }
     ],
     fire_buttons: 2,
-    // Retain the desktop Special keys menu; touch uses the full keypad above.
+    // Desktop uses these special keys; touch uses the full keypad above.
+    desktop_inline_special_keys: true,
     additional_buttons: {
         3: {
             "label": "1",

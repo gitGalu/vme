@@ -34,6 +34,8 @@ export default {
     dependencies: '',
     fire_buttons: 0,
     additional_buttons: {},
+    // Show special keys directly in the desktop toolbar when space allows.
+    desktop_inline_special_keys: false,
     libretro_thumbnails_system: null,
     getThumbnailUrls() {
         if (!this.libretro_thumbnails_system) {
