@@ -14,10 +14,10 @@ import { SelectedPlatforms } from './platforms/PlatformManager.js';
  * divs preserve total scroll height. Essential for large collections (C64 ~134k items).
  */
 export class CollectionGrid {
-    // Layout: exactly #cols columns filling the full width (no side padding). Cell width =
+    // Layout: #cols columns filling the full width (no side padding). Cell width =
     // (contentW - gaps) / cols, height from the 4:3 screenshot aspect. Rows are NOT height-capped,
     // so the bottom visible row may be clipped (by design).
-    #cols = 3;             // fixed column count
+    #cols = 3;             // default; a browser can override with --grid-columns
     #cellAspect = 4 / 3;   // width / height (4:3 screenshots)
     #cellHeight = 200;     // computed in #computeLayout()
     #cellWidth = 266;      // computed in #computeLayout()
@@ -128,6 +128,7 @@ export class CollectionGrid {
         this.#focusedCell = null;
         this.#items = items;
         this.#focusedIndex = this.#clampIndex(initialIndex);
+        this.#computeLayout();
         this.#renderedRange = { start: -1, end: -1 };
         this.#spacerTop.style.height = '0px';
         this.#spacerBottom.style.height = `${Math.ceil(items.length / this.#cols) * this.#rowHeight()}px`;
@@ -206,9 +207,10 @@ export class CollectionGrid {
         this.#changeListeners.forEach(cb => { try { cb(); } catch (_) {} });
     }
 
-    /** Cell height from viewport (3 rows fit), width from 4:3 aspect, columns from width. */
+    /** Read the column count from CSS and derive the 4:3 cell size. */
     #computeLayout() {
         const cs = getComputedStyle(this.#root);
+        this.#cols = parseInt(cs.getPropertyValue('--grid-columns'), 10) || 3;
         const padLeft = parseFloat(cs.paddingLeft) || 0;
         const padRight = parseFloat(cs.paddingRight) || 0;
 

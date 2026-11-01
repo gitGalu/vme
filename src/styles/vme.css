@@ -4242,11 +4242,13 @@ body.selection-mode-active .menu-strip-spacer {
   filter: brightness(0) invert(0.8);
 }
 
-/* Collection-local search, shared by the carousel and the virtualized grid. */
+/* Keep search in the toolbar flow so safe-area insets cannot move it away
+   from the other controls. Shared by both browsers and both view modes. */
 :is(#collectionBrowserSearchToggle, #saveBrowserSearchToggle) {
-  position: absolute;
-  top: max(10px, env(safe-area-inset-top, 0px));
-  left: 136px;
+  position: relative;
+  inset: auto;
+  flex: 0 0 44px;
+  margin: 0 8px;
   z-index: 2002;
   width: 44px;
   height: 44px;
@@ -4303,8 +4305,12 @@ body.selection-mode-active .menu-strip-spacer {
 }
 
 body.gamepad-browser-skin :is(#collectionBrowserSearchToggle, #saveBrowserSearchToggle) {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
   left: auto;
   right: max(12px, env(safe-area-inset-right, 0px));
+  margin: 0;
+  pointer-events: auto;
 }
 
 :is(#collectionBrowserSearch, #saveBrowserSearch) {
@@ -4481,25 +4487,14 @@ body.gamepad-browser-skin :is(#collectionBrowserSearchToggle, #saveBrowserSearch
 }
 
 /* Group view/search icons before the platform filter, with actions aligned right. */
-#saveBrowserSearchToggle {
-  position: relative;
-  inset: auto;
-  flex: 0 0 44px;
-  margin: 0 8px;
-}
 #saveBrowserUi .right-area { margin-left: auto; }
-body.gamepad-browser-skin #saveBrowserUi { z-index: 2002 !important; pointer-events: none; }
-body.gamepad-browser-skin #saveBrowserSearchToggle {
-  position: absolute;
-  top: max(10px, env(safe-area-inset-top, 0px));
-  left: auto;
-  right: max(12px, env(safe-area-inset-right, 0px));
-  margin: 0;
-  pointer-events: auto;
+body.gamepad-browser-skin :is(#saveBrowserUi, #collectionBrowserUi) {
+  z-index: 2002 !important;
+  pointer-events: none;
 }
 /* Platform options open over the search panel, including when the filter has no results. */
 #saveBrowserSearch { z-index: 1999; }
-#saveBrowserSearchToggle[hidden] { display: none; }
+:is(#collectionBrowserSearchToggle, #saveBrowserSearchToggle)[hidden] { display: none; }
 #save-browser #platformFilterContainer { flex: 0 1 auto; min-width: 0; }
 #save-browser #platformDropdownContainer {
   display: flex;
@@ -4520,10 +4515,8 @@ body.gamepad-browser-skin #saveBrowserSearchToggle {
   #saveBrowserUi .right-area .clickable-area { padding: 0 12px; font-size: 14px; }
 }
 
-/* View toggle after Back, reserving space for the search button.
-   The icon shows the view you switch TO. */
+/* The view icon shows the view you switch TO. Search follows it in the toolbar. */
 #collectionBrowserUiView {
-  margin-right: 48px;
   color: #cccccc;
 }
 
@@ -4532,7 +4525,6 @@ body.gamepad-browser-skin #saveBrowserSearchToggle {
 @media (max-width: 420px) {
   #collectionBrowserUiBack { padding-left: 16px; padding-right: 16px; }
   #collectionBrowserUiView { padding-left: 12px; padding-right: 12px; }
-  #collectionBrowserSearchToggle { left: 96px; }
   #collectionBrowserUi .right-area .clickable-area { padding: 0 12px; font-size: 14px; }
 }
 
@@ -6027,12 +6019,6 @@ body.gamepad-browser-skin #collectionBrowserUiRestore {
   display: none !important;
 }
 
-/* Grid (skorka): caly dolny/gorny pasek UI Collection jest pusty (przyciski wyzej ukryte) i ma
-   z-index:2000 - przykrywal gorny scroll-fade. W trybie gridu chowamy go w calosci. */
-body.gamepad-browser-skin #collectionBrowserUi {
-  display: none !important;
-}
-
 /* Tryb skorki: miniaturki karuzeli BEZ pochylenia (inline transform:rotate w JS). */
 body.gamepad-browser-skin #save-browser .flicking-panel img,
 body.gamepad-browser-skin #collection-browser .flicking-panel img {
@@ -6067,6 +6053,20 @@ body.gamepad-browser-skin #collection-browser .flicking-panel img {
      (Chrome) "przytrzymywal" wtedy tresc i przestawial scrollTop pod centrowanie fokusu: po
      przewinieciu myszka i kliknieciu daleko od fokusu widok konczyl obok kliknietej karty. */
   overflow-anchor: none;
+}
+
+/* Phone-sized portrait windows use larger previews; wider tablet windows
+   keep three columns. CollectionGrid reads this count for navigation too. */
+@media (orientation: portrait) and (max-width: 767px) {
+  .collection-grid {
+    --grid-columns: 2;
+  }
+}
+
+@media (orientation: landscape) {
+  .collection-grid {
+    --grid-columns: 4;
+  }
 }
 
 /* Cienie krawedziowe (scroll-fade): sygnalizuja, ze nad/pod widokiem jest wiecej tresci.
@@ -6664,6 +6664,7 @@ body.gamepad-browser-active .flicking-panel.active::after {
   text-align: left;
 }
 #save-grid .save-card-quicksave { text-align: left; }
+
 #save-browser[data-layout="grid"] #save-grid { opacity: 1; }
 #save-browser[data-layout="grid"] #save-grid.view-exit { opacity: 0; }
 /* The carousel scales during view transitions; the grid only fades. */

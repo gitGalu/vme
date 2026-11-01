@@ -178,6 +178,16 @@ export async function runSaveSearchTests({ grid = false } = {}) {
         assert(form.hidden && toggle.hidden && input.value === 'v1', 'Game-saves view must suspend search without clearing its query');
         assert(!overlay.search.isAvailable(), 'Gamepad search should not be advertised inside one game');
         assert(cards().map(card => card.dataset.id).join(',') === '102,101', 'Enter selected the wrong game/version');
+        if (grid) {
+            const card = root.querySelector('.collection-grid-cell.focused');
+            const range = document.createRange();
+            range.selectNodeContents(card.querySelector('.save-card-timestamp'));
+            const text = range.getBoundingClientRect();
+            const bounds = card.getBoundingClientRect();
+            assert(text.top >= bounds.top && text.bottom <= bounds.bottom
+                && text.left >= bounds.left && text.right <= bounds.right,
+                'The full save date/time must fit inside a grid card');
+        }
         await switchView(); await switchView();
         assert(form.hidden && input.value === 'v1', "Switching game saves lost the suspended search");
         const pad = buttons => ({ buttons: Array.from({ length: 16 }, (_, i) => ({ pressed: buttons.includes(i) })), axes: [0, 0] });
