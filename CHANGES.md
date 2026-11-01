@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.99] - 2026-11-01
+
+- refresh typography with Plus Jakarta Sans
+- Save Browser/Collection Browser: improve responsive layouts, captions and toolbar alignment
+- touch: refine controls, custom controller layouts and controller selection
+- desktop: show special keys directly in the toolbar when space allows
+- iOS PWA: fix status-bar blur and overlay clipping
+
 ## [0.98] - 2026-10-30
 
 - Save Browser/Collection Browser: add title search and coverflow/grid view toggle
