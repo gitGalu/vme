@@ -3571,7 +3571,7 @@ body.selection-mode-active .menu-strip-spacer {
   --fast-menu-row-height: 32px;
   --fast-menu-padding: 6px;
   position: absolute;
-  top: calc(0px - var(--fast-menu-padding));
+  top: calc(var(--fast-menu-offset-y, 0px) - var(--fast-menu-padding));
   left: calc(100% + 10px);
   display: flex;
   column-gap: 2px;

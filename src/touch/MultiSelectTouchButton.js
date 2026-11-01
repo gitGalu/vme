@@ -56,6 +56,12 @@ export class MultiSelectTouchButton {
         if (height <= 0) return;
         this.optionsContainer.style.setProperty('--fast-menu-row-height', `${height}px`);
 
+        // Keep the frame below the fixed iOS status strip, even on short landscape screens.
+        this.optionsContainer.style.setProperty('--fast-menu-offset-y', '0px');
+        const menuTop = this.optionsContainer.getBoundingClientRect().top;
+        const minimumTop = document.getElementById('pwa-status-bar')?.getBoundingClientRect().bottom ?? 0;
+        this.optionsContainer.style.setProperty('--fast-menu-offset-y', `${Math.max(0, minimumTop - menuTop)}px`);
+
         // Let the viewport limit determine wrapping, then fit the widest row.
         this.optionsContainer.style.removeProperty('width');
         const style = getComputedStyle(this.optionsContainer);
