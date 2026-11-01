@@ -105,6 +105,12 @@ checks actual colored pixels in the final WebGL framebuffer while modeling a GPU
 that returns NaN for signed `pow` arguments. It catches a black logo even when
 the HTML caption, animation timing and close/replay behavior all work.
 
+Toast layout and lifecycle: in a fresh isolated app page, import
+`tests/toast.browser.js` using the same `/@fs/<repository>/` prefix and run
+`await runToastTests()`. Repeat with reduced motion enabled. It checks system-strip
+clearance, long-message wrapping, keyboard-focusable actions, auto-close and the
+queue after manual dismissal. It does not use storage or start an emulator.
+
 Collection Browser lifecycle and virtualization: in a fresh isolated app page,
 import `tests/collection-browser.browser.js` through the `/@fs/<repository>/`
 prefix, then run `await runCollectionBrowserTests()`. It covers overlapping opens,

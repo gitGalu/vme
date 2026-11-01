@@ -7,6 +7,8 @@ export class ToastManager {
     static createContainer() {
         const container = document.createElement('div');
         container.id = 'toast-container';
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-relevant', 'additions');
         document.body.appendChild(container);
         return container;
     }
@@ -37,25 +39,29 @@ export class ToastManager {
 
         const toast = document.createElement('div');
         toast.classList.add('toast-message');
+        const content = document.createElement('span');
+        content.className = 'toast-message__content';
+        content.textContent = message;
+        toast.appendChild(content);
 
         if (buttonLabel && callback) {
-            toast.innerHTML = `${message} <span class="custom-button"><strong>${buttonLabel}</strong></span>`;
-            toast.querySelector('.custom-button').addEventListener('click', () => {
+            const button = this.createButton(buttonLabel, 'custom-button');
+            button.addEventListener('click', () => {
                 callback();
-                this.hideToast(toast, true);
+                this.hideToast(toast);
             });
+            toast.appendChild(button);
         } else if (isManualClose) {
-            toast.innerHTML = `${message} <span class="close-label"><strong>CLOSE</strong></span>`;
-            toast.querySelector('.close-label').addEventListener('click', () => this.hideToast(toast, true));
-        } else {
-            toast.textContent = message;
+            const button = this.createButton('CLOSE', 'close-label');
+            button.addEventListener('click', () => this.hideToast(toast));
+            toast.appendChild(button);
         }
 
         this.container.appendChild(toast);
         this.activeToasts++;
 
         requestAnimationFrame(() => {
-            toast.classList.add('show');
+            if (!toast.classList.contains('hide')) toast.classList.add('show');
         });
 
         if (!isManualClose) {
@@ -63,16 +69,39 @@ export class ToastManager {
         }
     }
 
-    static hideToast(toast, fromCloseButton = false) {
+    static createButton(label, className) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.textContent = label;
+        return button;
+    }
+
+    static hideToast(toast) {
+        if (!toast.isConnected || toast.classList.contains('hide')) return;
         toast.classList.remove('show');
         toast.classList.add('hide');
 
-        toast.addEventListener('transitionend', () => {
+        let finished = false;
+        let fallback;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            clearTimeout(fallback);
+            toast.removeEventListener('transitionend', onEnd);
             toast.remove();
             this.activeToasts--;
-            if (!fromCloseButton) {
-                this.displayNextToast();
-            }
-        });
+            this.displayNextToast();
+        };
+        const onEnd = event => {
+            if (event.target === toast && event.propertyName === 'opacity') finish();
+        };
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            finish();
+        } else {
+            toast.addEventListener('transitionend', onEnd);
+            // Also finish if a transition is interrupted or no frame was painted.
+            fallback = setTimeout(finish, 250);
+        }
     }
 }

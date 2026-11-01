@@ -3525,7 +3525,7 @@ body.selection-mode-active .menu-strip-spacer {
   justify-content: center;
   border: 1px solid transparent;
   border-radius: var(--fast-control-radius);
-  font: 500 11px Helvetica, Arial, sans-serif;
+  font: 600 11px Helvetica, Arial, sans-serif;
   color: var(--fast-control-label);
   background: var(--fast-control-background);
   pointer-events: auto;
@@ -4799,43 +4799,87 @@ canvas {
 }
 
 #toast-container {
+  --toast-top-edge: 0px;
   position: fixed;
-  top: 20px;
-  top: 0px;
-  width: 100%;
+  top: calc(max(env(safe-area-inset-top, 0px), var(--toast-top-edge)) + 12px);
+  left: 0;
+  right: 0;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px))
+             0 max(12px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
   pointer-events: none;
-  z-index: 3000 !important;
+  /* Above application controls, below the iOS status strip and splash. */
+  z-index: 2147483646 !important;
+}
+
+/* Leave the existing iOS paint strip intact; move notifications below it. */
+body:has(> #pwa-status-bar) #toast-container {
+  --toast-top-edge: 11px;
 }
 
 .toast-message {
-  background: rgba(0, 0, 0, 0.6);
-  color: #aaaaaa;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 12px;
-  padding: 16px 24px;
-  max-width: 80%;
-  margin-top: 10px;
+  background: rgba(28, 28, 28, 0.82);
+  color: #e0e0e0;
+  font-family: var(--ui-font-family);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-shadow: none;
+  width: max-content;
+  max-width: min(480px, 100%);
+  box-sizing: border-box;
+  padding: 12px 16px;
   opacity: 0;
-  transform: translateY(-50px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transform: translateY(6px);
+  transition: opacity 160ms ease, transform 160ms ease;
   pointer-events: auto;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.toast-message__content {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .toast-message .custom-button,
 .toast-message .close-label {
+  appearance: none;
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #f2f2f2;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
-  margin-left: 15px;
-  font-weight: bold;
-  color: #1e90ff;
+  touch-action: manipulation;
   text-transform: uppercase;
+}
+
+.toast-message :is(.custom-button, .close-label):is(:hover, :active) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toast-message :is(.custom-button, .close-label):focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .toast-message.show {
@@ -4845,7 +4889,15 @@ canvas {
 
 .toast-message.hide {
   opacity: 0;
-  transform: translateY(-50px);
+  transform: translateY(6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-message,
+  .toast-message.hide {
+    transition: none;
+    transform: none;
+  }
 }
 
 .flicking-panel {
