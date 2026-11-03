@@ -7,13 +7,17 @@
     "dev:https": "VITE_HTTPS=1 vite --port 8080 --host",
     "font-preview": "vite --config tools/font-preview/vite.config.js",
     "font-preview:https": "VITE_HTTPS=1 vite --config tools/font-preview/vite.config.js",
+    "touch-edit": "vite --config tools/touch-edit/vite.config.js",
+    "touch-edit:https": "VITE_HTTPS=1 vite --config tools/touch-edit/vite.config.js",
+    "touch-edit:check": "node tools/touch-edit/check.mjs",
     "build": "vite build  --emptyOutDir",
     "build:server": "VITE_PRIVATE_ASSETS=1 VITE_BASE=/ VITE_PWA_START_URL=/?source=pwa vite build --emptyOutDir",
     "build:gh": "VITE_BASE=/vme/ VITE_PWA_START_URL=/vme/?source=pwa vite build --emptyOutDir",
     "preview": "vite preview --port 8080 --host",
     "deploy": "npm run build:gh && gh-pages -d dist",
     "build-thumbnails": "node scripts/build-thumbnail-index.js",
-    "test:app-version": "node --test tests/app-version.mjs"
+    "test:app-version": "node --test tests/app-version.mjs",
+    "test:touch-edit": "node --test tests/touch-edit.mjs"
   },
   "keywords": [],
   "author": "gitGalu",

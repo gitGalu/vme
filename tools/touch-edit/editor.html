@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Custom controller editor for VM/E</title>
+<link rel="stylesheet" href="styles/custom-controller-editor.css" />
+</head>
+<body>
+<header>
+  <h1>Custom controller editor for VM/E</h1>
+  <div class="header-actions">
+    <a id="reviewSourceLink" href="./">Review source</a>
+    <button id="restoreDraftBtn" class="secondary">Restore draft</button>
+    <button id="undoBtn" class="secondary" title="Undo (Ctrl/Cmd+Z)">Undo</button>
+    <button id="redoBtn" class="secondary" title="Redo (Ctrl/Cmd+Y)">Redo</button>
+    <button id="clearDraftBtn" class="secondary" title="Clear saved draft from browser storage">Clear Draft</button>
+  </div>
+</header>
+<main>
+  <aside>
+    <section class="section platform-source">
+      <h2>VM/E controllers</h2>
+      <label for="platformSelect">Platform from current sources</label>
+      <select id="platformSelect" disabled><option>Loading platforms…</option></select>
+      <button id="loadPlatformBtn" disabled>Load platform (replace workspace)</button>
+      <label id="presetSelectLabel" for="presetSelect">Controller preset</label>
+      <select id="presetSelect" disabled><option>Load a platform first</option></select>
+      <p id="platformStatus" role="status">Reading VM/E configurations…</p>
+    </section>
+    <div class="tab-buttons">
+      <button class="tab-button active" data-tab="elements">Edit</button>
+      <button class="tab-button" data-tab="config">Config</button>
+      <button class="tab-button" data-tab="import">Import</button>
+      <button class="tab-button" data-tab="export">Export</button>
+    </div>
+    <div class="tab-panels">
+      <div class="tab-panel active" data-tab="elements">
+        <section class="section" data-role="element-editor">
+          <h2>Element Editor</h2>
+          <div>
+            <label for="elementComponent">Component</label>
+            <select id="elementComponent">
+              <option value="SingleTouchButton">SingleTouchButton</option>
+              <option value="DualTouchButton">DualTouchButton</option>
+              <option value="TripleTouchButton">TripleTouchButton</option>
+              <option value="QuadrupleTouchButton">QuadrupleTouchButton</option>
+              <option value="SextupleTouchButton">SextupleTouchButton</option>
+              <option value="TouchpadComponent">TouchpadComponent</option>
+              <option value="QuickshotComponent">QuickshotComponent</option>
+              <option value="CursorKeysComponent">CursorKeysComponent</option>
+            </select>
+          </div>
+          <div id="labelFields"></div>
+          <div id="optionsFields"></div>
+          <div>
+            <label for="bindingType">Binding Type</label>
+            <select id="bindingType">
+              <option value="keyboard">Keyboard</option>
+              <option value="joy">Joypad</option>
+              <option value="none">No Binding</option>
+              <option value="custom">Custom JSON</option>
+            </select>
+          </div>
+          <div id="bindingFields"></div>
+          <div id="bindingCustomContainer" style="display:none;">
+            <label for="bindingCustom">Custom Binding JSON</label>
+            <textarea id="bindingCustom" placeholder='{"type":"keyboard","key":{"key":"F1","code":"F1","keyCode":"112"}}'></textarea>
+          </div>
+          <div class="row">
+            <button id="addElementBtn">Add Element</button>
+            <button id="updateElementBtn" class="secondary" disabled>Update Element</button>
+            <button id="deleteElementBtn" class="danger" disabled>Remove</button>
+          </div>
+        </section>
+      </div>
+      <div class="tab-panel" data-tab="config">
+        <section class="section">
+          <h2>Global Settings</h2>
+          <div class="row">
+            <div>
+              <label for="specialLabel">Special Button Label</label>
+              <input id="specialLabel" type="text" value="SPECIAL" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="fastuiLandscape">FastUI Area (Landscape)</label>
+              <input id="fastuiLandscape" type="text" value="1 / 1 / span 50 / span 50" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="fastuiPortrait">FastUI Area (Portrait)</label>
+              <input id="fastuiPortrait" type="text" value="1 / 1 / span 50 / span 50" />
+            </div>
+          </div>
+        </section>
+
+        <section class="section" data-role="preset-settings">
+          <h2>Preset Details</h2>
+          <div class="row">
+            <button id="newPresetBtn" class="secondary">New</button>
+            <button id="deletePresetBtn" class="danger">Delete</button>
+          </div>
+          <div class="preset-layout-controls">
+            <label for="layoutSelect">Layout Variant</label>
+            <div class="preset-layout-row">
+              <select id="layoutSelect"></select>
+              <button id="newLayoutBtn" class="secondary">New Layout</button>
+              <button id="duplicateLayoutBtn" class="secondary">Duplicate</button>
+              <button id="renameLayoutBtn" class="secondary">Rename</button>
+              <button id="deleteLayoutBtn" class="danger">Delete Layout</button>
+            </div>
+          </div>
+          <div>
+            <label for="presetId">Preset ID</label>
+            <input id="presetId" type="text" placeholder="e.g. amiga-pinball" />
+          </div>
+          <div>
+            <label for="presetName">Preset Name</label>
+            <input id="presetName" type="text" placeholder="Display name" />
+          </div>
+          <div>
+            <label for="presetDescription">Preset Description</label>
+            <textarea id="presetDescription" placeholder="Short description"></textarea>
+          </div>
+          <div class="row">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; text-transform: none; margin: 8px 0;">
+              <input id="presetGameFocus" type="checkbox" checked style="margin: 0;">
+              <span>Enable Game Focus Mode</span>
+            </label>
+          </div>
+          <div class="row">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; text-transform: none; margin: 8px 0;">
+              <input id="presetHideAdditionalButtons" type="checkbox" style="margin: 0;">
+              <span>Hide additional platform buttons</span>
+            </label>
+          </div>
+          <div class="split">
+            <div>
+              <label for="landscapeCols">Landscape Columns</label>
+              <input id="landscapeCols" type="number" min="1" value="50" />
+            </div>
+            <div>
+              <label for="landscapeRows">Landscape Rows</label>
+              <input id="landscapeRows" type="number" min="1" value="50" />
+            </div>
+          </div>
+          <div class="split">
+            <div>
+              <label for="portraitCols">Portrait Columns</label>
+              <input id="portraitCols" type="number" min="1" value="50" />
+            </div>
+            <div>
+              <label for="portraitRows">Portrait Rows</label>
+              <input id="portraitRows" type="number" min="1" value="50" />
+            </div>
+          </div>
+          <button id="savePresetBtn">Save Preset Details</button>
+        </section>
+
+      </div>
+
+      <div class="tab-panel" data-tab="import">
+        <section class="section">
+          <h2>Import Data</h2>
+          <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 16px;">
+            Import from platform files or paste JSON/JavaScript data. Platform files will extract custom_controllers section automatically.
+          </p>
+
+          <div style="margin-bottom: 16px;">
+            <label for="fileInput">Import from Platform File</label>
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+              <input type="file" id="fileInput" accept=".js,.json" style="flex: 1; padding: 6px;">
+              <button id="loadFileBtn" class="secondary">Load File</button>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 10px; margin: 4px 0 0 0;">
+              Select a platform .js file (e.g., Amiga.js) to automatically extract custom_controllers
+            </p>
+          </div>
+
+          <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 16px;">
+            <label for="importData">Or Paste Configuration Manually</label>
+            <textarea id="importData" placeholder="Paste JSON data or JavaScript object here...
+
+Example:
+{
+  id: &quot;my-preset&quot;,
+  name: &quot;My Custom Preset&quot;,
+  elements: [
+    // your elements here...
+  ]
+}" style="min-height: 180px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; font-size: 11px;"></textarea>
+          </div>
+          <div class="row">
+            <button id="importBtn">Import Data</button>
+            <button id="clearImportBtn" class="secondary">Clear</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="tab-panel" data-tab="export">
+        <section class="section">
+          <h2>Export Data</h2>
+          <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 16px;">
+            Generate JSON configuration for use in your platform files or sharing with others.
+          </p>
+
+          <div style="margin-bottom: 16px;">
+            <label>Export Options</label>
+            <div style="display: flex; gap: 16px; margin-top: 6px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: none; margin: 0;">
+                <input type="radio" name="exportType" id="exportSingle" value="single" checked style="margin: 0;">
+                <span>Current Preset Only</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: none; margin: 0;">
+                <input type="radio" name="exportType" id="exportAll" value="all" style="margin: 0;">
+                <span>All Presets</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label for="output">Generated JSON Configuration</label>
+            <textarea id="output" readonly style="min-height: 220px; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; font-size: 11px;"></textarea>
+          </div>
+          <div class="row">
+            <button id="generateBtn">Generate JSON</button>
+            <button id="copyBtn" class="secondary">Copy to Clipboard</button>
+            <button id="downloadBtn" class="secondary">Download JSON</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </aside>
+
+  <div class="grid-board dual-view" id="gridBoard">
+    <div class="view-toggle">
+      <button id="showBothBtn" class="active">Both</button>
+      <button id="showLandscapeBtn">Landscape Only</button>
+      <button id="showPortraitBtn">Portrait Only</button>
+      <button id="toggleActiveOrientationBtn" title="Toggle active edit orientation (O)">Toggle Active (O)</button>
+      <div class="active-orientation-status" id="activeOrientationStatus" title="Keyboard shortcut: O">
+        <span class="label">Edit:</span>
+        <span class="value" id="activeOrientationValue">Landscape</span>
+      </div>
+      <span style="margin: 0 16px; color: var(--text-secondary);">|</span>
+      <button id="resetViewBtn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 4px 8px; color: var(--text-primary); font-size: 11px; cursor: pointer;">Reset View</button>
+      <span style="margin: 0 16px; color: var(--text-secondary);">|</span>
+      <select id="deviceRatio" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 4px 8px; color: var(--text-primary); font-size: 11px;">
+        <option value="iphone">iPhone (19.5:9)</option>
+        <option value="android">Android (915:412)</option>
+        <option value="ipad">iPad (4:3)</option>
+        <option value="square">Square (1:1)</option>
+      </select>
+    </div>
+    <section class="grid-panel" data-orientation="landscape" id="landscapePanel">
+      <h3>Landscape (50 × 50)</h3>
+      <div class="grid-stage" style="--cols:50; --rows:50;">
+        <div class="grid-canvas" data-orientation="landscape" style="--cols:50; --rows:50;">
+          <div class="grid-content" id="gridLandscape"></div>
+        </div>
+      </div>
+    </section>
+    <section class="grid-panel" data-orientation="portrait" id="portraitPanel">
+      <h3>Portrait (50 × 50)</h3>
+      <div class="grid-stage" style="--cols:50; --rows:50;">
+        <div class="grid-canvas" data-orientation="portrait" style="--cols:50; --rows:50;">
+          <div class="grid-content" id="gridPortrait"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside id="rightSidebar">
+    <section class="section">
+      <h2>Elements</h2>
+      <div id="elementList" class="element-list"></div>
+      <div class="layout-tools layout-tools-sidebar">
+        <h3>Layout Tools</h3>
+        <div>
+          <label for="layoutTarget">Target</label>
+          <select id="layoutTarget">
+            <option value="all" selected>All Elements (Preset)</option>
+            <option value="selected">Selected Element</option>
+          </select>
+        </div>
+        <div class="layout-group">
+          <span class="layout-group-title">Align (active orientation)</span>
+          <div class="layout-buttons">
+            <button id="alignLeftBtn" class="secondary small">Left</button>
+            <button id="alignCenterXBtn" class="secondary small">Center X</button>
+            <button id="alignRightBtn" class="secondary small">Right</button>
+            <button id="alignTopBtn" class="secondary small">Top</button>
+            <button id="alignMiddleBtn" class="secondary small">Middle</button>
+            <button id="alignBottomBtn" class="secondary small">Bottom</button>
+          </div>
+        </div>
+        <div class="layout-group">
+          <span class="layout-group-title">Distribute (active orientation)</span>
+          <div class="layout-buttons">
+            <button id="distributeHorizontalBtn" class="secondary small">Horizontal</button>
+            <button id="distributeVerticalBtn" class="secondary small">Vertical</button>
+          </div>
+        </div>
+        <div class="layout-group">
+          <span class="layout-group-title">Copy position (selected element)</span>
+          <div class="layout-buttons">
+            <button id="copyLandscapeToPortraitBtn" class="secondary small">Landscape -&gt; Portrait</button>
+            <button id="copyPortraitToLandscapeBtn" class="secondary small">Portrait -&gt; Landscape</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </aside>
+</main>
+<div class="toast" id="toast"></div>
+
+<script type="module" src="scripts/main.js"></script>
+</body>
+</html>

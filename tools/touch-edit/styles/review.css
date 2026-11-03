@@ -1,0 +1,53 @@
+:root { font: 14px/1.5 system-ui, sans-serif; color: #e8edf5; background: #10151f; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #303c50; flex: none; }
+h1 { margin: 0; font-size: 22px; } h2 { margin: 0 0 10px; font-size: 16px; }
+p { margin: 8px 0; } header p, .note, #presetDescription { color: #a6b4c8; }
+header p { margin: 4px 0 0; font-size: 12px; }
+nav, .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button, select, nav a { border: 1px solid #445575; border-radius: 8px; background: #1d293d; color: inherit; padding: 8px 12px; font: inherit; }
+button, nav a { cursor: pointer; } button:hover, nav a:hover { background: #293c59; } nav a { text-decoration: none; }
+button:disabled { opacity: .5; cursor: wait; } select { width: 100%; min-width: 0; }
+main { padding: 16px; }
+.controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.controls label:nth-child(-n+2) { grid-column: 1/-1; }
+label { display: flex; flex-direction: column; gap: 6px; color: #b7c7dd; }
+.checkbox { flex-direction: row; align-items: center; padding: 8px 0; white-space: nowrap; }
+#sourceStatus { font: 12px/1.6 ui-monospace, monospace; color: #9fb6d5; overflow-wrap: anywhere; }
+#error { color: #ffb3af; padding: 12px; border: 1px solid #b24848; border-radius: 8px; }
+.review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+#previews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+#previews[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+.preview-card { min-width: 0; border: 1px solid #303c50; border-radius: 12px; padding: 12px; background: #141d2b; }
+.preview-card h2 { font-size: 13px; }
+.preview-slot { min-width: 0; display: grid; place-items: center; }
+.preview-viewport { position: relative; overflow: hidden; background: #111923; border-radius: 6px; }
+.preview-viewport iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: top left; }
+aside { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+aside section { padding: 16px; border: 1px solid #303c50; border-radius: 12px; background: #141d2b; }
+aside p { font-size: 12px; color: #a6b4c8; }
+.finding { padding: 8px 0; border-bottom: 1px solid #2b374a; font-size: 12px; overflow-wrap: anywhere; }
+.finding[data-severity="error"] { color: #ffaaa4; } .finding[data-severity="warning"] { color: #f2cd89; }
+.finding small { display: block; color: #95a9c5; }
+#findings { max-height: 360px; overflow: auto; } details summary { cursor: pointer; }
+#heldInputs { color: #9dd8af; overflow-wrap: anywhere; } #heldInputs[data-held="true"] { color: #f2cd89; }
+#inputEvents { max-height: 300px; overflow: auto; margin: 12px 0 0; padding: 0; list-style: none; font: 11px/1.7 ui-monospace, monospace; overflow-wrap: anywhere; }
+.actions button { font-size: 12px; padding: 6px 8px; }
+:root[data-fit="true"] body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+:root[data-fit="true"] main { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+:root[data-fit="true"] .review-layout { flex: 1; min-width: 0; min-height: 0; align-items: stretch; }
+:root[data-fit="true"] #previews { min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+:root[data-fit="true"] .preview-card { min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+:root[data-fit="true"] .preview-slot { flex: 1; min-height: 0; overflow: hidden; }
+:root[data-fit="true"] aside { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+:root[data-fit="true"] aside > * { flex: none; }
+@media (max-width: 900px) {
+  .review-layout { grid-template-columns: minmax(0, 1fr); }
+  :root[data-fit="true"] .review-layout { grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
+}
+@media (max-width: 650px) {
+  #previews { grid-template-columns: minmax(0, 1fr); }
+  :root[data-fit="true"] #previews { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  :root[data-fit="true"] #previews[data-count="1"] { grid-template-rows: minmax(0, 1fr); }
+}

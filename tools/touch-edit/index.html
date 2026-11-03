@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-fit="true">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VM/E Custom Controller Tool</title>
+  <link rel="stylesheet" href="styles/review.css">
+  <script type="module" src="scripts/review.js"></script>
+</head>
+<body>
+  <header>
+    <h1>VM/E Custom Controller Tool</h1>
+    <nav><button id="reloadSource">Reload source</button><button id="copyLink">Copy link</button><a id="editLink" href="editor.html">Edit workspace</a></nav>
+  </header>
+  <main>
+    <div class="review-layout">
+      <section id="previews" aria-label="Runtime previews"></section>
+      <aside>
+        <section>
+          <h2>Review settings</h2>
+          <label class="checkbox"><input id="fitViewport" type="checkbox" checked>Fit to viewport</label>
+          <div class="controls" aria-label="Review selection">
+            <label>Platform<select id="platformSelect"></select></label>
+            <label>Controller preset<select id="presetSelect"></select></label>
+            <label>Device<select id="deviceSelect"></select></label>
+            <label>Orientation<select id="orientationSelect"><option value="both">Both</option><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+            <label class="checkbox"><input id="gridOverlay" type="checkbox">Grid overlay</label>
+            <label class="checkbox"><input id="showDisk" type="checkbox">DISK button</label>
+            <label class="checkbox"><input id="showFastUi" type="checkbox" checked>Fast buttons</label>
+            <label class="checkbox"><input id="keyboardTest" type="checkbox">Keyboard test</label>
+          </div>
+          <p id="sourceStatus" role="status">Loading source…</p>
+          <p id="presetDescription"></p>
+          <p id="keyboardStatus" role="status" hidden></p>
+          <p id="error" role="alert" hidden></p>
+        </section>
+        <section><h2>Diagnostics</h2><p id="diagnosticSummary"></p><div id="findings"></div></section>
+        <section><h2>Input monitor</h2>
+          <div class="actions"><button id="clearEvents">Clear log</button><button id="releaseInputs">Release inputs</button><button id="downloadReport">Download report</button></div>
+          <p id="heldInputs" role="status">No inputs held</p><ol id="inputEvents" aria-label="Recent input events"></ol>
+        </section>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

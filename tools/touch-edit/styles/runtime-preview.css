@@ -1,0 +1,10 @@
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #111923; }
+body { display: block; opacity: 1; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 50% 20%, #263749, #111923 70%); }
+#review-grid { display: none; position: fixed; inset: 0; z-index: 10000; pointer-events: none;
+  background-image: linear-gradient(#90bfff22 1px, transparent 1px), linear-gradient(90deg, #90bfff22 1px, transparent 1px);
+  background-size: 2% 2%; }
+html[data-grid="true"] #review-grid { display: block; }
+.review-key-active { background-color: #42b4ec88 !important; color: #fff !important; box-shadow: inset 0 0 0 3px #7ddaff, 0 0 12px #42b4ec88 !important; }
+.review-key-directions { position: absolute; top: 5px; left: 5px; z-index: 1; padding: 3px 8px; border-radius: 5px;
+  color: #fff; background: #07567a; font: bold 18px system-ui, sans-serif; pointer-events: none; }
