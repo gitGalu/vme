@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VM/E Collection Builder</title>
+  <link rel="stylesheet" href="styles/builder.css">
+  <script type="module" src="scripts/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>VM/E Collection Builder</h1>
+    <div class="header-actions"><label class="file-button">Import catalogs<input id="catalogFiles" type="file" multiple accept=".zip,.json,.software"></label><button id="clearSelection">New collection</button></div>
+  </header>
+  <main>
+    <section class="workspace panel" aria-label="Collection workspace">
+      <details id="sourcesPanel"><summary id="sourceCount">Imported catalogs (0)</summary><div id="sources"></div></details>
+      <div id="importStatus" role="status"></div>
+      <div class="context-bar">
+        <label class="platform-context">Platform<select id="platformFilter"><option value="">All platforms</option></select></label>
+        <div class="input-tabs" role="tablist" aria-label="Add programs">
+          <button id="listTab" role="tab" aria-selected="true" aria-controls="listInputPane">Paste a list</button>
+          <button id="searchTab" role="tab" aria-selected="false" aria-controls="searchInputPane" tabindex="-1">Search catalogs</button>
+        </div>
+      </div>
+      <section id="listInputPane" role="tabpanel" aria-labelledby="listTab">
+        <label class="sr-only" for="programListText">Program titles</label>
+        <textarea id="programListText" rows="5" spellcheck="false" placeholder="One title per line…&#10;Lemmings&#10;Rick Dangerous 2&#10;Ruff and Reddy in the Space Adventure"></textarea>
+        <div class="input-actions"><button id="matchProgramList">Match list</button><button id="copyListPrompt" title="Copy a list-generation prompt with all supported platform IDs">Copy prompt</button><details class="format-help"><summary>List format</summary><p>One title per line. For a mixed list use <code>platform | title | optional variant</code>.</p></details><span id="copyPromptStatus" role="status"></span></div>
+      </section>
+      <section id="searchInputPane" role="tabpanel" aria-labelledby="searchTab" hidden>
+        <label class="sr-only" for="query">Search catalogs</label><input id="query" type="search" placeholder="Search titles, filenames or tags…" autocomplete="off">
+        <details id="advancedFilters"><summary>More filters<span id="filterHint"></span></summary><div class="filters">
+          <label id="catalogFilterLabel">Catalog<select id="catalogFilter"><option value="">All catalogs</option></select></label>
+          <label id="tagFilterLabel">Tag<select id="tagFilter"><option value="">All tags</option></select></label>
+        </div></details>
+        <div class="table-scroll"><table><thead><tr><th>Game</th><th>Platform</th><th>Tag</th><th><span class="sr-only">Selection</span></th></tr></thead><tbody id="results"></tbody></table></div>
+        <div class="pagination"><button id="previousPage" disabled>Previous</button><span id="resultCount" role="status">Import catalogs to begin</span><button id="nextPage" disabled>Next</button></div>
+      </section>
+      <section class="collection-games" aria-label="Games in collection">
+        <div class="section-heading"><h2 id="selectionCount">0 games</h2><span id="selectionSize"></span></div>
+        <p id="programListStatus" role="status"></p>
+        <ol id="selection"></ol>
+        <p id="emptySelection" class="empty">Import catalogs, then paste a list or search for games.</p>
+        <button id="showMoreGames" hidden>Show more</button>
+      </section>
+    </section>
+    <aside class="settings panel" aria-label="Collection settings">
+      <h2>Collection</h2>
+      <label>Name<input id="collectionName" value="My collection"></label>
+      <details id="collectionDetails"><summary>Collection details</summary><div class="settings-fields">
+        <label>ID<input id="collectionId" value="my-collection" spellcheck="false"></label>
+        <label>Cover<input id="collectionCover" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+        <img id="coverPreview" alt="Collection cover" hidden>
+      </div></details>
+      <div class="build-settings">
+        <label>Include<select id="exportMode"><option value="files">Game files</option><option value="links">Links only</option></select></label>
+        <label class="check" title="Prefer WHDLoad releases when matching Amiga titles. Click Match list to update existing matches."><input id="preferWHDLoad" type="checkbox">Prefer WHDLoad (Amiga)</label>
+        <label class="check"><input id="includeImages" type="checkbox" checked>Download missing images</label>
+        <button id="exportZip" class="primary" disabled>Build ZIP</button>
+        <button id="cancelOperation" hidden>Cancel</button>
+      </div>
+      <ul id="validation" hidden></ul>
+      <progress id="exportProgress" max="100" value="0" hidden></progress>
+      <p id="exportStatus" role="status"></p>
+      <p id="imageStatus" role="status"></p>
+      <section id="importTestPanel" class="import-test" aria-label="VM/E import test" hidden>
+        <h2>Last ZIP import test</h2>
+        <p id="importTestFilename"></p>
+        <p id="importTestStatus" role="status"></p>
+        <p id="importTestHint"></p>
+        <button id="testLinkedImport" class="text-button" hidden>Test import · downloads linked files</button>
+        <details><summary>Import details</summary><ol id="importTestSteps"></ol><p class="test-scope">Uses the current working sources and temporary memory. The published VM/E version, BIOS, database writes and game startup are not checked.</p></details>
+      </section>
+      <button id="downloadProgramReport" class="text-button" hidden>Download report</button>
+      <p id="saveStatus" role="status">Opening workspace…</p>
+    </aside>
+  </main>
+  <dialog id="importPlatformDialog" aria-labelledby="importPlatformTitle"><form method="dialog">
+    <h2 id="importPlatformTitle">Choose a platform</h2><p id="importPlatformFilename"></p>
+    <label>Platform<select id="importPlatform" required></select></label>
+    <div class="dialog-actions"><button value="cancel" formnovalidate>Cancel</button><button value="import" class="primary">Import</button></div>
+  </form></dialog>
+  <dialog id="listPromptDialog" aria-labelledby="listPromptTitle"><form method="dialog">
+    <h2 id="listPromptTitle">List prompt</h2><p>Automatic copying is unavailable. Copy the selected text.</p>
+    <label class="sr-only" for="listPromptText">Prompt to copy</label><textarea id="listPromptText" rows="14" readonly></textarea>
+    <div class="dialog-actions"><button>Close</button></div>
+  </form></dialog>
+  <div id="error" role="alert" hidden></div>
+</body>
+</html>

@@ -19,7 +19,7 @@ const DEFAULT_TAGGED_PRIORITY = -1;
 const UNTAGGED_PRIORITY = 0;
 const sortedDirectories = new WeakMap();
 
-function tagRank(model, item) {
+export function tagRank(model, item) {
     const tag = model && model.tags ? model.tags[item[1]] : null;
     if (!tag) {
         return UNTAGGED_PRIORITY;

@@ -10,6 +10,8 @@
     "touch-edit": "vite --config tools/touch-edit/vite.config.js",
     "touch-edit:https": "VITE_HTTPS=1 vite --config tools/touch-edit/vite.config.js",
     "touch-edit:check": "node tools/touch-edit/check.mjs",
+    "collection-builder": "vite --config tools/collection-builder/vite.config.js",
+    "collection-builder:https": "VITE_HTTPS=1 vite --config tools/collection-builder/vite.config.js",
     "build": "vite build  --emptyOutDir",
     "build:server": "VITE_PRIVATE_ASSETS=1 VITE_BASE=/ VITE_PWA_START_URL=/?source=pwa vite build --emptyOutDir",
     "build:gh": "VITE_BASE=/vme/ VITE_PWA_START_URL=/vme/?source=pwa vite build --emptyOutDir",
@@ -17,7 +19,8 @@
     "deploy": "npm run build:gh && gh-pages -d dist",
     "build-thumbnails": "node scripts/build-thumbnail-index.js",
     "test:app-version": "node --test tests/app-version.mjs",
-    "test:touch-edit": "node --test tests/touch-edit.mjs"
+    "test:touch-edit": "node --test tests/touch-edit.mjs",
+    "test:collection-builder": "node --test tests/collection-builder.mjs"
   },
   "keywords": [],
   "author": "gitGalu",

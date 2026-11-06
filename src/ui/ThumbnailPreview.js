@@ -1,8 +1,7 @@
-import { FileUtils } from '../utils/FileUtils.js';
+import { matchThumbnails } from '../utils/ThumbnailMatching.js';
 import { SelectedPlatforms } from '../platforms/PlatformManager.js';
 
 const SHOW_DEBOUNCE_MS = 200;
-const LAYER_ORDER = ['snaps', 'titles', 'boxarts'];
 
 class ThumbnailPreviewClass {
     #platformManager = null;
@@ -83,24 +82,11 @@ class ThumbnailPreviewClass {
             this.hide();
             return;
         }
-        const keys = FileUtils.getThumbnailMatchKeys(romName);
-        if (keys.length === 0) {
-            this.hide();
-            return;
-        }
         const index = await this.#loadIndex(platform.platform_id);
         if (this.#currentToken !== token) return;
         if (!index) return;
 
-        const layers = [];
-        for (const layer of LAYER_ORDER) {
-            const layerIndex = index[layer];
-            const layerUrl = urls[layer];
-            if (!layerIndex || !layerUrl) continue;
-            const filename = keys.map(key => layerIndex[key]).find(Boolean);
-            if (!filename) continue;
-            layers.push({ layer, url: `${layerUrl}${encodeURIComponent(filename)}` });
-        }
+        const layers = matchThumbnails(index, urls, [romName]);
         if (layers.length === 0) return;
 
         this.#availableLayers = layers;

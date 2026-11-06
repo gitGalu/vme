@@ -34,6 +34,8 @@ import Apple2 from './systems/Apple2.js';
 import JSZip from 'jszip';
 import { ArchiveSelectionCancelled, readProgramArchive, extractArchiveProgram, restoreArchiveProgram } from '../utils/ArchivePrograms.js';
 import { UnsupportedDiskFormatError, assertSupportedDiskFormat } from '../utils/DiskFormats.js';
+import { prepareCollectionDiskBundle } from '../utils/CollectionDiskSet.js';
+import { importCollectionArchive, collectionImportIssue } from '../utils/CollectionImport.js';
 import { showArchiveProgramPicker } from '../components/ArchiveProgramPicker.js';
 import { s, hide } from '../dom.js';
 import { MD5, lib } from 'crypto-js';
@@ -1542,11 +1544,19 @@ export class PlatformManager {
             const originalCaption = caption;
             const remembered = this.#pending_launch_core_config?._vmeArchive;
             await assertSupportedDiskFormat(blob, romName, this.#selected_platform.disk_formats);
-            const archiveProgram = await this.#prepareArchiveProgram(blob, romName, remembered, browserType === 'save');
+            const collectionDisks = this.#isMultidiskEnabled()
+                ? await prepareCollectionDiskBundle(blob, romName, this.#selected_platform, this.#pending_archive_disk_index) : null;
+            if (collectionDisks) {
+                this.#archive_selection = null;
+                this.#pending_archive_disk_index = null;
+            }
+            const archiveProgram = collectionDisks || await this.#prepareArchiveProgram(blob, romName, remembered, browserType === 'save');
             if (archiveProgram) {
                 blob = archiveProgram;
-                romName = archiveProgram.archiveSelection.entryPath;
-                caption = remembered ? caption : `${romName} · ${originalCaption}`;
+                if (archiveProgram.archiveSelection) {
+                    romName = archiveProgram.archiveSelection.entryPath;
+                    caption = remembered ? caption : `${romName} · ${originalCaption}`;
+                }
             }
             return await this.#loadPreparedRomFile(blob, romName, caption, fromBrowser, browserType, closeCallback);
         } catch (error) {
@@ -2337,101 +2347,23 @@ export class PlatformManager {
     }
 
     async loadCollectionFile(blob) {
-        const zip = new JSZip();
-        let roms = [];
-
         try {
-            const content = await zip.loadAsync(blob);
-
-            if (content.files['vme_collection.json']) {
-                const vmeImportJson = await content.file('vme_collection.json').async('string');
-                const vmeImport = JSON.parse(vmeImportJson);
-
-                this.#cli.print('&nbsp;');
-                this.#cli.print_progress(`Importing ...`);
-
-                let itemCounts = vmeImport.list.length;
-
-                let i = 0;
-
-                let collectionUniqueName = vmeImport.id;
-                let collectionTitle = vmeImport.name;
-
-                const collectionImgFile = zip.file(vmeImport.image);
-                let collectionImgBlob = null;
-                if (collectionImgFile) {
-                    collectionImgBlob = await collectionImgFile.async('blob');
-                } else {
-                    throw new Error("The image file is invalid: " + vmeImport.image);
-                }
-
-                for (const item of vmeImport.list) {
-
-                    i++;
-                    this.#cli.print_progress(`Importing ... (${i}/${itemCounts})`);
-
-                    const platform = Object.values(SelectedPlatforms).find(platform => platform.platform_id === item.platform_id);
-                    if (platform == undefined) {
-                        throw new Error("Unsupported platform found.");
-                    }
-
-                    const [depsData, missingDeps, softwareFile] = await this.#storage_manager.checkFiles(platform);
-                    if (missingDeps.length > 0) {
-                        throw new Error("You are missing " + item.platform_id + " requirements.");
-                    }
-
-                    const imgFile = zip.file(item.image);
-                    let imgBlob = null;
-                    if (imgFile) {
-                        imgBlob = await imgFile.async('blob');
-                    } else {
-                        throw new Error("The image file is invalid: " + item.image);
-                    }
-
-                    let blob = null;
-                    if (item.url) {
-                        const response = await this.#network_manager.fetch(item.url, false);
-                        blob = await response.blob();
-                    } else if (item.file) {
-                        const romFile = zip.file(item.file);
-                        if (romFile) {
-                            blob = await romFile.async("blob");
-                        } else {
-                            throw new Error("The file is not found in the zip: " + item.file);
-                        }
-                    } else {
-                        throw new Error("The rom file is invalid: " + item.url);
-                    }
-
-                    roms.push({
-                        title: (item.title != null) ? item.title : "",
-                        credits: (item.credits != null) ? item.credits : "",
-                        description: (item.description != null) ? item.description : "",
-                        platform_id: item.platform_id,
-                        file: blob,
-                        data_type: 'blob',
-                        filename: item.filename,
-                        image: imgBlob
-                    });
-                }
-
-                const ok = await this.#storage_manager.storeCollection(collectionUniqueName, collectionTitle, collectionImgBlob, roms);
-
-                if (ok) {
-                    this.#cli.message("A new collection was successfully imported.");
-                } else {
-                    throw new Error();
-                }
-
-            } else {
-                this.#cli.message("&nbsp;", "Error importing VME Collection archive.", "vme_collection.json not found in the ZIP file.");
-                return;
-            }
+            this.#cli.print('&nbsp;');
+            const result = await importCollectionArchive(blob, {
+                platforms: SelectedPlatforms,
+                storage: this.#storage_manager,
+                network: this.#network_manager,
+                onProgress: position => this.#cli.print_progress(position.entryIndex
+                    ? `Importing ... (${position.entryIndex}/${position.total})`
+                    : 'Importing ...')
+            });
+            this.#cli.message('A new collection was successfully imported.');
+            return { ok: true, ...result };
         } catch (error) {
             console.error('An error occurred:', error);
             this.#cli.guru(error, false);
-            this.#cli.message("&nbsp;", "Error importing VME Collection archive.");
-            return;
+            this.#cli.message('&nbsp;', 'Error importing VME Collection archive.');
+            return { ok: false, error: collectionImportIssue(error) };
         }
     }
 

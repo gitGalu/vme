@@ -68,6 +68,11 @@ The standalone [font preview](tools/font-preview/README.md) compares typefaces i
 actual VM/E components. Run it separately with `npm run font-preview`; its files
 are excluded from the application build and PWA.
 
+The [custom controller review and editor](tools/touch-edit/README.md) runs with
+`npm run touch-edit` at `http://localhost:8082/`. It previews current source presets
+with real VM/E components, monitors input and exports edited JSON. Run
+`npm run touch-edit:check` for browser checks, screenshot matrices and a JSON report.
+
 ## Built using
 
 Libretro https://github.com/libretro
