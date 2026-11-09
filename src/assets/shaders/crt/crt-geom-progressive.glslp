@@ -1,0 +1,11 @@
+shaders = 1
+
+shader0 = shaders/crt-geom.glsl
+filter_linear0 = false
+
+# crt-geom treats any input of 400+ lines as interlaced and alternates fields
+# every frame. ST mono/high-res, X68000 512-line modes and PUAE frames (laced
+# fields are already woven by the core) are progressive, so that simulation
+# only produces flicker or halves the vertical detail there.
+parameters = "interlace_detect"
+interlace_detect = 0.0

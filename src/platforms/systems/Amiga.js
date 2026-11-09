@@ -356,7 +356,7 @@ function buildAmigaLaunchSettings(fileName, overrides = null, context = null) {
   const selectedModelOption = AMIGA_MODEL_PRESET_OPTIONS.find(option => option.value === model);
 
   const coreConfig = {
-    puae_video_vresolution: "single",
+    puae_video_vresolution: "auto",
     puae_video_resolution: "hires",
     puae_crop_mode: "auto",
     puae_floppy_multidrive: "disabled",
@@ -468,7 +468,12 @@ const Amiga = {
   },
   resolveLaunchSettings: (fileName, overrides = null, context = null) => buildAmigaLaunchSettings(fileName, overrides, context),
   guessConfig: (fileName) => buildAmigaLaunchSettings(fileName).coreConfig,
-  shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
+  // Older launches saved Line Mode "single", which drops every other line on
+  // interlaced screens. "auto" stays single-line otherwise, so it is safe for them.
+  migrateSavedCoreConfig: (coreConfig) => (coreConfig.puae_video_vresolution === 'single'
+    ? { ...coreConfig, puae_video_vresolution: 'auto' }
+    : coreConfig),
+  shader: ['assets/shaders/crt/crt-geom-progressive.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
   // force_scale: true,
   video_smooth: false,
   dependencies: [

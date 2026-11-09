@@ -436,7 +436,12 @@ export class PlatformManager {
 
     async #resolveLaunchSettings(romName, overrides = null, savedLaunchBios = null, savedLaunchCoreConfig = null, useArchiveContext = true) {
         const clonedSavedBios = this.#cloneLaunchBios(savedLaunchBios);
-        const clonedSavedCoreConfig = this.#cloneLaunchCoreConfig(savedLaunchCoreConfig);
+        let clonedSavedCoreConfig = this.#cloneLaunchCoreConfig(savedLaunchCoreConfig);
+        // Saves and collections keep the core options of their first launch; let the
+        // platform update options whose old defaults are known to be wrong.
+        if (clonedSavedCoreConfig && typeof this.#selected_platform.migrateSavedCoreConfig === 'function') {
+            clonedSavedCoreConfig = this.#selected_platform.migrateSavedCoreConfig(clonedSavedCoreConfig) || clonedSavedCoreConfig;
+        }
 
         if (clonedSavedBios || clonedSavedCoreConfig) {
             const fallbackBios = (typeof this.#selected_platform.guessBIOS === 'function')

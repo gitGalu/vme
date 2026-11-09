@@ -210,7 +210,9 @@ void main()
 	cosangle = cos(vec2(x_tilt, y_tilt)) + vec2(0.001);//cos(vec2(max(abs(x_tilt), 1e-3), max(abs(y_tilt), 1e-3)));
 	stretch = maxscale();
 
-	ilfac = vec2(1.0,clamp(floor(InputSize.y/200.0), 1.0, 2.0));
+	// With interlace_detect off, treat 400+ line input as progressive: one texel row
+	// per scanline (otherwise rows are paired and half the vertical detail is lost).
+	ilfac = vec2(1.0, interlace_detect > 0.5 ? clamp(floor(InputSize.y/200.0), 1.0, 2.0) : 1.0);
 
 // The size of one texel, in texture-coordinates.
 	vec2 sharpTextureSize = vec2(SHARPER * TextureSize.x, TextureSize.y);
