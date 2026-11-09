@@ -23,11 +23,11 @@ const Intv = {
 
         FS.mkdirTree('/home/web_user/retroarch/userdata/system/');
 
-        const exec = await storageManager.getFile('intv.exec.bin');
-        FS.writeFile('/home/web_user/retroarch/userdata/system/exec.bin', await new Uint8Array(exec));
+        const exec = await storageManager.getFileBytes('intv.exec.bin');
+        if (exec) FS.writeFile('/home/web_user/retroarch/userdata/system/exec.bin', exec);
 
-        const grom = await storageManager.getFile('intv.grom.bin');
-        FS.writeFile('/home/web_user/retroarch/userdata/system/grom.bin', await new Uint8Array(grom));
+        const grom = await storageManager.getFileBytes('intv.grom.bin');
+        if (grom) FS.writeFile('/home/web_user/retroarch/userdata/system/grom.bin', grom);
     },
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     keyboard_controller_info: {

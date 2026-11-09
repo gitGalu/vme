@@ -422,7 +422,7 @@ const DOS = {
         // The Windows 3.1 shell .DOSZ is a user-provided dependency (imported via
         // vme_import under the key `dos.win31.dosz`), not a bundled asset. Read it from
         // storage; if it isn't there, skip silently so a normal DOS boot still runs.
-        const data = storageManager ? await storageManager.getFile(`${this.platform_id}.win31.dosz`) : null;
+        const data = storageManager ? await storageManager.getFileBytes(`${this.platform_id}.win31.dosz`) : null;
         if (!data) {
             console.warn('Windows 3.1 shell dependency (dos.win31.dosz) not imported; skipping shell overlay.');
             return;
@@ -430,8 +430,7 @@ const DOS = {
         const FS = nostalgist.getEmscriptenFS();
         const sysDir = '/home/web_user/retroarch/userdata/system';
         FS.mkdirTree(sysDir);
-        const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-        FS.writeFile(`${sysDir}/${DOS_WIN31_SHELL_NAME}.dosz`, bytes);
+        FS.writeFile(`${sysDir}/${DOS_WIN31_SHELL_NAME}.dosz`, data);
     },
     savestates_disabled: false,
     rewind_disabled: true,

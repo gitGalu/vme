@@ -122,6 +122,16 @@ export class StorageManager {
         return file ? file.data : null;
     }
 
+    // Stored data is a File/Blob for single-file imports and an ArrayBuffer for
+    // vme_import ZIPs. new Uint8Array(blob) silently yields an empty array, so
+    // callers writing to the Emscripten FS should use this instead of getFile().
+    async getFileBytes(key) {
+        const data = await this.getFile(key);
+        if (data == null) return null;
+        if (data instanceof Uint8Array) return data;
+        return new Uint8Array(data instanceof Blob ? await data.arrayBuffer() : data);
+    }
+
     async deleteFile(key) {
         Debug.updateMessage('load', 'Deleting file');
 

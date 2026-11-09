@@ -22,11 +22,11 @@ const Coleco = {
     startup_beforelaunch: async function (nostalgist, storageManager) {
         const FS = nostalgist.getEmscriptenFS();
 
-        const bios = await storageManager.getFile('coleco.colecovision.rom');
+        const bios = await storageManager.getFileBytes('coleco.colecovision.rom');
 
         FS.mkdirTree('/home/web_user/retroarch/userdata/system/');
 
-        FS.writeFile('/home/web_user/retroarch/userdata/system/colecovision.rom', await new Uint8Array(bios));
+        if (bios) FS.writeFile('/home/web_user/retroarch/userdata/system/colecovision.rom', bios);
     },
     force_scale: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],

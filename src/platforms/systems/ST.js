@@ -176,13 +176,13 @@ const ST = {
       this._gemdosFolderName = null;
     }
 
-    const tos = await storageManager.getFile('st.tos.img');
-    const ste = await storageManager.getFile('st.ste.img');
-    const falcon = await storageManager.getFile('st.falcon.img');
+    const tos = await storageManager.getFileBytes('st.tos.img');
+    const ste = await storageManager.getFileBytes('st.ste.img');
+    const falcon = await storageManager.getFileBytes('st.falcon.img');
 
-    FS.writeFile('/home/web_user/retroarch/userdata/system/tos.img', await new Uint8Array(tos));
-    FS.writeFile('/home/web_user/retroarch/userdata/system/hatarib/ste.img', await new Uint8Array(ste));
-    FS.writeFile('/home/web_user/retroarch/userdata/system/hatarib/falcon.img', await new Uint8Array(falcon));
+    if (tos) FS.writeFile('/home/web_user/retroarch/userdata/system/tos.img', tos);
+    if (ste) FS.writeFile('/home/web_user/retroarch/userdata/system/hatarib/ste.img', ste);
+    if (falcon) FS.writeFile('/home/web_user/retroarch/userdata/system/hatarib/falcon.img', falcon);
   },
   guessBIOS: (fileName) => {
     return buildStLaunchSettings(fileName).bios;

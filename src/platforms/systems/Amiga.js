@@ -337,14 +337,11 @@ function isAmigaModelPresetAvailable(option, availableBiosKeys) {
 }
 
 async function writeStoredSystemFile(storageManager, FS, storageKey, systemFileName = storageKey) {
-  const data = await storageManager.getFile(`amiga.${storageKey}`);
-  if (!data) {
+  const bytes = await storageManager.getFileBytes(`amiga.${storageKey}`);
+  if (!bytes) {
     return false;
   }
 
-  const bytes = (data && typeof data.arrayBuffer === 'function')
-    ? new Uint8Array(await data.arrayBuffer())
-    : new Uint8Array(data);
   FS.writeFile(`/home/web_user/retroarch/userdata/system/${systemFileName}`, bytes);
   return true;
 }
