@@ -843,16 +843,9 @@ a {
     grid-area: -25 / -11 / span 24 / span 15;
   }
 
-  #qjud2 {
-    grid-area: -22 / -27 / span 21 / span 8;
-  }
-
-  #qja {
-    grid-area: -25 / -22 / span 24 / span 11;
-  }
-
+  #qja,
   #qjab {
-    grid-area: -18 / -19 / span 17 / span 18;
+    grid-area: -25 / -22 / span 24 / span 11;
   }
 
   #qsa {
@@ -960,16 +953,9 @@ a {
     grid-area: -25 / -9/ span 24 / span 9;
   }
 
-  #qjud2 {
-    grid-area: -21 / -22/ span 21 / span 5;
-  }
-
-  #qja {
-    grid-area: -25 / -17 / span 24 / span 8;
-  }
-
+  #qja,
   #qjab {
-    grid-area: -17 / -17 / span 17 / span 16;
+    grid-area: -25 / -17 / span 24 / span 8;
   }
 
   #fastui-msg {

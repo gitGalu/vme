@@ -55,8 +55,10 @@ export class QuickJoy {
                 new DualTouchButton(bottomContainer, false, 'UP', 'DOWN', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
                 new SingleTouchButton(bottomContainer, 'FIRE', undefined, 'qja', new SingleTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b'));
             } else if (btns == 2) {
-                new DualTouchButton(bottomContainer, false, 'UP', 'DOWN', undefined, 'qjud2', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
-                new DualTouchButton(bottomContainer, true, 'B', 'A', undefined, 'qjab', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b', 'a'));
+                // Same layout as the 1-button variant; the FIRE area is split into A (top) and B (bottom).
+                // RetroPad B is the primary fire button (as FIRE above), RetroPad A the secondary one.
+                new DualTouchButton(bottomContainer, false, 'UP', 'DOWN', undefined, 'qjud1', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'up', 'down'));
+                new DualTouchButton(bottomContainer, false, 'A', 'B', undefined, 'qjab', new DualTouchButtonJoyListener(this.#platform_manager.getNostalgist(), 'b', 'a'));
             }
         }
 
