@@ -1,5 +1,5 @@
 import PlatformBase from '../PlatformBase.js';
-import { JOYSTICK_TOUCH_MODE } from '../../Constants.js';
+import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../../Constants.js';
 
 // px68k reads its ROMs from <system>/keropi/ (iplrom.dat + cgrom.dat).
 const KEROPI_DIR = '/home/web_user/retroarch/userdata/system/keropi';
@@ -137,6 +137,9 @@ const X68000 = {
         JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
+    ],
+    mouse_controllers: [
+        MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS
     ],
     // 2-button X68000 joystick: RetroPad B -> trigger A, RetroPad A -> trigger B.
     keyboard_controller_mapping: {

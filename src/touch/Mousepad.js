@@ -116,7 +116,7 @@ export class Mousepad {
             }
         });
 
-        if (platform_id == "dos") {
+        if (platform_id == "dos" || platform_id == "x68000") {
             new SingleTouchButton(bottomContainer, 'LMB', undefined, 'lmb', new SingleTouchMouseButtonListener(s('canvas'), 0));
             new SingleTouchButton(bottomContainer, 'RMB', undefined, 'rmb', new SingleTouchMouseButtonListener(s('canvas'), 2));
         } else if (platform_id == "amiga" || platform_id == "st") {
