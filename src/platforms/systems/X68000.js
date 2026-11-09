@@ -83,10 +83,11 @@ const X68000 = {
         '--color1': '#e8e8ec',
         '--color2': '#9aa0aa',
         '--color3': '#d0202a',
-        '--font': 'PixelOperatorMono8',
-        '--fontsize': '1em',
-        '--portrait-fontsize': '85%',
-        '--cursorwidth': '1em'
+        // KH Dot Font: Keitaro Hiraki's dot fonts for the X68000 (8x16 half-width cells).
+        '--font': 'KHDotKodenmachou16',
+        '--fontsize': '1.2em',
+        '--portrait-fontsize': '100%',
+        '--cursorwidth': '0.5em'
     },
     startup_beforelaunch: async function (nostalgist, storageManager) {
         const FS = nostalgist.getEmscriptenFS();
@@ -208,8 +209,7 @@ const X68000 = {
                 "code": 'Space',
             }
         }
-    },
-    message: ["X68000 support is experimental."]
+    }
 };
 
 export default X68000;

@@ -74,6 +74,7 @@ export default defineConfig(({ command }) => {
           // Include the font package's license alongside the bundled font.
           { src: 'assets/fonts/pixel-operator', dest: 'assets/fonts' },
           { src: 'assets/fonts/plus-jakarta-sans/*.txt', dest: 'assets/fonts/plus-jakarta-sans' },
+          { src: 'assets/fonts/kh-dot/*.txt', dest: 'assets/fonts/kh-dot' },
           { src: 'assets/images/vme-512.png', dest: '.' },
           { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
           ...(includePrivateAssets ? [{ src: '../private-assets/*.zip', dest: 'assets' }] : []),

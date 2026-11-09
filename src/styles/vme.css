@@ -168,6 +168,13 @@
 }
 
 @font-face {
+  font-family: KHDotKodenmachou16;
+  /* KH Dot Font (OFL 1.1), subset to ASCII; see assets/fonts/kh-dot/README.txt */
+  src: url('../assets/fonts/kh-dot/KH-Dot-Kodenmachou-16.woff') format("woff");
+  font-display: block;
+}
+
+@font-face {
   font-family: PixelOperatorMono8;
   src: url('../assets/fonts/pixel-operator/PixelOperatorMono8-Bold.ttf') format("truetype");
   font-weight: 700;
