@@ -31,6 +31,7 @@ import DOS from './systems/DOS.js';
 import ST from './systems/ST.js';
 import TIC80 from './systems/TIC80.js';
 import Apple2 from './systems/Apple2.js';
+import X68000 from './systems/X68000.js';
 import JSZip from 'jszip';
 import { ArchiveSelectionCancelled, readProgramArchive, extractArchiveProgram, restoreArchiveProgram } from '../utils/ArchivePrograms.js';
 import { UnsupportedDiskFormatError, assertSupportedDiskFormat } from '../utils/DiskFormats.js';
@@ -55,7 +56,7 @@ import { isKeyboardOnlyTouchControllers } from '../Constants.js';
 import { ConfigOverrideDropdown } from '../components/ConfigOverrideDropdown.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Jaguar, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Jaguar, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2, X68000
 }
 
 
@@ -2883,6 +2884,22 @@ export class PlatformManager {
         return String(fileName || '').toLowerCase().endsWith('.dsk');
     }
 
+    #isX68000DiskImageName(fileName) {
+        // Floppy formats only: px68k takes HDF hard disks through a different path.
+        return /\.(?:dim|img|d88|88d|hdm|dup|2hd|xdf)$/i.test(String(fileName || ''));
+    }
+
+    // Cores whose M3U entries must be bare disk images (disks are extracted from ZIPs).
+    #getM3uDiskImageMatcher() {
+        switch (this.#selected_platform.core) {
+            case 'hatarib': return name => this.#isStDiskImageName(name);
+            case 'atari800': return name => this.#isAtari800DiskImageName(name);
+            case 'cap32': return name => this.#isCpcDiskImageName(name);
+            case 'px68k': return name => this.#isX68000DiskImageName(name);
+            default: return null;
+        }
+    }
+
     async #restoreM3uDiskIndex(nostalgist, index) {
         let ejected = false;
         try {
@@ -2905,26 +2922,14 @@ export class PlatformManager {
     }
 
     async #resolveM3uLaunchFileFromSource(sourceFileName, sourceBlob) {
-        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800' && this.#selected_platform.core !== 'cap32') {
+        const isSupportedDiskName = this.#getM3uDiskImageMatcher();
+        if (!isSupportedDiskName) {
             return {
                 sourceFileName,
                 launchFileName: sourceFileName,
                 launchBlob: sourceBlob
             };
         }
-
-        const isSupportedDiskName = (name) => {
-            if (this.#selected_platform.core === 'hatarib') {
-                return this.#isStDiskImageName(name);
-            }
-            if (this.#selected_platform.core === 'atari800') {
-                return this.#isAtari800DiskImageName(name);
-            }
-            if (this.#selected_platform.core === 'cap32') {
-                return this.#isCpcDiskImageName(name);
-            }
-            return false;
-        };
 
         if (!this.#isZipFile(sourceFileName)) {
             if (!isSupportedDiskName(sourceFileName)) {
@@ -2986,7 +2991,7 @@ export class PlatformManager {
         if (!this.#isZipFile(selectedRomName)) {
             return null;
         }
-        if (this.#selected_platform.core !== 'hatarib' && this.#selected_platform.core !== 'atari800' && this.#selected_platform.core !== 'cap32') {
+        if (!this.#getM3uDiskImageMatcher()) {
             return null;
         }
 
@@ -3028,6 +3033,12 @@ export class PlatformManager {
             }
             return a.displayName.localeCompare(b.displayName, undefined, { numeric: true, sensitivity: 'base' });
         });
+
+        if (this.#selected_platform.core === 'px68k') {
+            candidates.forEach((candidate, index) => {
+                candidate.launchName = `vme_disk_${index}.${candidate.launchName.split('.').pop().toLowerCase()}`;
+            });
+        }
 
         const launchFiles = candidates.map((candidate) => ({
             fileName: candidate.launchName,
@@ -3118,8 +3129,10 @@ export class PlatformManager {
             if (!resolved) {
                 return null;
             }
+            // px68k builds a quoted command line from M3U entries, so TOSEC names are aliased too.
+            const aliasDisk = isAtari800 || this.#selected_platform.core === 'px68k';
             selectedFiles.push({
-                fileName: isAtari800 ? `vme_disk_${i}.${resolved.launchFileName.split('.').pop().toLowerCase()}` : resolved.launchFileName,
+                fileName: aliasDisk ? `vme_disk_${i}.${resolved.launchFileName.split('.').pop().toLowerCase()}` : resolved.launchFileName,
                 fileContent: resolved.launchBlob
             });
             selectedSourceNames.push(file.romName);

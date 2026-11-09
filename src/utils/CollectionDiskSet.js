@@ -8,7 +8,8 @@ const extensions = {
     hatarib: ['st', 'stx', 'msa', 'dim'],
     cap32: ['dsk'],
     atari800: ['atr', 'atx', 'xfd', 'dcm', 'pro'],
-    applewin: ['dsk', 'do', 'po', 'nib', 'woz', '2mg', '2hd', 'hdv']
+    applewin: ['dsk', 'do', 'po', 'nib', 'woz', '2mg', '2hd', 'hdv'],
+    px68k: ['dim', 'img', 'd88', '88d', 'hdm', 'dup', '2hd', 'xdf']
 };
 const extension = name => String(name).split('.').pop().toLowerCase();
 const leaf = name => String(name || '').split(/[\\/]/).pop();
