@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.00] - 2026-11-09
+
+- add Sharp X68000 emulation (uses px68k core)
+- touch: remember the active controller and preset in savestates
+- ST/Amiga: fix interlace flicker and halved vertical resolution
+- DOS/XT/TIC-80: turn off unused rewind in the core
+- ST/ColecoVision/Intellivision: fix empty BIOS files when importing dependencies
+- fix duplicate quicksaves when using multi-disk games
+
 ## [0.99] - 2026-11-01
 
 - refresh typography with Plus Jakarta Sans
