@@ -65,6 +65,7 @@ export class VME {
     #return_to_shell = false;  // browser opened from shell -> on close return to shell, not CLI
     #pendingLaunchTitle = '';
     #launchedFromGamepad = false; // launched from shell/gamepad skin -> no on-screen UX
+    #restoredTouchController = false;
     #ingameMenuOpen = false;
     #ingameFocus = 0;
     #ingameJoyState = null;
@@ -454,7 +455,8 @@ export class VME {
         }
 
         this.#ui.initTouchControllerMenu();
-        this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
+        this.#restoredTouchController = UiManager.applySavedTouchController(this.#pl.takePendingTouchController());
+        this.applyCurrentAutoGameProfile();
         EnvironmentManager.resizeCanvas(this.#pl.getNostalgist());
 
         if (this.#xr && XrSessionManager.isVrAvailable()) {
@@ -479,8 +481,15 @@ export class VME {
         }
     }
 
+    // A controller restored from a savestate wins over the game's auto-profile.
     applyCurrentAutoGameProfile() {
-        this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
+        if (!this.#restoredTouchController) {
+            this.#ui.applyAutoGameProfile(this.#pl.getCurrentGameProfile());
+        }
+    }
+
+    getTouchControllerState() {
+        return UiManager.getTouchControllerState();
     }
 
     toggleScreen(mode) {
@@ -1027,7 +1036,8 @@ export class VME {
                 data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption,
                 null,   // closeCallback - shell has no browser to close
                 data.m3u_disks, data.m3u_disk_index, data.m3u_disk_rom_ids, data.m3u_disk_launch_names,
-                data.dos_sram, data.dos_exec_hint, data.st_state_path, data.launch_bios, data.launch_core_config
+                data.dos_sram, data.dos_exec_hint, data.st_state_path, data.launch_bios, data.launch_core_config,
+                data.touch_controller
             );
         } catch (error) {
             console.error('[recent] restore failed:', error);
@@ -1649,7 +1659,7 @@ export class VME {
                 data.platform_id, data.save_data, data.rom_data, data.program_name, data.caption,
                 () => { }, data.m3u_disks, data.m3u_disk_index, data.m3u_disk_rom_ids,
                 data.m3u_disk_launch_names, data.dos_sram, data.dos_exec_hint,
-                data.st_state_path, data.launch_bios, data.launch_core_config);
+                data.st_state_path, data.launch_bios, data.launch_core_config, data.touch_controller);
         } catch (error) {
             console.error('[vr-saves] load failed:', error);
             this.#setLaunchError(this.#friendlyLoadError(error));

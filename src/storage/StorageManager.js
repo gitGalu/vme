@@ -279,7 +279,7 @@ export class StorageManager {
         return referenced;
     }
 
-    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null, dosSram = null, dosExecHint = null, stStatePath = null, launchBios = null, launchCoreConfig = null) {
+    async storeState(save_data, rom_data, screenshot, platform_id, program_name, caption, isQuickSave = false, m3uData = null, dosSram = null, dosExecHint = null, stStatePath = null, launchBios = null, launchCoreConfig = null, touchController = null) {
         save_data = this.#toBlobOrNull(save_data, 'application/octet-stream');
         if (!save_data) {
             throw new Error('Invalid savestate payload: expected Blob-compatible data.');
@@ -321,6 +321,8 @@ export class StorageManager {
         const launchCoreConfigValue = (launchCoreConfig && typeof launchCoreConfig === 'object' && !Array.isArray(launchCoreConfig))
             ? { ...launchCoreConfig }
             : null;
+        // Left out when not in touch mode, so overwriting a quicksave keeps the controller it had.
+        const touchControllerField = touchController ? { touch_controller: touchController } : {};
         const diskNames = Array.isArray(m3uData?.diskNames) ? m3uData.diskNames.filter(Boolean) : [];
         const diskIndex = Number.isInteger(m3uData?.diskIndex) ? m3uData.diskIndex : null;
         const diskFiles = Array.isArray(m3uData?.diskFiles)
@@ -393,7 +395,8 @@ export class StorageManager {
                             dos_exec_hint: dosExecHintValue,
                             st_state_path: stStatePathValue,
                             launch_bios: launchBiosValue,
-                            launch_core_config: launchCoreConfigValue
+                            launch_core_config: launchCoreConfigValue,
+                            ...touchControllerField
                         });
                     } else {
                         let saveDataId = await this.#db.saveData.add({ save_data: saveB64 });
@@ -415,7 +418,8 @@ export class StorageManager {
                             dos_exec_hint: dosExecHintValue,
                             st_state_path: stStatePathValue,
                             launch_bios: launchBiosValue,
-                            launch_core_config: launchCoreConfigValue
+                            launch_core_config: launchCoreConfigValue,
+                            ...touchControllerField
                         });
                     }
                 } else {
@@ -438,7 +442,8 @@ export class StorageManager {
                         dos_exec_hint: dosExecHintValue,
                         st_state_path: stStatePathValue,
                         launch_bios: launchBiosValue,
-                        launch_core_config: launchCoreConfigValue
+                        launch_core_config: launchCoreConfigValue,
+                        ...touchControllerField
                     });
                 }
             });
@@ -624,7 +629,8 @@ export class StorageManager {
             m3u_disks: saveMeta.m3u_disks,
             m3u_disk_index: saveMeta.m3u_disk_index,
             m3u_disk_rom_ids: saveMeta.m3u_disk_rom_ids,
-            m3u_disk_launch_names: saveMeta.m3u_disk_launch_names
+            m3u_disk_launch_names: saveMeta.m3u_disk_launch_names,
+            touch_controller: saveMeta.touch_controller ?? null
         };
     }
 

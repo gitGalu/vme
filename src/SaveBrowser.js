@@ -930,7 +930,8 @@ export class SaveBrowser {
                             data.dos_exec_hint,
                             data.st_state_path,
                             data.launch_bios,
-                            data.launch_core_config
+                            data.launch_core_config,
+                            data.touch_controller
                         );
                     })
                     .catch((error) => {

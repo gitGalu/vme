@@ -26,6 +26,23 @@ import {
 const REWIND_REPEAT_MS = 33;
 const FAST_FORWARD_HOLD_REPEAT_MS = 16;
 
+// Stored with savestates, so these names must stay resolvable by #resolveProfile*().
+const SAVED_TOUCH_CONTROLLER_VERSION = 1;
+const SAVED_INPUT_METHOD_NAMES = {
+    [TOUCH_INPUT.JOYSTICK]: 'joystick',
+    [TOUCH_INPUT.MOUSE]: 'mouse',
+    [TOUCH_INPUT.CURSORS]: 'cursors',
+    [TOUCH_INPUT.CUSTOM]: 'custom'
+};
+const SAVED_JOY_MODE_NAMES = {
+    [JOYSTICK_TOUCH_MODE.QUICKJOY_PRIMARY]: 'quickjoy',
+    [JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC]: 'quickshot',
+    [JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC]: 'dpad',
+    [JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD]: 'cursor-keys',
+    [JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC]: 'cursor-dpad',
+    [JOYSTICK_TOUCH_MODE.HIDEAWAY]: 'hideaway'
+};
+
 function getJoystickModeName(mode, platform = null) {
     const overrideLabel = platform?.touch_controller_mode_labels?.[mode];
     if (typeof overrideLabel === 'string' && overrideLabel.trim().length > 0) {
@@ -1280,6 +1297,89 @@ export class UiManager {
         }
     }
 
+    static #selectJoyMode(joyMode, platform) {
+        const index = Array.isArray(platform.touch_controllers) ? platform.touch_controllers.indexOf(joyMode) : -1;
+        if (joyMode == null || index < 0) {
+            return false;
+        }
+
+        UiManager.#currentControllerIndex = index;
+        UiManager.#currentJoyTouchMode = joyMode;
+        UiManager.updateJoystickSelectorIndex();
+        return true;
+    }
+
+    // Desktop, Quest/XR and gamepad-only sessions have no on-screen controllers.
+    static #isTouchSession() {
+        return !EnvironmentManager.isDesktop() && !EnvironmentManager.isQuest()
+            && !document.body.classList.contains('gamepad-emulation');
+    }
+
+    static getTouchControllerState() {
+        const inputMethod = SAVED_INPUT_METHOD_NAMES[UiManager.#baseInputMethod];
+        if (!UiManager.#isTouchSession() || !inputMethod) {
+            return null;
+        }
+
+        const state = { version: SAVED_TOUCH_CONTROLLER_VERSION, inputMethod };
+        const joyMode = SAVED_JOY_MODE_NAMES[UiManager.#currentJoyTouchMode];
+        if (joyMode) {
+            state.joyMode = joyMode;
+        }
+        if (inputMethod === 'custom') {
+            const customPresetId = UiManager.#customControllerManager?.getActivePreset()?.id;
+            if (!customPresetId) {
+                return null;
+            }
+            state.customPresetId = customPresetId;
+        }
+        return state;
+    }
+
+    // Returns false, changing nothing, when the saved controller cannot be restored.
+    static applySavedTouchController(saved) {
+        if (!UiManager.#isTouchSession() || saved?.version !== SAVED_TOUCH_CONTROLLER_VERSION
+            || typeof saved.inputMethod !== 'string') {
+            return false;
+        }
+
+        const platform = UiManager.#platform_manager.getSelectedPlatform();
+        const inputMethod = UiManager.#resolveProfileInputMethod(saved.inputMethod);
+        const joyMode = typeof saved.joyMode === 'string' ? UiManager.#resolveProfileJoyMode(saved.joyMode) : null;
+        const hasJoyMode = Array.isArray(platform.touch_controllers) && platform.touch_controllers.includes(joyMode);
+
+        switch (inputMethod) {
+            case TOUCH_INPUT.JOYSTICK:
+                if (!hasJoyMode) return false;
+                break;
+            case TOUCH_INPUT.MOUSE:
+                if (!(platform.mouse_controllers?.length > 0)) return false;
+                break;
+            case TOUCH_INPUT.CURSORS:
+                if (!platform.arrow_keys || platform.platform_id === 'dos') return false;
+                break;
+            case TOUCH_INPUT.CUSTOM:
+                if (!UiManager.#customControllerManager
+                    || !platform.custom_controllers?.presets?.some(preset => preset.id === saved.customPresetId)) return false;
+                break;
+            default:
+                return false;
+        }
+
+        if (hasJoyMode) {
+            UiManager.#selectJoyMode(joyMode, platform);
+        }
+        UiManager.#keyboardOverlayVisible = false;
+        if (inputMethod === TOUCH_INPUT.CUSTOM) {
+            UiManager.#customControllerManager.setActivePreset(saved.customPresetId);
+            return true;
+        }
+
+        UiManager.#baseInputMethod = inputMethod;
+        UiManager.#applyTouchInputState();
+        return true;
+    }
+
     static applyAutoGameProfile(profile) {
         if (!profile || EnvironmentManager.isDesktop() || EnvironmentManager.isQuest()) {
             if (profile) {
@@ -1309,14 +1409,7 @@ export class UiManager {
         }
 
         const joyMode = UiManager.#resolveProfileJoyMode(touchConfig.joyMode ?? touchConfig.touchControllerMode);
-        if (joyMode != null && Array.isArray(selectedPlatform.touch_controllers)) {
-            const index = selectedPlatform.touch_controllers.indexOf(joyMode);
-            if (index >= 0) {
-                UiManager.#currentControllerIndex = index;
-                UiManager.#currentJoyTouchMode = joyMode;
-                UiManager.updateJoystickSelectorIndex();
-            }
-        }
+        UiManager.#selectJoyMode(joyMode, selectedPlatform);
 
         const customPresetId = typeof touchConfig.customPresetId === 'string' ? touchConfig.customPresetId : null;
         if (customPresetId && UiManager.#customControllerManager) {

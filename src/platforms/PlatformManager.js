@@ -84,6 +84,7 @@ export class PlatformManager {
     #launch_override_values;
     #pending_launch_bios;
     #pending_launch_core_config;
+    #pending_touch_controller = null;
     #launch_settings_modal;
     #hidden_launch_chrome = null;
     #skip_launch_settings_prompt_once;
@@ -1220,6 +1221,7 @@ export class PlatformManager {
 
         let self = this;
         this.#state = null;
+        this.#pending_touch_controller = null;
         this.#sram = null;
         this.#pending_dos_state = null;
         this.#pending_st_state = null;
@@ -1547,6 +1549,9 @@ export class PlatformManager {
 
     async loadRomFile(blob, romName, caption, fromBrowser = false, browserType = null, closeCallback = null) {
         try {
+            if (browserType !== 'save') {
+                this.#pending_touch_controller = null;
+            }
             const originalCaption = caption;
             const remembered = this.#pending_launch_core_config?._vmeArchive;
             await assertSupportedDiskFormat(blob, romName, this.#selected_platform.disk_formats);
@@ -2038,6 +2043,12 @@ export class PlatformManager {
 
     getProgramName() {
         return this.#program_name;
+    }
+
+    takePendingTouchController() {
+        const touchController = this.#pending_touch_controller;
+        this.#pending_touch_controller = null;
+        return touchController;
     }
 
     getCurrentGameProfile() {
@@ -4149,7 +4160,7 @@ export class PlatformManager {
         }
     }
 
-    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null, stStatePath = null, launchBios = null, launchCoreConfig = null) {
+    async loadState(platform_id, state, blob, program_name, caption, closeCallback = null, m3uDisks = null, m3uDiskIndex = null, m3uDiskRomIds = null, m3uDiskLaunchNames = null, dosSram = null, dosExecHint = null, stStatePath = null, launchBios = null, launchCoreConfig = null, touchController = null) {
         if (closeCallback) {
             s("html").style.background = "#000000";
             s("body").style.background = "#000000";
@@ -4229,6 +4240,7 @@ export class PlatformManager {
         this.#pending_launch_bios = this.#cloneLaunchBios(launchBios);
         this.#pending_launch_core_config = this.#cloneLaunchCoreConfig(launchCoreConfig);
         this.#pending_archive_disk_index = m3uDiskIndex;
+        this.#pending_touch_controller = touchController;
         this.#skip_launch_settings_prompt_once = true;
         if (isDos && dosCanAutoLoadState) {
             this.#logDosDebug('DOS restore mode: launch-time state autoload.');
@@ -4282,7 +4294,8 @@ export class PlatformManager {
                 dosExecHint,
                 stStatePath,
                 launchBios,
-                launchCoreConfig
+                launchCoreConfig,
+                this.#vme.getTouchControllerState()
             );
 
             if (saved) {

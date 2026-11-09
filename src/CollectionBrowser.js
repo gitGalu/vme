@@ -956,7 +956,8 @@ export class CollectionBrowser {
                             state.dos_exec_hint,
                             state.st_state_path,
                             state.launch_bios,
-                            state.launch_core_config
+                            state.launch_core_config,
+                            state.touch_controller
                         );
                     } else {
                         throw new Error("Cannot load selected program.");
