@@ -101,6 +101,7 @@ const X68000 = {
     resolveLaunchSettings: (_fileName, overrides = null) => buildX68000LaunchSettings(overrides),
     guessConfig: () => buildX68000LaunchSettings().coreConfig,
     savestates_disabled: false,
+    rewind_disabled: true,
     force_scale: true,
     video_smooth: false,
     shader: ['assets/shaders/crt/crt-geom-progressive.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],

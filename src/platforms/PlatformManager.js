@@ -900,7 +900,7 @@ export class PlatformManager {
             bios: launchBios,
             ...(this.#selected_platform.platform_id === 'dos' ? { sramType: 'pure.zip' } : {}),
             retroarchConfig: {
-                rewind_enable: true,
+                rewind_enable: !this.#selected_platform.rewind_disabled,
                 rewind_buffer_size: 20,
                 rewind_granularity: (this.#selected_platform.rewind_granularity === undefined) ? 5 : this.#selected_platform.rewind_granularity,
                 fastforward_ratio: (this.#selected_platform.fastforward_ratio === undefined) ? 10 : this.#selected_platform.fastforward_ratio,
