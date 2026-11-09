@@ -4187,6 +4187,11 @@ export class PlatformManager {
                     restoredM3uLaunch = await this.#buildLaunchPackageFromSavedDiskSet(m3uDisks, m3uDiskIndex, program_name);
                 }
                 if (restoredM3uLaunch) {
+                    // Keep the saved ROM as the game's identity: the rebuilt package points at an
+                    // extracted disk, whose different hash would make the next quicksave a new one.
+                    if (blob instanceof Blob) {
+                        restoredM3uLaunch.saveBlob = blob;
+                    }
                     launchBlob = restoredM3uLaunch;
                     launchProgramName = restoredM3uLaunch.primaryFileName;
                 }
