@@ -850,9 +850,16 @@ a {
     grid-area: -25 / -11 / span 24 / span 15;
   }
 
-  #qja,
-  #qjab {
+  #qja {
     grid-area: -25 / -22 / span 24 / span 11;
+  }
+
+  #qjud2 {
+    grid-area: -25 / -22 / span 24 / span 10;
+  }
+
+  #qjab {
+    grid-area: -25 / -12 / span 24 / span 11;
   }
 
   #qsa {
@@ -961,8 +968,12 @@ a {
   }
 
   #qja,
-  #qjab {
+  #qjud2 {
     grid-area: -25 / -17 / span 24 / span 8;
+  }
+
+  #qjab {
+    grid-area: -25 / -9 / span 24 / span 8;
   }
 
   #fastui-msg {
