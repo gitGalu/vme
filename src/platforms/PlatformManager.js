@@ -1670,9 +1670,9 @@ export class PlatformManager {
             // screen as Browse files (#gamepad-launch, driven by VME via the event). No
             // separate browserLoadingOverlay, no bottom bar, no 'Keyboard controls'. A gesture
             // (click/touch/key) starts the game.
-            const gamepadSkinLaunch = document.body.classList.contains('gamepad-browser-skin');
+            const gamepadSkinLaunch = this.#vme.isGamepadLaunch();
 
-            if (hasGamepad && gamepadSkinLaunch) {
+            if (gamepadSkinLaunch) {
                 if (shouldPromptLaunchSettings) {
                     const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
                     launchSettings = await this.#resolveLaunchSettings(romName, overrides);

@@ -315,7 +315,7 @@ export class VME {
         document.addEventListener('vme:awaiting-launch-gesture', (e) => {
             // On Quest EVERY launch path uses the unified box - it's the only place
             // offering 'Start in VR' (CLI launches would otherwise bypass it).
-            if (!this.#launchedFromGamepad && !this.#xr) return;
+            if (!this.isGamepadLaunch() && !this.#xr) return;
             const title = this.#pendingLaunchTitle || e.detail?.caption || '';
             this.#showLaunchScreen(title);
             this.#setLaunchAwaiting();
@@ -2298,6 +2298,25 @@ export class VME {
     isGamepadLaunch() {
         return this.#launchedFromGamepad
             || document.body.classList.contains('gamepad-browser-skin');
+    }
+
+    /** Show the shared launch screen before a shell browser starts reading ROM/save data. */
+    beginBrowserLaunch(title) {
+        if (!document.body.classList.contains('gamepad-browser-skin')) return false;
+        this.#launchedFromGamepad = true;
+        this.#pendingLaunchTitle = title;
+        this.#gamepad.stopAutoRepeat();
+        this.#gamepad.setGuiNavigationEnabled(false);
+        this.#showLaunchScreen(title);
+        return true;
+    }
+
+    /** A browser load failed before startup: return control to its existing selection. */
+    abortBrowserLaunch() {
+        this.#launchedFromGamepad = false;
+        this.#pendingLaunchTitle = '';
+        this.#hideLaunchScreen();
+        this.#gamepad.setGuiNavigationEnabled(true);
     }
 
     /** Mark that leaving the browser should return to the gamepad shell (not the CLI). Used

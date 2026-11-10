@@ -4392,15 +4392,6 @@ body.selection-mode-active .menu-strip-spacer {
   z-index: 1;
 }
 
-body.gamepad-browser-skin :is(#collectionBrowserSearchToggle, #saveBrowserSearchToggle) {
-  position: absolute;
-  top: max(10px, env(safe-area-inset-top, 0px));
-  left: auto;
-  right: max(12px, env(safe-area-inset-right, 0px));
-  margin: 0;
-  pointer-events: auto;
-}
-
 :is(#collectionBrowserSearch, #saveBrowserSearch) {
   position: absolute;
   top: calc(64px + env(safe-area-inset-top, 0px));
@@ -6144,10 +6135,13 @@ body.gamepad-browser-skin .gm-browser-crumb > #saveBrowserCrumbFilter {
 
 /* Tryb skorki pada: ukryj elementy nieuzywane padowo:
    - Back (powrot przez B),
+   - lupe (wyszukiwanie przez Y),
    - standardowy dropdown filtra platformy (zastapiony overlayem w stylu shella),
    - przyciski Show i Delete. */
 body.gamepad-browser-skin #saveBrowserUiBack,
 body.gamepad-browser-skin #collectionBrowserUiBack,
+body.gamepad-browser-skin #saveBrowserSearchToggle,
+body.gamepad-browser-skin #collectionBrowserSearchToggle,
 body.gamepad-browser-skin #collectionBrowserUiView,
 body.gamepad-browser-skin #saveBrowserUiView,
 body.gamepad-browser-skin #platformFilterContainer,

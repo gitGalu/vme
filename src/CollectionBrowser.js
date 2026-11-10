@@ -159,6 +159,8 @@ export class CollectionBrowser {
     }
     
     #addLaunchVisualFeedback(element) {
+        // The shell covers the entire browser with its shared loading screen.
+        if (document.body.classList.contains('gamepad-browser-skin')) return;
         element.classList.add('launch-feedback');
         
         this.#zoomOutTimer = setTimeout(() => {
@@ -174,6 +176,7 @@ export class CollectionBrowser {
     /** Launch failed: undo the launch animation/hidden UI instead of leaving a blank screen. */
     #abortLaunch(element, error) {
         console.error('Failed to launch collection item:', error);
+        if (document.body.classList.contains('gamepad-browser-skin')) this.#vme.abortBrowserLaunch?.();
         if (this.#zoomOutTimer) {
             clearTimeout(this.#zoomOutTimer);
             this.#zoomOutTimer = null;
@@ -928,10 +931,11 @@ export class CollectionBrowser {
                     const filteredItems = this.#items.filter(item => item.id == intId);
 
                     if (filteredItems.length > 0) {
+                        const item = filteredItems[0];
+                        this.#vme.beginBrowserLaunch?.(item.title);
                         const saveId = activePanel.element.dataset.save;
                         const saveIntId = parseInt(saveId, 10);
                         const state = await this.#db.getSaveData(saveIntId);
-                        const item = filteredItems[0];
 
                         document.getElementById('collectionBrowserUi').style.display = "none";
                         this.#search.setAvailable(false);
@@ -941,7 +945,7 @@ export class CollectionBrowser {
                         }
 
                         await new Promise(resolve => setTimeout(resolve, 100));
-                        this.#platform_manager.loadState(
+                        await this.#platform_manager.loadState(
                             state.platform_id,
                             state.save_data,
                             state.rom_data,
@@ -987,6 +991,7 @@ export class CollectionBrowser {
 
                     if (filteredItems.length > 0) {
                         const item = filteredItems[0];
+                        this.#vme.beginBrowserLaunch?.(item.title);
                         const rom = await this.#db.getRomData(item.rom_data_id);
 
                         document.getElementById('collectionBrowserUi').style.display = "none";
@@ -997,7 +1002,7 @@ export class CollectionBrowser {
                         }
 
                         await new Promise(resolve => setTimeout(resolve, 100));
-                        this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, null, () => this.close(true));
+                        await this.#platform_manager.loadRomFromCollection(item.platform_id, rom.rom_data, item.rom_name, item.title, null, () => this.close(true));
                     } else {
                         throw new Error("Cannot load selected program.");
                     }

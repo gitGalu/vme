@@ -903,6 +903,9 @@ export class SaveBrowser {
             if (activePanel != null) {
                 const id = activePanel.element.getAttribute('data-id');
 
+                const save = this.#viewItems.find(item => String(item.id) === id);
+                this.#vme.beginBrowserLaunch?.(save?.caption || save?.program_name || '');
+
                 document.getElementById('saveBrowserUi').style.display = "none";
                 const flickingElement = document.getElementById(this.#useGrid ? 'save-grid' : 'flicking');
                 if (flickingElement) {
@@ -915,7 +918,7 @@ export class SaveBrowser {
                         if (data.caption == undefined) {
                             data.caption = data.program_name;
                         }
-                        this.#platform_manager.loadState(
+                        return this.#platform_manager.loadState(
                             data.platform_id,
                             data.save_data,
                             data.rom_data,
@@ -937,6 +940,7 @@ export class SaveBrowser {
                     .catch((error) => {
                         // Bring the browser back instead of leaving a blank screen.
                         console.error('Failed to load save state:', error);
+                        if (document.body.classList.contains('gamepad-browser-skin')) this.#vme.abortBrowserLaunch?.();
                         document.getElementById('saveBrowserUi').style.display = "";
                         if (flickingElement) {
                             flickingElement.style.opacity = "";
