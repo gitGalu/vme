@@ -789,8 +789,8 @@ export class VME {
     }
 
     /**
-     * Asset-import sub-screen (CLI 'OPEN IA' / 'OPEN COL' equivalent). The available codes
-     * are DELIBERATELY not listed; the user must TYPE the code (IA/COL) on the pad keyboard,
+     * Asset-import sub-screen (CLI 'OPEN IA/COL/A8' equivalent). The available codes
+     * are DELIBERATELY not listed; the user must TYPE the code on the pad keyboard,
      * and an unknown code reveals nothing. Enter submits.
      */
     #buildImportLibraryView() {
@@ -816,9 +816,9 @@ export class VME {
     /** Fetch and import an asset bundle; on success reload so new games appear. */
     async #runAssetImport(kind) {
         const CFG = {
-            IA:  { file: '../assets/vme_import.zip',     run: (b) => this.#pl.loadVmeImportFile(b) },
-            COL: { file: '../assets/vme_collection.zip', run: (b) => this.#pl.loadCollectionFile(b) },
-            A8:  { file: '../assets/a8_vme_collection.zip', run: (b) => this.#pl.loadCollectionFile(b) }
+            IA:  { file: 'assets/vme_import.zip',     run: (b) => this.#pl.loadVmeImportFile(b, { reportToCli: false }) },
+            COL: { file: 'assets/vme_collection.zip', run: (b) => this.#pl.loadCollectionFile(b, { reportToCli: false }) },
+            A8:  { file: 'assets/a8_vme_collection.zip', run: (b) => this.#pl.loadCollectionFile(b, { reportToCli: false }) }
         };
         const cfg = CFG[kind] || CFG.IA;
 
@@ -831,10 +831,14 @@ export class VME {
 
         let ok = false, message;
         try {
-            const url = new URL(cfg.file, import.meta.url).href;
+            // Static-copy assets live under the app's base path in dev and production,
+            // independently of VME.js's source location or the built chunk filename.
+            const base = new URL(import.meta.env.BASE_URL, window.location.origin);
+            const url = new URL(cfg.file, base).href;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
-            await cfg.run(await response.blob());
+            const result = await cfg.run(await response.blob());
+            if (!result?.ok) throw new Error(result?.error?.message || 'Import failed');
             ok = true;
             message = t('import.done');
         } catch (error) {

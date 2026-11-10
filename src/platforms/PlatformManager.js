@@ -2358,7 +2358,7 @@ export class PlatformManager {
         }
     }
 
-    importCorsFile(key, json) {
+    importCorsFile(key, json, { reportToCli = true } = {}) {
         try {
             var tryItems = [];
             json.items.forEach(disk => {
@@ -2370,88 +2370,86 @@ export class PlatformManager {
 
             prepareSoftwareDirectory(json);
             this.#model = json;
-            this.#storage_manager.storeFile(key, json);
+            return this.#storage_manager.storeFile(key, json);
         } catch (error) {
             console.log('error', error);
+            if (!reportToCli) throw error;
             this.#cli.guru(error, false);
             this.#cli.message('Error loading file.');
         }
     }
 
-    async loadCollectionFile(blob) {
+    async loadCollectionFile(blob, { reportToCli = true } = {}) {
         try {
-            this.#cli.print('&nbsp;');
+            if (reportToCli) this.#cli.print('&nbsp;');
             const result = await importCollectionArchive(blob, {
                 platforms: SelectedPlatforms,
                 storage: this.#storage_manager,
                 network: this.#network_manager,
-                onProgress: position => this.#cli.print_progress(position.entryIndex
+                onProgress: reportToCli ? position => this.#cli.print_progress(position.entryIndex
                     ? `Importing ... (${position.entryIndex}/${position.total})`
-                    : 'Importing ...')
+                    : 'Importing ...') : undefined
             });
-            this.#cli.message('A new collection was successfully imported.');
+            if (reportToCli) this.#cli.message('A new collection was successfully imported.');
             return { ok: true, ...result };
         } catch (error) {
             console.error('An error occurred:', error);
-            this.#cli.guru(error, false);
-            this.#cli.message('&nbsp;', 'Error importing VME Collection archive.');
+            if (reportToCli) {
+                this.#cli.guru(error, false);
+                this.#cli.message('&nbsp;', 'Error importing VME Collection archive.');
+            }
             return { ok: false, error: collectionImportIssue(error) };
         }
     }
 
-    async loadVmeImportFile(blob) {
+    async loadVmeImportFile(blob, { reportToCli = true } = {}) {
         const zip = new JSZip();
-        let ok = true;
         try {
             const content = await zip.loadAsync(blob);
             if (content.files['vme_import.json']) {
                 const vmeImportJson = await content.file('vme_import.json').async('string');
                 const vmeImport = JSON.parse(vmeImportJson);
 
-                this.#cli.print('&nbsp;');
+                if (reportToCli) this.#cli.print('&nbsp;');
                 let i = 1;
                 let count = Object.keys(vmeImport.platforms).length;
 
                 for (const platformId in vmeImport.platforms) {
-                    this.#cli.print_progress(`Importing ... (${i++}/${count})`);
+                    if (reportToCli) this.#cli.print_progress(`Importing ... (${i++}/${count})`);
 
                     const platform = vmeImport.platforms[platformId];
 
-                    let result = await this.#processFileInZip(platform.software, `${platformId}.software`, content);
-                    if (!result) return;
+                    await this.#processFileInZip(platform.software, `${platformId}.software`, content, { reportToCli });
 
                     if (platform.dependencies) {
                         for (const depKey in platform.dependencies) {
                             const depFilePath = platform.dependencies[depKey];
-                            let result = await this.#processFileInZip(depFilePath, `${platformId}.${depKey}`, content);
-                            if (!result) throw new Error("Error processing zip.");
+                            await this.#processFileInZip(depFilePath, `${platformId}.${depKey}`, content, { reportToCli });
                         }
                     }
                 }
             } else {
-                this.#cli.message("&nbsp;", "Error loading VME Import archive.", "vme_import.json not found in the ZIP file.");
-                ok = false;
-                return;
+                throw new Error('vme_import.json not found in the ZIP file.');
             }
         } catch (error) {
             console.error('An error occurred:', error);
-            this.#cli.guru(error, true);
-            this.#cli.message("&nbsp;", "Error loading VME Import archive.");
-            ok = false;
-            return;
+            if (reportToCli) {
+                this.#cli.guru(error, true);
+                this.#cli.message("&nbsp;", "Error loading VME Import archive.", error.message);
+            }
+            return { ok: false, error: { message: error.message } };
         }
-        if (ok) {
-            this.#cli.message("Files have been successfully imported.");
-        }
+        if (reportToCli) this.#cli.message("Files have been successfully imported.");
+        return { ok: true };
     }
 
-    async #processFileInZip(filePath, tag, zipContent) {
+    async #processFileInZip(filePath, tag, zipContent, { reportToCli = true } = {}) {
         if (zipContent.files[filePath]) {
             let fileData;
             if (filePath.endsWith('.json')) {
                 fileData = await zipContent.file(filePath).async('string');
                 let json = JSON.parse(fileData);
-                this.importCorsFile(tag, json);
+                await this.importCorsFile(tag, json, { reportToCli });
             } else {
                 fileData = await zipContent.file(filePath).async('arraybuffer');
                 var wordArray = lib.WordArray.create(fileData);
@@ -2461,9 +2459,7 @@ export class PlatformManager {
             console.log(`Saved ${tag}`);
             return true;
         } else {
-            console.error(`${filePath} not found in the ZIP file.`);
-            this.#cli.message("&nbsp;", "Error loading VME Import archive.", "" + filePath + " not found.");
-            return false;
+            throw new Error(`${filePath} not found in the ZIP file.`);
         }
     }
 
