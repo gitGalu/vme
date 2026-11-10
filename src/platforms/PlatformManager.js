@@ -794,6 +794,9 @@ export class PlatformManager {
     }
 
     #getKeyboardMode() {
+        if (this.#selected_platform.keyboard_passthrough) {
+            return 'retropad';
+        }
         try {
             if (window.__VME_KB_MODE) {
                 return window.__VME_KB_MODE;
@@ -1609,20 +1612,31 @@ export class PlatformManager {
             && Array.isArray(launchSettings.overrideSchema)
             && launchSettings.overrideSchema.length > 0;
         this.#skip_launch_settings_prompt_once = false;
-        const applyLaunchSettingsToCore = (resolvedLaunchSettings) => {
+        const originalBlob = blob;
+        const applyLaunchSettingsToCore = async (resolvedLaunchSettings) => {
             this.#applyLaunchSettings(resolvedLaunchSettings);
             Nostalgist.configure({
                 bios: this.#cloneLaunchBios(resolvedLaunchSettings.bios) || [],
                 retroarchCoreConfig: this.#getRetroarchCoreOptions(resolvedLaunchSettings.coreConfig)
             });
+            // ZIP boot drivers must match the final Autoconfig choices, including
+            // choices changed in the collection/local launch dialog.
+            if (this.#selected_platform.platform_id === 'xt') {
+                blob = await this.#selected_platform.prepareLaunchRom({
+                    launchRomInput: originalBlob,
+                    romName,
+                    caption,
+                    launchSettings: resolvedLaunchSettings
+                });
+            }
         };
 
         this.#prepareNostalgist(romName, caption);
-        applyLaunchSettingsToCore(launchSettings);
+        await applyLaunchSettingsToCore(launchSettings);
         if (shouldPromptLaunchSettings && this.#archive_selection && this.#vme.isGamepadLaunch()) {
             const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
             launchSettings = await this.#resolveLaunchSettings(romName, overrides);
-            applyLaunchSettingsToCore(launchSettings);
+            await applyLaunchSettingsToCore(launchSettings);
             shouldPromptLaunchSettings = false;
         }
 
@@ -1662,7 +1676,7 @@ export class PlatformManager {
                 if (shouldPromptLaunchSettings) {
                     const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
                     launchSettings = await this.#resolveLaunchSettings(romName, overrides);
-                    applyLaunchSettingsToCore(launchSettings);
+                    await applyLaunchSettingsToCore(launchSettings);
                     if (closeCallback) closeCallback();
                     self.startEmulation(blob, caption, romName);
                     return;
@@ -1731,7 +1745,7 @@ export class PlatformManager {
                     if (shouldPromptLaunchSettings) {
                         const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
                         launchSettings = await this.#resolveLaunchSettings(romName, overrides);
-                        applyLaunchSettingsToCore(launchSettings);
+                        await applyLaunchSettingsToCore(launchSettings);
 
                         if (backgroundEl) {
                             backgroundEl.classList.remove('zoom-out');
@@ -1775,7 +1789,7 @@ export class PlatformManager {
                 if (shouldPromptLaunchSettings) {
                     const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
                     launchSettings = await this.#resolveLaunchSettings(romName, overrides);
-                    applyLaunchSettingsToCore(launchSettings);
+                    await applyLaunchSettingsToCore(launchSettings);
                     if (closeCallback) {
                         closeCallback();
                     }
@@ -1813,7 +1827,7 @@ export class PlatformManager {
             if (shouldPromptLaunchSettings) {
                 const overrides = await this.#showLaunchSettingsDialog(caption, launchSettings);
                 launchSettings = await this.#resolveLaunchSettings(romName, overrides);
-                applyLaunchSettingsToCore(launchSettings);
+                await applyLaunchSettingsToCore(launchSettings);
                 self.startEmulation(blob, caption, romName);
                 return;
             }

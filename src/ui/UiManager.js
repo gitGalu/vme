@@ -317,11 +317,62 @@ export class UiManager {
                 }
             });
 
-        const kbModeSelection = document.getElementById('kbModeContainer');
-        const kbModeSelect = document.getElementById('kbMode');
+        this.#initKeyboardMode();
 
-        if (kbModeSelect) {
-            kbModeSelect.remove();
+        addButtonEventListeners(s('#desktopUiBack'),
+            (pressed) => {
+                location.reload();
+            });
+
+        this.initControlsButton();
+
+        const platform = UiManager.#platform_manager.getSelectedPlatform();
+        if (!platform.keyboard_passthrough && (platform.mouse_controllers || "lightgun" == this.#getOverridenControllerType())) {
+            const emuscreen = document.getElementById('emuscreen');
+            if (emuscreen) {
+                const canvasObserver = new MutationObserver((mutations) => {
+                    const canvas = emuscreen.querySelector('canvas');
+                    if (canvas) {
+                        canvas.addEventListener('click', () => {
+                            canvas.requestPointerLock();
+                        });
+                        canvasObserver.disconnect();
+                    }
+                });
+
+                canvasObserver.observe(emuscreen, { childList: true, subtree: true });
+
+                const existingCanvas = emuscreen.querySelector('canvas');
+                if (existingCanvas) {
+                    existingCanvas.addEventListener('click', () => {
+                        existingCanvas.requestPointerLock();
+                    });
+                    canvasObserver.disconnect();
+                }
+            }
+        }
+    }
+
+    #initKeyboardMode() {
+        const platform = UiManager.#platform_manager.getSelectedPlatform();
+        const kbModeSelection = document.getElementById('kbModeContainer');
+        this.#kbModeDropdown?.destroy();
+        this.#kbModeDropdown = null;
+        this.#focusSyncUnsub?.();
+        this.#focusSyncUnsub = null;
+        document.getElementById('kbModePopover')?.remove();
+        this._hidePopover = null;
+        kbModeSelection.replaceChildren();
+
+        const shouldManageKbModeFromDesktop = EnvironmentManager.isDesktop() || EnvironmentManager.isQuest();
+        const desktopFocusMode = platform.desktop_focus_mode && shouldManageKbModeFromDesktop;
+        if (platform.keyboard_passthrough && !desktopFocusMode) {
+            // All keyboard binds are released in XT's RetroArch configuration;
+            // Game Focus would only add an unnecessary mouse grab.
+            kbModeSelection.style.display = 'none';
+            GameFocusManager.getInstance().disable();
+            window.__VME_KB_MODE = 'retropad';
+            return;
         }
 
         const kbModeDropdownContainer = document.createElement('div');
@@ -331,7 +382,6 @@ export class UiManager {
         let options = [];
         const hasKeyboardSupport = UiManager.#platform_manager.getSelectedPlatform().keyboard != undefined;
         const isCursorKeysOnly = isKeyboardOnlyTouchControllers(UiManager.#platform_manager.getSelectedPlatform().touch_controllers);
-        const platform = UiManager.#platform_manager.getSelectedPlatform();
         const keyboardModeLabels = platform.keyboard_mode_labels || platform.keyboard?.mode_labels || {};
         // Computers map the keyboard to their joystick, consoles to a joystick or a pad.
         // Focus mode passes every key to the core, captures the mouse on platforms that
@@ -342,9 +392,13 @@ export class UiManager {
         };
 
         const focusManager = GameFocusManager.getInstance();
-        const shouldManageKbModeFromDesktop = EnvironmentManager.isDesktop() || EnvironmentManager.isQuest();
 
-        if (isCursorKeysOnly) {
+        if (desktopFocusMode) {
+            options = [
+                { value: 'retropad', text: kbModeLabels.retropad },
+                { value: 'focusmode', text: kbModeLabels.focusmode }
+            ];
+        } else if (isCursorKeysOnly) {
             options = [{ value: 'focusmode', text: kbModeLabels.focusmode }];
             if (shouldManageKbModeFromDesktop) {
                 focusManager.enable();
@@ -378,12 +432,11 @@ export class UiManager {
             kbModeSelection.classList.add('none');
         }
 
-        this.#addKeyboardControlsPopover();
+        if (!desktopFocusMode) {
+            this.#addKeyboardControlsPopover();
+        }
 
         this.#kbModeDropdown.onChange(this.#kb_mode_change_handler_bound);
-        if (this.#focusSyncUnsub) {
-            this.#focusSyncUnsub();
-        }
         this.#focusSyncUnsub = focusManager.onChange((isEnabled) => {
             if (!this.#kbModeDropdown) return;
             const value = isEnabled ? 'focusmode' : 'retropad';
@@ -393,38 +446,6 @@ export class UiManager {
                 this._hidePopover();
             }
         });
-
-        addButtonEventListeners(s('#desktopUiBack'),
-            (pressed) => {
-                location.reload();
-            });
-
-        this.initControlsButton();
-
-        if (UiManager.#platform_manager.getSelectedPlatform().mouse_controllers || "lightgun" == this.#getOverridenControllerType()) {
-            const emuscreen = document.getElementById('emuscreen');
-            if (emuscreen) {
-                const canvasObserver = new MutationObserver((mutations) => {
-                    const canvas = emuscreen.querySelector('canvas');
-                    if (canvas) {
-                        canvas.addEventListener('click', () => {
-                            canvas.requestPointerLock();
-                        });
-                        canvasObserver.disconnect();
-                    }
-                });
-
-                canvasObserver.observe(emuscreen, { childList: true, subtree: true });
-
-                const existingCanvas = emuscreen.querySelector('canvas');
-                if (existingCanvas) {
-                    existingCanvas.addEventListener('click', () => {
-                        existingCanvas.requestPointerLock();
-                    });
-                    canvasObserver.disconnect();
-                }
-            }
-        }
     }
 
     #addKeyboardControlsPopover() {
@@ -493,6 +514,19 @@ export class UiManager {
         }
 
         this.#focusEmulationCanvas();
+        if (mode === 'focusmode' && UiManager.#platform_manager.getSelectedPlatform().desktop_focus_mode) {
+            const canvas = document.querySelector('#emuscreen canvas');
+            if (canvas && document.pointerLockElement !== canvas) {
+                // Capture directly during the dropdown gesture; RetroArch's
+                // command may be processed after browser activation expires.
+                try {
+                    const capture = canvas.requestPointerLock();
+                    capture?.catch(() => GameFocusManager.getInstance().disable());
+                } catch (error) {
+                    GameFocusManager.getInstance().disable();
+                }
+            }
+        }
     }
 
     #focusEmulationCanvas() {
@@ -1457,6 +1491,9 @@ export class UiManager {
     }
 
     static #getDesiredTouchGameFocus() {
+        if (UiManager.#platform_manager.getSelectedPlatform().keyboard_passthrough) {
+            return false;
+        }
         if (UiManager.#keyboardOverlayVisible) {
             return true;
         }

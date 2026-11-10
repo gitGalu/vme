@@ -1,0 +1,10 @@
+XT DOS boot files
+
+Extracted from boot/freedos_hd.img in VirtualXT 3.1.0, commit 2aecaf13:
+https://git.libretro.com/libretro/virtualxt
+
+Contains the FreeDOS MBR/boot sector, KERNEL.SYS, FreeCOM COMMAND.COM,
+CuteMouse CTMOUSE.EXE, Lo-tech LTEMM.EXE and Use!UMBs USE!UMBS.SYS.
+The archive does not include the demonstration games from the original disk.
+
+FreeDOS and source packages: https://www.freedos.org/

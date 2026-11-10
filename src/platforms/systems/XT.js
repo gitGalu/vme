@@ -1,12 +1,98 @@
 import PlatformBase from '../PlatformBase.js';
 import { JOYSTICK_TOUCH_MODE, MOUSE_TOUCH_MODE } from '../../Constants.js';
 import { KeyMaps } from '../../touch/KeyMaps.js';
+import xtSystemUrl from '../../assets/xt-system.zip?url';
+import { prepareXtLaunchRom } from '../../utils/XtDiskImage.js';
+
+const XT_CPU_OPTIONS = Object.freeze([
+    { value: 'Intel 8088', label: 'Intel 8088' },
+    { value: 'NEC V20', label: 'NEC V20' }
+]);
+
+const XT_SPEED_OPTIONS = Object.freeze([
+    { value: 'disabled', label: '4.77 MHz' },
+    { value: 'enabled', label: '10 MHz (Turbo)' }
+]);
+
+const XT_VIDEO_OPTIONS = Object.freeze([
+    { value: 'CGA', label: 'CGA' },
+    { value: 'EGA', label: 'EGA' },
+    { value: 'HGC', label: 'Hercules (monochrome)' }
+]);
+
+const XT_EMS_OPTIONS = Object.freeze([
+    { value: 'disabled', label: 'Disabled' },
+    { value: 'enabled', label: '2 MB' }
+]);
+
+function guessXtLaunchOverrides(fileName) {
+    const guessed = { cpu: 'Intel 8088', speed: 'disabled', video: 'CGA', ems: 'disabled' };
+    // Only explicit tags select hardware; a game title can contain e.g. "EGA".
+    for (const match of String(fileName || '').matchAll(/\[([^\]]+)\]|\(([^)]+)\)/g)) {
+        const tag = (match[1] ?? match[2]).trim().toUpperCase().replace(/\s+/g, ' ');
+        switch (tag) {
+            case '8088':
+            case 'INTEL 8088': guessed.cpu = 'Intel 8088'; break;
+            case 'V20':
+            case 'NEC V20': guessed.cpu = 'NEC V20'; break;
+            case '4.77 MHZ':
+            case '4.77MHZ': guessed.speed = 'disabled'; break;
+            case 'TURBO':
+            case '10 MHZ':
+            case '10MHZ': guessed.speed = 'enabled'; break;
+            case 'CGA': guessed.video = 'CGA'; break;
+            case 'EGA': guessed.video = 'EGA'; break;
+            case 'HGC':
+            case 'HERCULES': guessed.video = 'HGC'; break;
+            case 'EMS':
+            case '2MB EMS': guessed.ems = 'enabled'; break;
+            case 'NO EMS': guessed.ems = 'disabled'; break;
+        }
+    }
+    return guessed;
+}
+
+function selectedOption(options, value, fallback) {
+    return options.some(option => option.value === value) ? value : fallback;
+}
+
+function buildXtLaunchSettings(fileName, overrides = null) {
+    const guessedOverrides = guessXtLaunchOverrides(fileName);
+    const selected = overrides && typeof overrides === 'object' ? overrides : {};
+    const cpu = selectedOption(XT_CPU_OPTIONS, selected.cpu, guessedOverrides.cpu);
+    const speed = selectedOption(XT_SPEED_OPTIONS, selected.speed, guessedOverrides.speed);
+    const video = selectedOption(XT_VIDEO_OPTIONS, selected.video, guessedOverrides.video);
+    const ems = selectedOption(XT_EMS_OPTIONS, selected.ems, guessedOverrides.ems);
+
+    return {
+        coreConfig: {
+            virtualxt_cpu_type: cpu,
+            virtualxt_cpu_turbo: speed,
+            virtualxt_video: video,
+            virtualxt_ems: ems,
+            virtualxt_serial_mouse: 'enabled',
+            virtualxt_hostfs: 'enabled',
+            virtualxt_crt_filter: 'disabled',
+            virtualxt_pc_noise: 'disabled',
+            virtualxt_show_game_focus: 'disabled'
+        },
+        overrideValues: { cpu, speed, video, ems },
+        guessedOverrides,
+        overrideSchema: [
+            { id: 'cpu', label: 'CPU', options: XT_CPU_OPTIONS },
+            { id: 'speed', label: 'CPU speed', options: XT_SPEED_OPTIONS },
+            { id: 'video', label: 'Video adapter', options: XT_VIDEO_OPTIONS },
+            { id: 'ems', label: 'EMS memory', options: XT_EMS_OPTIONS }
+        ]
+    };
+}
 
 const XT = {
     ...PlatformBase,
     platform_id: 'xt',
     core: 'virtualxt',
-    platform_name: 'IBM PC/XT (286 + CGA)',
+    core_asset_version: '3.1.0-2aecaf13-vme2',
+    platform_name: 'IBM PC/XT (8088/V20 + CGA/EGA)',
     short_name: 'XT',
     libretro_thumbnails_system: 'DOS',
     theme: {
@@ -20,21 +106,29 @@ const XT = {
         '--cursorwidth': '0.5em',
         '--portrait-fontsize': '100%'
     },
-    guessConfig: (fileName) => {
-        return {
-        }
-    },
+    resolveLaunchSettings: buildXtLaunchSettings,
+    guessConfig: fileName => buildXtLaunchSettings(fileName).coreConfig,
+    prepareLaunchRom: options => prepareXtLaunchRom(options, xtSystemUrl),
     savestates_disabled: true,
     rewind_disabled: true,
     ffd_disabled: true,
     shader: ['assets/shaders/crt/crt-geom.glslp', 'assets/shaders/crt/shaders/crt-geom.glsl'],
     force_scale: false,
     video_smooth: false,
+    keyboard_passthrough: true,
+    desktop_focus_mode: true,
+    keyboard_mode_labels: {
+        retropad: 'Mouse capture: Off',
+        focusmode: 'Mouse capture: On (Esc to release)'
+    },
     dependencies: [
     ],
     touch_controllers: [
         JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD,
         JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD_STATIC
+    ],
+    mouse_controllers: [
+        MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS
     ],
     touch_key_mapping: {
         keyMap: {
@@ -64,7 +158,10 @@ const XT = {
         input_player1_l3: 'nul',
         input_player1_r3: 'nul',
         input_player1_select: 'nul',
-        input_player1_start: 'nul'
+        input_player1_start: 'nul',
+        // These lightgun bindings reserve Enter and right Shift without a lightgun.
+        input_player1_gun_start: 'nul',
+        input_player1_gun_select: 'nul'
     },
     touch_controller_mapping: {
         input_player1_up: 'nul',
@@ -84,6 +181,8 @@ const XT = {
         input_player1_r3: 'nul',
         input_player1_select: 'nul',
         input_player1_start: 'nul',
+        input_player1_gun_start: 'nul',
+        input_player1_gun_select: 'nul',
     },
     default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_KEYBOARD,
     fire_buttons: 2,
@@ -135,7 +234,6 @@ const XT = {
             }
         },
     },
-    message: ["XT support is under development and mostly broken or non-functional."]
 };
 
 export default XT;
