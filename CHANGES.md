@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10] - 2026-11-10
+
+- add MSX/MSX2 emulation (uses blueMSX core)
+- XR, gamepad shell: fix asset imports and game loading
+- X68000: add mouse support
+- XT: update virtualxt core to 3.1.0
+- XT: improve keyboard and mouse support
+- XT: add Autoconfig options
+
 ## [1.00] - 2026-11-09
 
 - add Sharp X68000 emulation (uses px68k core)
