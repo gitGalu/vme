@@ -72,6 +72,22 @@
 }
 
 @font-face {
+  font-family: MSXWidth40;
+  src: url('../assets/fonts/msx/MSXW40J.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: MSXWidth40;
+  src: url('../assets/fonts/msx/MSXW40JB.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
   font-family: NES;
   src: url('../assets/fonts/PressStart2P-Regular.ttf') format("truetype");
   font-display: block;

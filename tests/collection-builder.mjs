@@ -236,6 +236,21 @@ test('runtime bundle unwraps separate disk ZIPs, aliases colliding names and pro
     assert.equal(restored.launchFiles.length, 3);
 });
 
+test('MSX disk collections round trip into a blueMSX playlist and preserve the selected disk', async () => {
+    const platform = { platform_id: 'msx', core: 'bluemsx', multidisk: true };
+    const disks = [{ filename: 'Game (Disk 1 of 2).dsk' }, { filename: 'Game (Disk 2 of 2).dsk' }];
+    const bundle = await buildCollectionDiskBundle(disks, 'msx', async (_, index) => new Uint8Array([index + 1]));
+    const prepared = await prepareCollectionDiskBundle(bundle, 'Game.zip', platform, 1);
+    assert.equal(prepared.diskIndex, 1);
+    assert.equal(await prepared.launchFiles[0].fileContent.text(), 'vme_disk_0.dsk\nvme_disk_1.dsk\n');
+    assert.deepEqual([...new Uint8Array(await prepared.launchFiles[2].fileContent.arrayBuffer())], [2]);
+    const restored = await prepareCollectionDiskBundle(prepared.saveBlob, prepared.programName, platform, prepared.diskIndex);
+    assert.equal(restored.diskIndex, 1);
+    assert.equal(restored.launchFiles.length, 3);
+    const tape = await buildCollectionDiskBundle([{ filename: 'one.cas' }, { filename: 'two.cas' }], 'msx', async () => new Uint8Array([1]));
+    await assert.rejects(prepareCollectionDiskBundle(tape, 'tapes.zip', platform), /unsupported disk image/);
+});
+
 test('bundle decoding preserves ordinary ZIP behavior and rejects missing, unsupported or ambiguous disks', async () => {
     const platform = { platform_id: 'amiga', core: 'puae', multidisk: true };
     const ordinary = new JSZip(); ordinary.file('game.adf', 'game');

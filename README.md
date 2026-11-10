@@ -62,6 +62,8 @@ including Polish characters. It is served locally and included in the PWA precac
 Platform-specific CLI fonts remain part of their themes. Plus Jakarta Sans is licensed under
 the [SIL Open Font License 1.1](src/assets/fonts/plus-jakarta-sans/OFL.txt).
 
+MSX CLI font: [MSX-WIDTH40J by Gigamix](https://www.gigamix.jp/download/gigamix/msxfont.php).
+
 ## Development tools
 
 The standalone [font preview](tools/font-preview/README.md) compares typefaces in
@@ -72,6 +74,7 @@ The [custom controller review and editor](tools/touch-edit/README.md) runs with
 `npm run touch-edit` at `http://localhost:8082/`. It previews current source presets
 with real VM/E components, monitors input and exports edited JSON. Run
 `npm run touch-edit:check` for browser checks, screenshot matrices and a JSON report.
+
 
 ## Built using
 
@@ -102,6 +105,7 @@ Dexie.js https://github.com/dexie/Dexie.js
 | ZX Spectrum | [fuse](https://github.com/libretro/fuse-libretro) |
 | ZX80 / ZX81 | [81](https://github.com/libretro/81-libretro) |
 | Amstrad CPC | [cap32](https://github.com/libretro/libretro-cap32) |
+| MSX / MSX2 / MSX2+ / MSX turbo R | [blueMSX](https://github.com/libretro/blueMSX-libretro) |
 | NES | [fceumm](https://github.com/libretro/libretro-fceumm) |
 | SNES | [snes9x](https://github.com/snes9xgit/snes9x) |
 | Game Boy / Game Boy Color | [gambatte](https://github.com/libretro/gambatte-libretro) |

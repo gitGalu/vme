@@ -1,0 +1,13 @@
+MSX-WIDTH40J (SCREEN 0: WIDTH 40, 6 x 8 pixel characters)
+Author: nf_ban / Gigamix
+Version: 20260927
+Source: https://www.gigamix.jp/download/gigamix/msxfont.php
+Download: https://www.gigamix.jp/download/gigamix/MSXW40J.ZIP
+Archive SHA-256: 7ec3e035eb8c75e4ac1c16f38de5b1534ea5ef785f7174c6ced31368432475e3
+
+Copyright: MSX Association; nf_ban/Gigamix 2003, 2026.
+Upstream supplies these WOFF2 files for embedding with @font-face.
+Original documentation is preserved in UPSTREAM.txt.
+
+The regular and bold webfonts are included unchanged. ASCII maps directly;
+MSX-specific graphics use the private-use Unicode range U+E000-U+E0FF.

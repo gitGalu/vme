@@ -1,0 +1,180 @@
+[
+  {
+    "key": "MSX.rom",
+    "path": "Machines/Shared Roms/MSX.rom",
+    "machines": [
+      "MSX"
+    ],
+    "accepted": [
+      "364a1a579fe5cb8dba54519bcfcdac0d"
+    ]
+  },
+  {
+    "key": "PHILIPSDISK.rom",
+    "path": "Machines/Shared Roms/PHILIPSDISK.rom",
+    "machines": [
+      "MSX",
+      "MSX2"
+    ],
+    "accepted": [
+      "01dd1d72ed9bb6afe8a9b441c198a1cd"
+    ]
+  },
+  {
+    "key": "MOONSOUND.rom",
+    "path": "Machines/Shared Roms/MOONSOUND.rom",
+    "machines": [
+      "MSX2",
+      "MSX2+",
+      "MSXturboR"
+    ],
+    "accepted": [
+      "42af93619160ef2116416f74a6cb12f2"
+    ]
+  },
+  {
+    "key": "MSX2.rom",
+    "path": "Machines/Shared Roms/MSX2.rom",
+    "machines": [
+      "MSX2"
+    ],
+    "accepted": [
+      "ec3a01c91f24fbddcbcab0ad301bc9ef"
+    ]
+  },
+  {
+    "key": "MSX2PMUS.rom",
+    "path": "Machines/Shared Roms/MSX2PMUS.rom",
+    "machines": [
+      "MSX2",
+      "MSX2+"
+    ],
+    "accepted": [
+      "f877f32e6d8687474ac5ee83e40de23b"
+    ]
+  },
+  {
+    "key": "MSX2EXT.rom",
+    "path": "Machines/Shared Roms/MSX2EXT.rom",
+    "machines": [
+      "MSX2"
+    ],
+    "accepted": [
+      "2183c2aff17cf4297bdb496de78c2e8a"
+    ]
+  },
+  {
+    "key": "XBASIC2.rom",
+    "path": "Machines/Shared Roms/XBASIC2.rom",
+    "machines": [
+      "MSX2",
+      "MSX2+",
+      "MSXturboR"
+    ],
+    "accepted": [
+      "0b6120f289336538bc564548109f97c6"
+    ]
+  },
+  {
+    "key": "KANJI.rom",
+    "path": "Machines/Shared Roms/KANJI.rom",
+    "machines": [
+      "MSX2+",
+      "MSXturboR"
+    ],
+    "accepted": [
+      "acf53887c2d2783dc059a9b442c86b90"
+    ]
+  },
+  {
+    "key": "MSX2P.rom",
+    "path": "Machines/Shared Roms/MSX2P.rom",
+    "machines": [
+      "MSX2+"
+    ],
+    "accepted": [
+      "847cc025ffae665487940ff2639540e5"
+    ]
+  },
+  {
+    "key": "MSX2PEXT.rom",
+    "path": "Machines/Shared Roms/MSX2PEXT.rom",
+    "machines": [
+      "MSX2+"
+    ],
+    "accepted": [
+      "7c8243c71d8f143b2531f01afa6a05dc"
+    ]
+  },
+  {
+    "key": "MSXKANJI.rom",
+    "path": "Machines/Shared Roms/MSXKANJI.rom",
+    "machines": [
+      "MSX2+",
+      "MSXturboR"
+    ],
+    "accepted": [
+      "9dfdebfaa6b547222a40aab8bb2e29f8"
+    ]
+  },
+  {
+    "key": "PANASONICDISK.rom",
+    "path": "Machines/Shared Roms/PANASONICDISK.rom",
+    "machines": [
+      "MSX2+"
+    ],
+    "accepted": [
+      "00aa02b6077de40a0b51d71a3c3e1d5f"
+    ]
+  },
+  {
+    "key": "MSXTR.ROM",
+    "path": "Machines/Shared Roms/MSXTR.ROM",
+    "machines": [
+      "MSXturboR"
+    ],
+    "accepted": [
+      "fd9513736823e470965949f2a3ec6a43"
+    ]
+  },
+  {
+    "key": "MSXTRMUS.ROM",
+    "path": "Machines/Shared Roms/MSXTRMUS.ROM",
+    "machines": [
+      "MSXturboR"
+    ],
+    "accepted": [
+      "c688a229f834f95f8c64df7d33188cd8"
+    ]
+  },
+  {
+    "key": "MSXTROPT.ROM",
+    "path": "Machines/Shared Roms/MSXTROPT.ROM",
+    "machines": [
+      "MSXturboR"
+    ],
+    "accepted": [
+      "2cba0d812ec445cfe63ffa2cac8d42c2"
+    ]
+  },
+  {
+    "key": "MSXTREXT.ROM",
+    "path": "Machines/Shared Roms/MSXTREXT.ROM",
+    "machines": [
+      "MSXturboR"
+    ],
+    "accepted": [
+      "824b1c4475a3bd3b91c5ae81ea940aa2"
+    ]
+  },
+  {
+    "key": "MSXDOS23.ROM",
+    "path": "Machines/Shared Roms/MSXDOS23.ROM",
+    "machines": [
+      "MSXturboR"
+    ],
+    "accepted": [
+      "56bf5b02fed377b7bb9d91f914965431"
+    ]
+  }
+]

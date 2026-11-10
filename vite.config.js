@@ -75,6 +75,7 @@ export default defineConfig(({ command }) => {
           { src: 'assets/fonts/pixel-operator', dest: 'assets/fonts' },
           { src: 'assets/fonts/plus-jakarta-sans/*.txt', dest: 'assets/fonts/plus-jakarta-sans' },
           { src: 'assets/fonts/kh-dot/*.txt', dest: 'assets/fonts/kh-dot' },
+          { src: 'assets/fonts/msx/*.txt', dest: 'assets/fonts/msx' },
           { src: 'assets/images/vme-512.png', dest: '.' },
           { src: 'thumbnail-index/*', dest: 'thumbnail-index' },
           ...(includePrivateAssets ? [{ src: '../private-assets/*.zip', dest: 'assets' }] : []),
@@ -103,7 +104,7 @@ export default defineConfig(({ command }) => {
         filename: 'sw.js',
         strategies: 'injectManifest',
         injectManifest: {
-          globPatterns: ['**/*.{js,css,html,png}', '**/PlusJakartaSans-Variable*.ttf', '**/fonts/plus-jakarta-sans/*.txt'],
+          globPatterns: ['**/*.{js,css,html,png,xml}', '**/PlusJakartaSans-Variable*.ttf', '**/fonts/plus-jakarta-sans/*.txt', '**/MSXW40J*.woff2', '**/fonts/msx/*.txt'],
         },
       }),
       obfuscator({

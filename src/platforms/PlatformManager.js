@@ -32,6 +32,7 @@ import ST from './systems/ST.js';
 import TIC80 from './systems/TIC80.js';
 import Apple2 from './systems/Apple2.js';
 import X68000 from './systems/X68000.js';
+import MSX from './systems/MSX.js';
 import JSZip from 'jszip';
 import { ArchiveSelectionCancelled, readProgramArchive, extractArchiveProgram, restoreArchiveProgram } from '../utils/ArchivePrograms.js';
 import { UnsupportedDiskFormatError, assertSupportedDiskFormat } from '../utils/DiskFormats.js';
@@ -56,7 +57,7 @@ import { isKeyboardOnlyTouchControllers } from '../Constants.js';
 import { ConfigOverrideDropdown } from '../components/ConfigOverrideDropdown.js';
 
 export const SelectedPlatforms = {
-    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Jaguar, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2, X68000
+    NES, GB, GBC, GBA, SNES, SMS, PCE, MD, C64, Amiga, C128, C264, A2600, A5200, A800, A7800, Lynx, Jaguar, Coleco, CPC, VIC20, ZX80, Spectrum, SNK, Intv, MAME, XT, PICO8, DOS, ST, TIC80, Apple2, X68000, MSX
 }
 
 
@@ -2906,6 +2907,7 @@ export class PlatformManager {
             case 'hatarib': return name => this.#isStDiskImageName(name);
             case 'atari800': return name => this.#isAtari800DiskImageName(name);
             case 'cap32': return name => this.#isCpcDiskImageName(name);
+            case 'bluemsx': return name => /\.dsk$/i.test(String(name || ''));
             case 'px68k': return name => this.#isX68000DiskImageName(name);
             default: return null;
         }

@@ -138,6 +138,7 @@ const X68000 = {
         JOYSTICK_TOUCH_MODE.QUICKSHOT_STATIC,
         JOYSTICK_TOUCH_MODE.HIDEAWAY
     ],
+    default_touch_controller: JOYSTICK_TOUCH_MODE.QUICKSHOT_DYNAMIC,
     mouse_controllers: [
         MOUSE_TOUCH_MODE.TRACKPAD_BUTTONS
     ],

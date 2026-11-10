@@ -1204,6 +1204,10 @@ export class UiManager {
         UiManager.#baseInputMethod = TOUCH_INPUT.JOYSTICK;
         UiManager.#keyboardOverlayVisible = false;
         UiManager.#currentJoyTouchMode = mode;
+        const modes = UiManager.#platform_manager.getSelectedPlatform().touch_controllers;
+        const index = modes.indexOf(mode);
+        if (index >= 0) UiManager.#currentControllerIndex = index;
+        UiManager.updateJoystickSelectorIndex();
         UiManager.toggleInputMethod(TOUCH_INPUT.JOYSTICK, true);
     }
 

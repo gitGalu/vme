@@ -7,6 +7,7 @@ const extensions = {
     puae: ['adf', 'adz', 'dms', 'fdi', 'raw', 'hdf', 'hdz'],
     hatarib: ['st', 'stx', 'msa', 'dim'],
     cap32: ['dsk'],
+    bluemsx: ['dsk'],
     atari800: ['atr', 'atx', 'xfd', 'dcm', 'pro'],
     applewin: ['dsk', 'do', 'po', 'nib', 'woz', '2mg', '2hd', 'hdv'],
     px68k: ['dim', 'img', 'd88', '88d', 'hdm', 'dup', '2hd', 'xdf']
